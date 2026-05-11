@@ -1,11 +1,11 @@
 import { app, BrowserWindow, screen } from "electron";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = path.resolve();
 
 const isDev = process.env.NODE_ENV === "development";
+
+app.setAppUserModelId("com.solutionroad.weightmanagement");
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -24,6 +24,7 @@ function createMainWindow() {
 		autoHideMenuBar: true,
 
 		backgroundColor: "#1e1e1e",
+		show: false,
 
 		webPreferences: {
 			preload: path.join(__dirname, "preload", "preload.js"),
@@ -42,4 +43,33 @@ function createMainWindow() {
 			mainWindow?.webContents.openDevTools();
 		}
 	});
+
+	if (isDev) {
+		// Load frontend
+		mainWindow.loadURL("http://localhost:2500");
+	} else {
+		mainWindow.loadFile(path.join(__dirname, "../../renderer/dist/index.html"));
+	}
+
+	// Cleanup
+	mainWindow.on("closed", () => {
+		mainWindow = null;
+	});
 }
+
+app.whenReady().then(() => {
+	createMainWindow();
+
+	app.on("activate", () => {
+		if (BrowserWindow.getAllWindows().length === 0) {
+			createMainWindow();
+		}
+	});
+});
+
+app.on("window-all-closed", () => {
+	// macOS behavior
+	if (process.platform !== "darwin") {
+		app.quit();
+	}
+});
