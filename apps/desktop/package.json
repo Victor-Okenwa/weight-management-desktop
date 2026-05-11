@@ -1,10 +1,16 @@
 {
-  "name": "desktop",
+  "name": "@apps/desktop",
+  "private": true,
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/main.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc",
+    "start": "electron .",
+    "electron:dev": "concurrently \"pnpm dev\" \"wait-on dist/main.js && electron .\"",
+    "dist": "pnpm build && electron-builder"
   },
   "keywords": [],
   "author": "",
@@ -16,8 +22,11 @@
     "serialport": "^13.0.0"
   },
   "devDependencies": {
+    "@types/node": "^24.12.3",
+    "concurrently": "^9.2.1",
     "electron-builder": "^26.8.1",
     "tsx": "^4.21.0",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "wait-on": "^9.0.10"
   }
 }
