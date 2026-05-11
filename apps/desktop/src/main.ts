@@ -3,7 +3,7 @@ import path from "node:path";
 
 const __dirname = path.resolve();
 
-const isDev = process.env.NODE_ENV === "development";
+const isDev = !app.isPackaged;
 
 app.setAppUserModelId("com.solutionroad.weightmanagement");
 

@@ -3,7 +3,7 @@
 	"ui": "tui",
 	"tasks": {
 		"dev": {
-			"cache": true
+			"cache": false
 		},
 		"build": {
 			"dependsOn": ["^build"],
