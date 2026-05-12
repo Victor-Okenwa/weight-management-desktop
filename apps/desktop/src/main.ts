@@ -19,15 +19,17 @@ function createMainWindow() {
 	const windowHeight = Math.floor(height * 0.9);
 
 	mainWindow = new BrowserWindow({
+		title: "Solution Road Weight Management",
+		icon: path.join(__dirname, "assets", "logo.png"),
+
 		width: windowWidth,
 		height: windowHeight,
 		autoHideMenuBar: true,
 
 		backgroundColor: "#1e1e1e",
 		show: false,
-
 		webPreferences: {
-			preload: path.join(__dirname, "preload", "preload.js"),
+			// preload: path.join(__dirname, "preload", "preload.js"),
 
 			contextIsolation: true,
 			nodeIntegration: false,
