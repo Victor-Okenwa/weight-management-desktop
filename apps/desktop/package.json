@@ -16,6 +16,12 @@
 	"author": "",
 	"license": "ISC",
 	"packageManager": "pnpm@10.28.2",
+	"build": {
+  		"files": [
+			"dist/**/*",
+			"assets/**/*"
+		]
+	},
 	"dependencies": {
 		"better-sqlite3": "^12.9.0",
 		"electron": "^42.0.1",

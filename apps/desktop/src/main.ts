@@ -8,6 +8,8 @@ const isDev = !app.isPackaged;
 app.setAppUserModelId("com.solutionroad.weightmanagement");
 
 let mainWindow: BrowserWindow | null = null;
+const iconPath = path.join(app.getAppPath(), 'assets', 'logo.png');
+console.log('Icon path:', iconPath);
 
 function createMainWindow() {
 	const primaryDisplay = screen.getPrimaryDisplay();
@@ -19,17 +21,18 @@ function createMainWindow() {
 	const windowHeight = Math.floor(height * 0.9);
 
 	mainWindow = new BrowserWindow({
-		title: "Solution Road Weight Management",
-		icon: path.join(__dirname, "assets", "logo.png"),
+		icon: iconPath,
 
 		width: windowWidth,
 		height: windowHeight,
-		autoHideMenuBar: true,
+		autoHideMenuBar: isDev,
 
-		backgroundColor: "#1e1e1e",
+		title: "Solution Road Weight Management",
+        
+		backgroundColor: "#f2f2f2",
 		show: false,
 		webPreferences: {
-			// preload: path.join(__dirname, "preload", "preload.js"),
+			preload: path.join(__dirname, "dist", "preload", "preload.js"),
 
 			contextIsolation: true,
 			nodeIntegration: false,
