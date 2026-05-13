@@ -9,7 +9,7 @@
 		"build": "tsc",
 		"watch": "tsc --watch",
 		"electron": "electron .",
-		"dev": "concurrently \"pnpm watch\" \"wait-on dist/main.js && electron .\"",
+		"dev": "concurrently \"pnpm watch\" \"wait-on dist/main.js && electronmon .\"",
 		"dist": "pnpm build && electron-builder"
 	},
 	"keywords": [],
@@ -17,7 +17,7 @@
 	"license": "ISC",
 	"packageManager": "pnpm@10.28.2",
 	"build": {
-  		"files": [
+		"files": [
 			"dist/**/*",
 			"assets/**/*"
 		]
@@ -28,9 +28,11 @@
 		"serialport": "^13.0.0"
 	},
 	"devDependencies": {
+		"@electron/rebuild": "^4.0.4",
 		"@types/node": "^24.12.3",
 		"concurrently": "^9.2.1",
 		"electron-builder": "^26.8.1",
+		"electronmon": "^2.0.4",
 		"tsx": "^4.21.0",
 		"typescript": "catalog:",
 		"wait-on": "^9.0.10"

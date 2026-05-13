@@ -1,53 +1,48 @@
 {
-	"$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
-
+	"$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
 	"files": {
-		"ignore": ["**/dist", "**/node_modules", "**/.turbo", "**/coverage"]
+		"ignoreUnknown": false,
+		"includes": ["*.json", "*.ts", "*.tsx"]
 	},
-
 	"formatter": {
 		"enabled": true,
-		"indentStyle": "space",
+		"formatWithErrors": false,
+		"indentStyle": "tab",
 		"indentWidth": 2,
+		"lineEnding": "lf",
 		"lineWidth": 100
 	},
 
 	"javascript": {
 		"formatter": {
-			"quoteStyle": "single",
+			"quoteStyle": "double",
+			"jsxQuoteStyle": "double",
+			"quoteProperties": "asNeeded",
+			"trailingCommas": "es5",
 			"semicolons": "always",
-			"trailingCommas": "all",
-			"arrowParentheses": "always"
-		}
-	},
-
-	"json": {
-		"formatter": {
-			"enabled": true
+			"arrowParentheses": "always",
+			"bracketSpacing": true,
+			"bracketSameLine": false
 		}
 	},
 
 	"linter": {
-		"enabled": true,
 		"rules": {
-			"recommended": true,
-
+			"nursery": {
+				"noShadow": "off"
+			},
 			"style": {
-				"useConst": "error",
-				"useTemplate": "warn"
+				"useBlockStatements": "off",
+				"useConsistentTypeDefinitions": {
+					"level": "error",
+					"options": {
+						"style": "interface"
+					}
+				}
 			},
-
-			"suspicious": {
-				"noExplicitAny": "warn"
-			},
-
-			"correctness": {
-				"noUnusedVariables": "warn"
+			"performance": {
+				"noNamespaceImport": "off"
 			}
 		}
-	},
-
-	"organizeImports": {
-		"enabled": true
 	}
 }

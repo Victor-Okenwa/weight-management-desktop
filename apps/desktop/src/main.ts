@@ -29,7 +29,7 @@ function createMainWindow() {
 
 		title: "Solution Road Weight Management",
         
-		backgroundColor: "#f2f2f2",
+		backgroundColor: "#1e1e1e",
 		show: false,
 		webPreferences: {
 			preload: path.join(__dirname, "dist", "preload", "preload.js"),
