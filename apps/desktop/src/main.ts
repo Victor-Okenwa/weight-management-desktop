@@ -1,5 +1,6 @@
 import { app, BrowserWindow, screen } from "electron";
 import path from "node:path";
+import { SerialManager, SerialOptions } from "./serial/serial-manager.js";
 
 const __dirname = path.resolve();
 
@@ -33,10 +34,10 @@ function createMainWindow() {
 		show: false,
 		webPreferences: {
 			preload: path.join(__dirname, "dist", "preload", "preload.js"),
-
 			contextIsolation: true,
 			nodeIntegration: false,
 			sandbox: false,
+            enableWebSQL: true
 		},
 	});
 
@@ -70,6 +71,27 @@ app.whenReady().then(() => {
 			createMainWindow();
 		}
 	});
+
+  const indicatorType = 'd300';
+
+  const serialOptions: SerialOptions = {
+    port: 'COM7',
+    baudRate: 2400,
+    dataBits: 8,
+    stopBits: 1,
+    parity: 'none',
+    flowControl: 'none',
+    autoOpen: false,
+  };
+
+  const serialManager = new SerialManager(indicatorType);
+  serialManager.connect(serialOptions);
+
+  app.on('before-quit', async (event) => {
+    event.preventDefault();
+    await serialManager.disconnect();
+    app.quit();
+  });
 });
 
 app.on("window-all-closed", () => {

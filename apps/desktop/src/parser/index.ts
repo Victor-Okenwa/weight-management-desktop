@@ -6,7 +6,7 @@ import { parseGeneric } from './generic.js';
 export type IndicatorType = 'd300' | 'averyZMor' | 'cardinal225' | 'generic';
 
 export function parseWeight(indicatorType: IndicatorType, data: string, unit?:string) {
-
+console.log("yfuygiuoihugifyug")
     switch (indicatorType){
         case 'd300': 
             return parseD300(data, unit)
@@ -16,6 +16,5 @@ export function parseWeight(indicatorType: IndicatorType, data: string, unit?:st
             return parseCardinal225(data, unit)
         default :
             parseGeneric(data, unit)
-
     }
 }
