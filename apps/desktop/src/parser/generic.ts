@@ -8,5 +8,6 @@ export function parseGeneric(data: string, unit: string = "kg") {
     weight: Number.parseFloat(match[1]),
     unit: readUnit || unit,
     raw: data,
+    isStable: false
   };
 }

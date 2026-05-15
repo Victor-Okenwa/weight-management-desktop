@@ -13,9 +13,5 @@
     },
     "./types/*": "./src/types/*.ts",
     "./constants/*": "./src/constants/*.ts"
-  },
-   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch"
   }
 }

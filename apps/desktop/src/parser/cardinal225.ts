@@ -8,5 +8,6 @@ export function parseCardinal225(data: string, unit: string = "kg") {
     weight: Number.parseFloat(match[1]),
     unit: match[2].toLowerCase(),
     raw: data,
+    isStable: false
   };
 }

@@ -13,5 +13,6 @@ export function parseAveryZMor(data: string, unit: string = "kg") {
     weight,
     unit: readUnit || unit,
     raw: data,
+    isStable: false
   };
 }
