@@ -1,11 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-
-
-export interface WeightReading {
-  weight: number;
-  unit: string;
-  raw: string;
-}
+import type { WeightReading } from "@weight/shared/types/index";
 
 contextBridge.exposeInMainWorld('electronAPI', {
     onWeightUpdate: (callback: (reading: WeightReading) => void) => {

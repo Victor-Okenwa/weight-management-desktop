@@ -1,3 +1,5 @@
+import { useWeightStore } from "@/store/weightStore";
+import { useEffect } from "react";
 
 export function useWeightUpdates() {
   const setLatestReading = useWeightStore((s) => s.setLatestReading);

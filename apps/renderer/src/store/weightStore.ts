@@ -1,11 +1,5 @@
 import { create } from 'zustand';
-
-export interface WeightReading {
-  weight: number;
-  unit: string;
-  raw: string;
-}
-
+import type { WeightReading } from '@weight/shared/types/index';
 
 interface WeightState {
   latestReading: WeightReading | null;

@@ -1,5 +1,5 @@
 {
-	"name": "@apps/desktop",
+	"name": "@weight/desktop",
 	"private": true,
 	"version": "1.0.0",
 	"description": "",
@@ -24,6 +24,7 @@
 		]
 	},
 	"dependencies": {
+		"@weight/shared": "workspace:*",
 		"@serialport/parser-delimiter": "^13.0.0",
 		"@serialport/parser-readline": "^13.0.0",
 		"better-sqlite3": "^12.9.0",

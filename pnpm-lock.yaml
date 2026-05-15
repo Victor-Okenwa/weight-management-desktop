@@ -29,6 +29,9 @@ importers:
       '@serialport/parser-readline':
         specifier: ^13.0.0
         version: 13.0.0
+      '@weight/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       better-sqlite3:
         specifier: ^12.9.0
         version: 12.9.0
@@ -78,6 +81,9 @@ importers:
       '@tanstack/react-router':
         specifier: ^1.169.8
         version: 1.169.8(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+      '@weight/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
