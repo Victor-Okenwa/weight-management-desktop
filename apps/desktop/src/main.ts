@@ -10,7 +10,6 @@ app.setAppUserModelId("com.solutionroad.weightmanagement");
 
 let mainWindow: BrowserWindow | null = null;
 const iconPath = path.join(app.getAppPath(), 'assets', 'logo.png');
-console.log('Icon path:', iconPath);
 
 function createMainWindow() {
 	const primaryDisplay = screen.getPrimaryDisplay();
@@ -31,7 +30,8 @@ function createMainWindow() {
 		title: "Solution Road Weight Management",
         
 		backgroundColor: "#1e1e1e",
-		show: false,
+		show: true,
+		
 		webPreferences: {
 			preload: path.join(__dirname, "dist", "preload", "preload.js"),
 			contextIsolation: true,
@@ -50,8 +50,11 @@ function createMainWindow() {
 		}
 	});
 
+	mainWindow.webContents.openDevTools();
+
 	if (isDev) {
 		// Load frontend
+		// mainWindow.loadURL(`data:text/html,<h1>Hello</h1>`);
 		mainWindow.loadURL("http://localhost:2500");
 	} else {
 		mainWindow.loadFile(path.join(__dirname, "../../renderer/dist/index.html"));
@@ -84,7 +87,11 @@ app.whenReady().then(() => {
     autoOpen: false,
   };
 
-  const serialManager = new SerialManager(indicatorType);
+  const serialManager = new SerialManager(indicatorType, (reading) => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('weight:update', reading);
+  }
+});
   serialManager.connect(serialOptions);
 
   app.on('before-quit', async (event) => {

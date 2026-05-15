@@ -36,9 +36,11 @@ export class SerialManager {
  private port: SerialPort | null = null;
   private streamParser: Transform | null = null;
   private indicatorType: IndicatorType;
+    private onWeight?: (reading: { weight: number; unit: string; raw: string }) => void;
   
- constructor(indicatorType: IndicatorType) {
+ constructor(indicatorType: IndicatorType, onWeight?: (reading: any) => void) {
     this.indicatorType = indicatorType;
+        this.onWeight = onWeight;
   }
 
     connect(serialOptions: SerialOptions) {
@@ -58,7 +60,7 @@ export class SerialManager {
 
     this.streamParser = this.port.pipe(createStreamParser(this.indicatorType));
 
-   this.streamParser.on('data', (line: string) => {
+   this.streamParser.on('data', (line: string | Buffer) => {
       this.handleData(line);
     });
 
@@ -72,6 +74,7 @@ export class SerialManager {
         console.error('Failed to open port:', err.message);
         return;
       }
+   
       console.log(`Serial port ${serialOptions.port} opened at ${serialOptions.baudRate} baud`);
     });
   }
@@ -95,6 +98,10 @@ const line = typeof rawLine === 'string' ? rawLine : rawLine.toString();
     const reading = parseWeight(this.indicatorType, cleanLine)
    if (reading) {
       console.log(`[${this.indicatorType}] Weight: ${reading.weight} ${reading.unit} (raw: ${cleanLine})`);
+
+       if (this.onWeight) {
+        this.onWeight(reading);
+      }
    }else {
       console.log(`[${this.indicatorType}] Unparsed: ${cleanLine}`);
     }

@@ -8,6 +8,8 @@ import {
 	SidebarHeader,
 } from "@/components/ui/sidebar";
 import { HistoryIcon, LayoutDashboard, Settings2 } from "lucide-react";
+import {useWeightUpdates} from "@/hooks/useWeightUpdates"
+import { useWeightStore } from "../../store/weightStore";
 
 const dashboardRoutes = [
     {
@@ -32,6 +34,10 @@ export const Route = createFileRoute("/_protected/")({
 });
 
 function RouteComponent() {
+	  useWeightUpdates(); // starts listening
+
+  const latestReading = useWeightStore((s) => s.latestReading);
+
 	return (
 		<SidebarProvider>
 			<AppSidebar />
@@ -39,7 +45,7 @@ function RouteComponent() {
 			<main className="w-full">
 				<TopBar />
 
-                <span className="font-classic text-5xl">2450 kg</span>
+                <span className="font-classic text-5xl">{latestReading?.weight}</span>
 				<Outlet />
 			</main>
 		</SidebarProvider>

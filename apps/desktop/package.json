@@ -6,10 +6,11 @@
 	"main": "dist/main.js",
 	"type": "module",
 	"scripts": {
+		"clean": "rimraf dist",
 		"build": "tsc",
 		"watch": "tsc --watch",
 		"electron": "electron .",
-		"dev": "concurrently \"pnpm watch\" \"wait-on dist/main.js && electronmon .\"",
+		"dev": "rimraf dist && concurrently \"pnpm watch\" \"wait-on dist/main.js && electronmon .\"",
 		"dist": "pnpm build && electron-builder"
 	},
 	"keywords": [],

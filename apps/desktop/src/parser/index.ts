@@ -15,7 +15,7 @@ class LineSplitter extends Transform {
     this.buffer = lines.pop() || '';
 
  for (const line of lines) {
-  if (line) this.push(line, 'utf8');   // add encoding
+  if (line) this.push(line);   // add encoding
 }
 
     callback();
@@ -40,7 +40,6 @@ export function createStreamParser(type: IndicatorType): Transform {
 
 
 export function parseWeight(indicatorType: IndicatorType, data: string, unit?:string) {
-console.log("yfuygiuoihugifyug")
     switch (indicatorType){
         case 'd300': 
             return parseD300(data, unit)

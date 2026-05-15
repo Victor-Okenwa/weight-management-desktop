@@ -10,7 +10,7 @@
 		]
 	},
 	"scripts": {
-		"dev": "turbo run dev",
+		"dev": "turbo run dev --force",
 		"build": "turbo run build",
 		"format": "biome format . --write",
 		"lint": "biome lint .",
