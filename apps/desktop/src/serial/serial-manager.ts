@@ -1,6 +1,5 @@
 import {  SerialPort } from "serialport";
-import { IndicatorType, parseWeight } from "../parser/index.js";
-import { ReadlineParser } from '@serialport/parser-readline';
+import { createStreamParser, IndicatorType, parseWeight } from "../parser/index.js";
 import { Transform } from 'node:stream';
 
 type COMPorts = `COM${number}`;
@@ -33,32 +32,10 @@ export interface SerialOptions {
   flowControl: FlowControl;
   autoOpen: boolean;
 }
-
-class AnyLineParser extends Transform {
-  private buffer = '';
-
-  _transform(chunk: Buffer, encoding: string, callback: () => void) {
-    const str = this.buffer + chunk.toString();
-    const lines = str.split(/[\r\n]+/);
-    // The last element may be incomplete if it doesn't end with newline
-    this.buffer = lines.pop() || '';
-    for (const line of lines) {
-      if (line) this.push(line);
-    }
-    callback();
-  }
-
-  _flush(callback: () => void) {
-    if (this.buffer) this.push(this.buffer);
-    callback();
-  }
-}
 export class SerialManager {
-
  private port: SerialPort | null = null;
-  private parser: Transform | null = null;   // <-- changed to Transform
+  private streamParser: Transform | null = null;
   private indicatorType: IndicatorType;
-
   
  constructor(indicatorType: IndicatorType) {
     this.indicatorType = indicatorType;
@@ -79,18 +56,18 @@ export class SerialManager {
       autoOpen: serialOptions.autoOpen || false,
     });
 
-    // Use a Readline parser to split data on newline (or carriage return)
-    this.parser = this.port.pipe(new AnyLineParser());
+    this.streamParser = this.port.pipe(createStreamParser(this.indicatorType));
 
-     this.parser.on('data', (line: string) => {
+   this.streamParser.on('data', (line: string) => {
       this.handleData(line);
     });
+
 
      this.port.on('error', (err) => {
       console.error('Serial port error:', err.message);
     });
 
-        this.port.open((err) => {
+    this.port.open((err) => {
       if (err) {
         console.error('Failed to open port:', err.message);
         return;
@@ -109,8 +86,10 @@ export class SerialManager {
     }
   }
 
-    private handleData(rawLine: string) {
-    const cleanLine = rawLine.trim();
+    private handleData(rawLine: string | Buffer) {
+const line = typeof rawLine === 'string' ? rawLine : rawLine.toString();
+  const cleanLine = line.trim();
+
     if (!cleanLine) return; // skip empty lines
 
     const reading = parseWeight(this.indicatorType, cleanLine)

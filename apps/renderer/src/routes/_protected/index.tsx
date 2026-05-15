@@ -39,7 +39,6 @@ function RouteComponent() {
 			<main className="w-full">
 				<TopBar />
 
-<span></span>
                 <span className="font-classic text-5xl">2450 kg</span>
 				<Outlet />
 			</main>
