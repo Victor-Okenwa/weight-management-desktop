@@ -1,16 +1,18 @@
-import { useWeightStore } from "@/store/weightStore";
-import { useEffect } from "react";
+import { useEffect } from 'react';
+import { useWeightStore } from '../store/weightStore';
 
 export function useWeightUpdates() {
   const setLatestReading = useWeightStore((s) => s.setLatestReading);
+  const setStableReading = useWeightStore((s) => s.setStableReading);
 
-   useEffect(() => {
-    // This will work once the preload exposes window.electronAPI
+  useEffect(() => {
     if (window.electronAPI) {
       window.electronAPI.onWeightUpdate((reading) => {
         setLatestReading(reading);
       });
+      window.electronAPI.onWeightStable((reading) => {
+        setStableReading(reading);
+      });
     }
-    // Cleanup if needed, but onWeightUpdate already removes listeners in preload
-  }, [setLatestReading]);
+  }, [setLatestReading, setStableReading]);
 }

@@ -4,6 +4,7 @@ declare global {
   interface Window {
     electronAPI: {
       onWeightUpdate: (callback: (reading: WeightReading) => void) => void;
+      onWeightStable: (callback: (reading: WeightReading) => void) => void;
     };
   }
 }

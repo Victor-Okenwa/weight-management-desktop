@@ -1,6 +1,7 @@
 import { app, BrowserWindow, screen } from "electron";
 import path from "node:path";
 import { SerialManager, SerialOptions } from "./serial/serial-manager.js";
+import { StableWeightDetector } from "./serial/stable-weight-detector.js";
 
 const __dirname = path.resolve();
 
@@ -90,8 +91,18 @@ app.whenReady().then(() => {
   const serialManager = new SerialManager(indicatorType, (reading) => {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('weight:update', reading);
+}
+
+stableDetector.addReading(reading);
+});
+
+const stableDetector = new StableWeightDetector((stableReading) => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('weight:stable', stableReading);
   }
 });
+
+
   serialManager.connect(serialOptions);
 
   app.on('before-quit', async (event) => {

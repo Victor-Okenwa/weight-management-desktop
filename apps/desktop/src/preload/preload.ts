@@ -7,6 +7,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.removeAllListeners('weight:update');
     ipcRenderer.on('weight:update', (_event, reading) => callback(reading));
   },
+   onWeightStable: (callback: (reading: WeightReading) => void) => {
+    ipcRenderer.removeAllListeners('weight:stable');
+    ipcRenderer.on('weight:stable', (_event, reading: WeightReading) => callback(reading));
+  },
     // Later you can add more methods:
   // getSettings, setSettings, etc.
 })
