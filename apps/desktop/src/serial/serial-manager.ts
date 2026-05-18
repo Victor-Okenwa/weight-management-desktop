@@ -46,7 +46,6 @@ export class SerialManager {
       `Attempting to open serial port ${serialOptions.port} at ${serialOptions.baudRate} baud`,
     );
     if (this.port?.isOpen) {
-      console.warn('Serial port already open');
       logger.info(`Serial port already opened`);
       return;
     }
@@ -73,26 +72,21 @@ export class SerialManager {
       const line = typeof chunk === 'string' ? chunk : chunk.toString();
       const reading = this.weightParser.parse(line.trim(), this.unit);
       if (reading) {
-        console.log(
-          `[${this.indicatorType}] Weight: ${reading.weight} ${reading.unit} ${reading.isStable ? 'STABLE' : ''} (raw: ${reading.raw})`,
-        );
-
         logger.debug(
           `[${this.indicatorType}] Weight: ${reading.weight} ${reading.unit} ${reading.isStable ? 'STABLE' : ''}`,
         );
 
         this.onWeight?.(reading);
       } else {
-        console.warn(`[${this.indicatorType}] Unparsed: ${line.trim()}`);
         logger.warn(`[${this.indicatorType}] Unparsed: ${line.trim()}`);
       }
     });
 
-    this.streamParser.on('error', (err) => console.error('Stream parser error:', err.message));
+    this.streamParser.on('error', (err) => logger.error('Stream parser error:', err.message));
 
     // Handle unexpected port close (e.g., physical unplug)
     this.port.on('close', () => {
-      console.log('Serial port closed');
+      logger.info('Serial port closed');
       this.cleanupPort();
       if (!this.manualDisconnect) {
         this.currentStatus = 'disconnected';
@@ -103,7 +97,7 @@ export class SerialManager {
 
     // Handle errors, including permission denied, device removal, etc.
     this.port.on('error', (err) => {
-      console.error('Serial port error:', err.message);
+      logger.error(`Serial port error: ${err.message}`);
       // Specific error codes that mean the port is gone
       if (
         err.message.includes('ENXIO') ||
@@ -127,7 +121,6 @@ export class SerialManager {
     // Attempt to open
     this.port.open((err) => {
       if (err) {
-        console.error('Failed to open port:', err.message);
         logger.error(`Failed to open port: ${err.message}`);
         this.cleanupPort();
         this.currentStatus = 'error';
@@ -139,7 +132,7 @@ export class SerialManager {
         return;
       }
       // Successfully opened
-      console.log(`Serial port ${serialOptions.port} opened at ${serialOptions.baudRate} baud`);
+      logger.info(`Serial port ${serialOptions.port} opened at ${serialOptions.baudRate} baud`);
 
       this.currentStatus = 'connected';
       this.onStatus?.('connected');
@@ -155,9 +148,8 @@ export class SerialManager {
     if (this.port?.isOpen) {
       this.port.close((err) => {
         if (err) {
-          console.error('Error closing port:', err.message);
           logger.error(`Error closing port: ${err.message}`);
-        } else console.log('Serial port closed by user');
+        } else logger.info('Serial port closed by user');
       });
     }
     this.port = null;
@@ -184,16 +176,12 @@ export class SerialManager {
     // Don't stack multiple loops
     if (this.reconnectTimer) return;
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.warn(`Max reconnect attempts (${this.maxReconnectAttempts}) reached. Giving up.`);
       logger.warn(`Max reconnect attempts (${this.maxReconnectAttempts}) reached. Giving up.`);
       this.currentStatus = 'error';
       this.onStatus?.('error');
       return;
     }
 
-    console.log(
-      `Reconnect attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts} in ${this.reconnectInterval}ms`,
-    );
     logger.info(
       `Reconnect attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts} in ${this.reconnectInterval}ms`,
     );
