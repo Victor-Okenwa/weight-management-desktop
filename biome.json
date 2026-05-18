@@ -1,48 +1,46 @@
 {
-	"$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
-	"files": {
-		"ignoreUnknown": false,
-		"includes": ["*.json", "*.ts", "*.tsx"]
+	"$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+	"organizeImports": {
+		"enabled": true
 	},
 	"formatter": {
 		"enabled": true,
 		"formatWithErrors": false,
-		"indentStyle": "tab",
+		"indentStyle": "space",
 		"indentWidth": 2,
-		"lineEnding": "lf",
-		"lineWidth": 100
+		"lineWidth": 100,
+		"lineEnding": "lf"
 	},
-
 	"javascript": {
 		"formatter": {
-			"quoteStyle": "double",
-			"jsxQuoteStyle": "double",
-			"quoteProperties": "asNeeded",
-			"trailingCommas": "es5",
+			"quoteStyle": "single",
 			"semicolons": "always",
-			"arrowParentheses": "always",
+			"trailingCommas": "all",
 			"bracketSpacing": true,
-			"bracketSameLine": false
+			"arrowParentheses": "always"
 		}
 	},
-
 	"linter": {
+		"enabled": true,
 		"rules": {
-			"nursery": {
-				"noShadow": "off"
+			"recommended": true,
+			"correctness": {
+				"noUnusedImports": "warn"
 			},
 			"style": {
-				"useBlockStatements": "off",
-				"useConsistentTypeDefinitions": {
-					"level": "error",
-					"options": {
-						"style": "interface"
-					}
-				}
-			},
-			"performance": {
-				"noNamespaceImport": "off"
+				"useConst": "error",
+				"useTemplate": "warn"
 			}
 		}
+	},
+	"files": {
+		"ignore": [
+			"**/node_modules",
+			"**/dist",
+			"**/.turbo",
+			"**/coverage",
+			"**/pnpm-lock.yaml",
+			"*.min.*"
+		]
 	}
 }

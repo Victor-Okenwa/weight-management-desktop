@@ -65,6 +65,25 @@ function createMainWindow() {
 	mainWindow.on("closed", () => {
 		mainWindow = null;
 	});
+
+	mainWindow.webContents.on('did-start-loading', () => {
+  console.log('Renderer: started loading');
+});
+mainWindow.webContents.on('did-finish-load', () => {
+  console.log('Renderer: finished loading');
+});
+mainWindow.webContents.on('dom-ready', () => {
+  console.log('Renderer: DOM ready');
+});
+mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+  console.error('Renderer: failed to load', errorCode, errorDescription, validatedURL);
+});
+mainWindow.on('unresponsive', () => {
+  console.warn('Window became unresponsive!');
+});
+mainWindow.webContents.on('render-process-gone', (event, details) => {
+  console.error('Renderer process gone:', details.reason, details.exitCode);
+});
 }
 
 app.whenReady().then(() => {
@@ -98,6 +117,7 @@ stableDetector.addReading(reading);
 
 const stableDetector = new StableWeightDetector((stableReading) => {
   if (mainWindow && !mainWindow.isDestroyed()) {
+	// console.log(stableReading)
     mainWindow.webContents.send('weight:stable', stableReading);
   }
 });

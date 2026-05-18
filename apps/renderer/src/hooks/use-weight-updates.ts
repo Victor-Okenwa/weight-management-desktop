@@ -9,10 +9,11 @@ export function useWeightUpdates() {
     if (window.electronAPI) {
       window.electronAPI.onWeightUpdate((reading) => {
         setLatestReading(reading);
+        // console.log(reading)
       });
       window.electronAPI.onWeightStable((reading) => {
         setStableReading(reading);
-        console.log(reading)
+        // console.log(reading)
       });
     }
   }, [setLatestReading, setStableReading]);

@@ -28,7 +28,7 @@ const dashboardRoutes = [
         link: "/settings",
         label: "Settings"
     },
-]
+];
 
 export const Route = createFileRoute("/_protected/")({
 	component: RouteComponent,

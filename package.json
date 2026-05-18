@@ -12,9 +12,10 @@
 	"scripts": {
 		"dev": "turbo run dev --force",
 		"build": "turbo run build",
-		"format": "biome format . --write",
+		"format": "biome format --write .",
+		"format:check": "biome format .",
 		"lint": "biome lint .",
-		"check": "biome check . --write"
+		"check": "biome check ."
 	},
 	"keywords": [],
 	"author": "Victor-Okenwa",

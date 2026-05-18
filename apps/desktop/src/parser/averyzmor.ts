@@ -1,18 +1,16 @@
-export function parseAveryZMor(data: string, unit: string = "kg") {
- const trimmed = data.trim();
-  // Example: "ST,GS,   12.3,kg"
+import { WeightReading } from "@weight/shared/types/index";
 
-  const parts = trimmed.split(',');
+export class AveryWeightParser {
+  private lastWeight: number | null = null;
+
+  parse(data: string, unit: string = 'kg'): WeightReading | null {
+    const parts = data.split(',');
     if (parts.length !== 4) return null;
-
-    const weightStr = parts[2].trim();
-  const weight = Number.parseFloat(weightStr);
-      if (Number.isNaN(weight)) return null;
-  const readUnit = parts[3].trim().toLowerCase();
-  return {
-    weight,
-    unit: readUnit || unit,
-    raw: data,
-    isStable: false
-  };
+    const weight = Number.parseFloat(parts[2].trim());
+    if (Number.isNaN(weight)) return null;
+    const parsedUnit = parts[3].trim().toLowerCase() || unit;
+    const isStable = this.lastWeight !== null && weight === this.lastWeight;
+    this.lastWeight = weight;
+    return { weight, unit: parsedUnit, raw: data, isStable };
+  }
 }
