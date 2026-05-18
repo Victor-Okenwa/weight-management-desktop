@@ -8,6 +8,8 @@ import {
   type IWeightParser,
 } from '../parser/index.js';
 
+export type SerialStatus = 'connected' | 'disconnected' | 'error';
+
 type COMPorts = `COM${number}`;
 type BaudRate =
   | 300
@@ -43,13 +45,19 @@ export class SerialManager {
   private streamParser: Transform | null = null;
   private weightParser: IWeightParser;
   private indicatorType: IndicatorType;
+  private onStatus?: (status: SerialStatus) => void;
   private onWeight?: (reading: WeightReading) => void;
   private unit = 'kg'; // default, will be configurable
 
-  constructor(indicatorType: IndicatorType, onWeight?: (reading: WeightReading) => void) {
+  constructor(
+    indicatorType: IndicatorType,
+    onWeight?: (reading: WeightReading) => void,
+    onStatus?: (status: SerialStatus) => void,
+  ) {
     this.indicatorType = indicatorType;
     this.weightParser = createWeightParser(indicatorType);
     this.onWeight = onWeight;
+    this.onStatus = onStatus;
   }
 
   connect(serialOptions: SerialOptions) {
@@ -84,15 +92,38 @@ export class SerialManager {
       }
     });
 
-    this.streamParser.on('error', (err) => console.error('Stream parser error:', err.message));
+    this.port.on('close', () => {
+      console.log('Serial port closed');
+      this.port = null;
+      this.streamParser = null;
+      this.onStatus?.('disconnected');
+    });
+
+    this.streamParser.on('error', (err) => {
+      console.error('Serial port error:', err.message);
+      // These error codes indicate the port is gone
+      if (
+        err.message.includes('ENXIO') ||
+        err.message.includes('EIO') ||
+        err.message.includes('ENOENT') ||
+        err.message.includes('Access denied')
+      ) {
+        this.onStatus?.('disconnected');
+      } else {
+        this.onStatus?.('error');
+      }
+    });
+
     this.port.on('error', (err) => console.error('Serial port error:', err.message));
 
     this.port.open((err) => {
       if (err) {
         console.error('Failed to open port:', err.message);
+        this.onStatus?.('error');
         return;
       }
       console.log(`Serial port ${serialOptions.port} opened at ${serialOptions.baudRate} baud`);
+      this.onStatus?.('connected');
     });
   }
 
@@ -105,24 +136,4 @@ export class SerialManager {
       this.port = null;
     }
   }
-
-  //     private handleData(rawLine: string | Buffer) {
-  // const line = typeof rawLine === 'string' ? rawLine : rawLine.toString();
-  //   const cleanLine = line.trim();
-
-  //     if (!cleanLine) return; // skip empty lines
-
-  //     const reading = parseWeight(this.indicatorType, cleanLine)
-  //    if (reading) {
-  //       console.log(`[${this.indicatorType}] Weight: ${reading.weight} ${reading.unit} ${reading.isStable ? 'STABLE' : ''} (raw: ${reading.raw})`);
-  //       if (this.onWeight) {
-  //         this.onWeight(reading);
-  //       }
-  //        if (this.onWeight) {
-  //         this.onWeight(reading);
-  //       }
-  //    }else {
-  //       console.log(`[${this.indicatorType}] Unparsed: ${cleanLine}`);
-  //     }
-  // }
 }

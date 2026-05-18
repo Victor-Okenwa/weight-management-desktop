@@ -9,12 +9,17 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ProtectedRouteRouteImport } from './routes/_protected/route'
 import { Route as ProtectedIndexRouteImport } from './routes/_protected/index'
 
-const ProtectedIndexRoute = ProtectedIndexRouteImport.update({
-  id: '/_protected/',
-  path: '/',
+const ProtectedRouteRoute = ProtectedRouteRouteImport.update({
+  id: '/_protected',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ProtectedIndexRoute = ProtectedIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ProtectedRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -25,6 +30,7 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/_protected': typeof ProtectedRouteRouteWithChildren
   '/_protected/': typeof ProtectedIndexRoute
 }
 export interface FileRouteTypes {
@@ -32,27 +38,46 @@ export interface FileRouteTypes {
   fullPaths: '/'
   fileRoutesByTo: FileRoutesByTo
   to: '/'
-  id: '__root__' | '/_protected/'
+  id: '__root__' | '/_protected' | '/_protected/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  ProtectedIndexRoute: typeof ProtectedIndexRoute
+  ProtectedRouteRoute: typeof ProtectedRouteRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/_protected': {
+      id: '/_protected'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof ProtectedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_protected/': {
       id: '/_protected/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof ProtectedIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof ProtectedRouteRoute
     }
   }
 }
 
-const rootRouteChildren: RootRouteChildren = {
+interface ProtectedRouteRouteChildren {
+  ProtectedIndexRoute: typeof ProtectedIndexRoute
+}
+
+const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
   ProtectedIndexRoute: ProtectedIndexRoute,
+}
+
+const ProtectedRouteRouteWithChildren = ProtectedRouteRoute._addFileChildren(
+  ProtectedRouteRouteChildren,
+)
+
+const rootRouteChildren: RootRouteChildren = {
+  ProtectedRouteRoute: ProtectedRouteRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
