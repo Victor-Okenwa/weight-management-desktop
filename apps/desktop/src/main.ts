@@ -13,6 +13,12 @@ app.setAppUserModelId('com.solutionroad.weightmanagement');
 let mainWindow: BrowserWindow | null = null;
 const iconPath = path.join(app.getAppPath(), 'assets', 'logo.png');
 
+const dbPath = process.env.DB_PATH
+  ? path.resolve(process.env.DB_PATH)
+  : path.join(app.getPath('userData'), 'data.db');
+
+const db = initDatabase(dbPath);
+
 function createMainWindow() {
   const primaryDisplay = screen.getPrimaryDisplay();
 

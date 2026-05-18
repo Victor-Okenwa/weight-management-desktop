@@ -9,6 +9,9 @@ build/
 out/
 release/
 
+# DATABASE FILES
+*.db
+
 # Logs
 *.log
 logs/
