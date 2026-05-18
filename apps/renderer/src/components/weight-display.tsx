@@ -16,6 +16,7 @@ export function WeightDisplay() {
           </div>
         )}
       </header>
+    
       <div className="relative bg-black">
         <div aria-hidden className="font-digital text-display-dim/40 absolute inset-0 select-none">
           888888
