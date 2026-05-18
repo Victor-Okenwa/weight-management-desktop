@@ -1,5 +1,5 @@
-import { WeightReading } from "@weight/shared/types/index";
-import { IWeightParser } from "./index.js";
+import { WeightReading } from '@weight/shared/types/index';
+import { IWeightParser } from './index.js';
 
 /**
  * Parses weight strings from a Cardinal 225 indicator.

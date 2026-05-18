@@ -31,7 +31,7 @@ export class D300StreamParser extends Transform {
           // status byte – ignore
           const match = this.buffer.match(/Wt:\s*(\d+(?:\.\d+)?)/);
           if (match) {
-            this.push(match[1] + 'Wt');  // push string, e.g., "100Wt"
+            this.push(match[1] + 'Wt'); // push string, e.g., "100Wt"
           }
           this.state = 'IDLE';
           this.buffer = '';
@@ -50,7 +50,10 @@ export class D300StreamParser extends Transform {
 export class D300WeightParser {
   private lastWeight: number | null = null;
 
-  parse(data: string, unit: string = 'kg'): { weight: number; unit: string; raw: string; isStable: boolean } | null {
+  parse(
+    data: string,
+    unit: string = 'kg',
+  ): { weight: number; unit: string; raw: string; isStable: boolean } | null {
     const trimmed = data.trim();
     const match = trimmed.match(/^(-?\d+(\.\d+)?)\s*Wt$/);
     if (!match) return null;

@@ -3,13 +3,16 @@
   "ui": "tui",
   "tasks": {
     "dev": {
-      "dependsOn": ["^build"], 
+      "dependsOn": ["^build"],
       "cache": false
     },
     "build": {
       "cache": false,
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
-    }
+    },
+    "format": {},
+    "lint": {},
+    "check": {}
   }
 }

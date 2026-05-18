@@ -1,99 +1,79 @@
-import { app, BrowserWindow, screen } from "electron";
-import path from "node:path";
-import { SerialManager, SerialOptions } from "./serial/serial-manager.js";
-import { StableWeightDetector } from "./serial/stable-weight-detector.js";
+import path from 'node:path';
+import { app, BrowserWindow, screen } from 'electron';
+import { SerialManager, type SerialOptions } from './serial/serial-manager.js';
 
 const __dirname = path.resolve();
 
 const isDev = !app.isPackaged;
 
-app.setAppUserModelId("com.solutionroad.weightmanagement");
+app.setAppUserModelId('com.solutionroad.weightmanagement');
 
 let mainWindow: BrowserWindow | null = null;
 const iconPath = path.join(app.getAppPath(), 'assets', 'logo.png');
 
 function createMainWindow() {
-	const primaryDisplay = screen.getPrimaryDisplay();
+  const primaryDisplay = screen.getPrimaryDisplay();
 
-	const { width, height } = primaryDisplay.workAreaSize;
+  const { width, height } = primaryDisplay.workAreaSize;
 
-	// Recommended initial sizing
-	const windowWidth = Math.floor(width * 0.9);
-	const windowHeight = Math.floor(height * 0.9);
+  // Recommended initial sizing
+  const windowWidth = Math.floor(width * 0.9);
+  const windowHeight = Math.floor(height * 0.9);
 
-	mainWindow = new BrowserWindow({
-		icon: iconPath,
+  mainWindow = new BrowserWindow({
+    icon: iconPath,
 
-		width: windowWidth,
-		height: windowHeight,
-		autoHideMenuBar: isDev,
+    width: windowWidth,
+    height: windowHeight,
+    autoHideMenuBar: isDev,
 
-		title: "Solution Road Weight Management",
-        
-		backgroundColor: "#1e1e1e",
-		show: true,
-		
-		webPreferences: {
-			preload: path.join(__dirname, "dist", "preload", "preload.js"),
-			contextIsolation: true,
-			nodeIntegration: false,
-			sandbox: false,
-            enableWebSQL: true
-		},
-	});
+    title: 'Solution Road Weight Management',
 
-	// Show only when ready
-	mainWindow.once("ready-to-show", () => {
-		mainWindow?.show();
+    backgroundColor: '#1e1e1e',
+    show: true,
 
-		if (isDev) {
-			mainWindow?.webContents.openDevTools();
-		}
-	});
+    webPreferences: {
+      preload: path.join(__dirname, 'dist', 'preload', 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false,
+      enableWebSQL: true,
+    },
+  });
 
-	mainWindow.webContents.openDevTools();
+  // Show only when ready
+  mainWindow.once('ready-to-show', () => {
+    mainWindow?.show();
 
-	if (isDev) {
-		// Load frontend
-		// mainWindow.loadURL(`data:text/html,<h1>Hello</h1>`);
-		mainWindow.loadURL("http://localhost:2500");
-	} else {
-		mainWindow.loadFile(path.join(__dirname, "../../renderer/dist/index.html"));
-	}
+    if (isDev) {
+      mainWindow?.webContents.openDevTools();
+    }
+  });
 
-	// Cleanup
-	mainWindow.on("closed", () => {
-		mainWindow = null;
-	});
+  mainWindow.webContents.openDevTools();
 
-	mainWindow.webContents.on('did-start-loading', () => {
-  console.log('Renderer: started loading');
-});
-mainWindow.webContents.on('did-finish-load', () => {
-  console.log('Renderer: finished loading');
-});
-mainWindow.webContents.on('dom-ready', () => {
-  console.log('Renderer: DOM ready');
-});
-mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
-  console.error('Renderer: failed to load', errorCode, errorDescription, validatedURL);
-});
-mainWindow.on('unresponsive', () => {
-  console.warn('Window became unresponsive!');
-});
-mainWindow.webContents.on('render-process-gone', (event, details) => {
-  console.error('Renderer process gone:', details.reason, details.exitCode);
-});
+  if (isDev) {
+    // Load frontend
+    // mainWindow.loadURL(`data:text/html,<h1>Hello</h1>`);
+    mainWindow.loadURL('http://localhost:2500');
+  } else {
+    mainWindow.loadFile(path.join(__dirname, '../../renderer/dist/index.html'));
+  }
+
+  // Cleanup
+  mainWindow.on('closed', () => {
+    mainWindow = null;
+  });
 }
 
 app.whenReady().then(() => {
-	createMainWindow();
+  createMainWindow();
 
-	app.on("activate", () => {
-		if (BrowserWindow.getAllWindows().length === 0) {
-			createMainWindow();
-		}
-	});
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createMainWindow();
+    }
+  });
 
   const indicatorType = 'd300';
 
@@ -108,20 +88,10 @@ app.whenReady().then(() => {
   };
 
   const serialManager = new SerialManager(indicatorType, (reading) => {
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send('weight:update', reading);
-}
-
-stableDetector.addReading(reading);
-});
-
-const stableDetector = new StableWeightDetector((stableReading) => {
-  if (mainWindow && !mainWindow.isDestroyed()) {
-	// console.log(stableReading)
-    mainWindow.webContents.send('weight:stable', stableReading);
-  }
-});
-
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('weight:update', reading);
+    }
+  });
 
   serialManager.connect(serialOptions);
 
@@ -132,9 +102,9 @@ const stableDetector = new StableWeightDetector((stableReading) => {
   });
 });
 
-app.on("window-all-closed", () => {
-	// macOS behavior
-	if (process.platform !== "darwin") {
-		app.quit();
-	}
+app.on('window-all-closed', () => {
+  // macOS behavior
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
 });

@@ -1,4 +1,4 @@
-import { WeightReading } from "@weight/shared/types/index";
+import { WeightReading } from '@weight/shared/types/index';
 
 export class AveryWeightParser {
   private lastWeight: number | null = null;

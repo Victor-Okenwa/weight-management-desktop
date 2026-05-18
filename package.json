@@ -1,31 +1,31 @@
 {
-	"name": "weight-management-system",
-	"version": "1.0.0",
-	"description": "",
-	"main": "index.js",
-	"workspaces": {
-		"packages": [
-			"apps/*",
-			"packages/*"
-		]
-	},
-	"scripts": {
-		"dev": "turbo run dev --force",
-		"build": "turbo run build",
-		"format": "biome format --write .",
-		"format:check": "biome format .",
-		"lint": "biome lint .",
-		"check": "biome check ."
-	},
-	"keywords": [],
-	"author": "Victor-Okenwa",
-	"license": "ISC",
-	"packageManager": "pnpm@10.28.2",
-	"catalog": {
-		"typescript": "^6.0.3"
-	},
-	"devDependencies": {
-		"@biomejs/biome": "^2.4.15",
-		"turbo": "^2.9.12"
-	}
+  "name": "weight-management-system",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "workspaces": {
+    "packages": [
+      "apps/*",
+      "packages/*"
+    ]
+  },
+  "scripts": {
+    "dev": "turbo run dev --force",
+    "build": "turbo run build",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "lint": "biome lint .",
+    "check": "biome check ."
+  },
+  "keywords": [],
+  "author": "Victor-Okenwa",
+  "license": "ISC",
+  "packageManager": "pnpm@10.28.2",
+  "catalog": {
+    "typescript": "^6.0.3"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.15",
+    "turbo": "^2.9.12"
+  }
 }

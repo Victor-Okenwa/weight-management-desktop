@@ -3,7 +3,6 @@ import { useWeightStore } from '../store/weightStore';
 
 export function useWeightUpdates() {
   const setLatestReading = useWeightStore((s) => s.setLatestReading);
-  const setStableReading = useWeightStore((s) => s.setStableReading);
 
   useEffect(() => {
     if (window.electronAPI) {
@@ -11,10 +10,6 @@ export function useWeightUpdates() {
         setLatestReading(reading);
         // console.log(reading)
       });
-      window.electronAPI.onWeightStable((reading) => {
-        setStableReading(reading);
-        // console.log(reading)
-      });
     }
-  }, [setLatestReading, setStableReading]);
+  }, [setLatestReading]);
 }
