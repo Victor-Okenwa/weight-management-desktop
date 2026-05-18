@@ -1,16 +1,18 @@
 /* eslint-disable react-refresh/only-export-components */
-import { SidebarProvider } from '@/components/ui/sidebar';
+
 import { createFileRoute, Outlet } from '@tanstack/react-router';
+import { HistoryIcon, LayoutDashboard, Settings2 } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
   SidebarHeader,
+  SidebarProvider,
 } from '@/components/ui/sidebar';
-import { HistoryIcon, LayoutDashboard, Settings2 } from 'lucide-react';
-import { useWeightStore } from '../../store/weightStore';
+import { WeightDisplay } from '@/components/weight-display';
 import { useWeightUpdates } from '../../hooks/use-weight-updates';
+import { useWeightStore } from '../../store/weightStore';
 
 const dashboardRoutes = [
   {
@@ -35,19 +37,13 @@ export const Route = createFileRoute('/_protected/')({
 });
 
 function RouteComponent() {
-  useWeightUpdates(); // starts listening
-
-  const latestReading = useWeightStore((s) => s.latestReading);
-
   return (
     <SidebarProvider>
       <AppSidebar />
 
       <main className="w-full">
         <TopBar />
-
-        <span className="font-classic text-5xl">{latestReading?.weight}</span>
-        <sub>{latestReading?.unit}</sub>
+        <WeightDisplay />
         <Outlet />
       </main>
     </SidebarProvider>
