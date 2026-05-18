@@ -1,28 +1,43 @@
 import { cn } from '@/lib/utils';
 import { useWeightStore } from '@/store/weightStore';
+import { Spinner } from './ui/spinner';
 
 export function WeightDisplay() {
   const { latestReading, serialStatus } = useWeightStore();
-  const isConnected = serialStatus === 'connected';
+
+  const retrying = serialStatus === 'connecting' || serialStatus === 'reconnecting';
+
+  const trafficRed =
+    serialStatus === 'disconnected' ||
+    serialStatus === 'error' ||
+    serialStatus === 'idle' ||
+    serialStatus === 'reconnecting';
+
+  const trafficYellow =
+    serialStatus === 'connecting' || serialStatus === 'reconnecting' || !latestReading?.isStable;
+
+  const trafficGreen = serialStatus === 'connected' && latestReading?.isStable;
 
   return (
     <div className="rounded-lg relative overflow-hidden shadow">
       <header className="bg-accent flex justify-end py-3 px-2">
         <div className="flex items-center gap-2">
+          {retrying && <Spinner />}
+
           {/* Traffic light container */}
           <div className="flex flex-row justify-between items-center h-6 w-16 bg-black rounded-full p-1 shadow-inner border border-gray-700">
             {/* Red Light */}
             <span
               className={cn(
                 'block h-4 w-4 rounded-full mr-1 transition-all duration-200',
-                !isConnected ? 'bg-red-500 shadow-lg shadow-red-500/60' : 'bg-red-700 opacity-40',
+                trafficRed ? 'bg-red-500 shadow-lg shadow-red-500/60' : 'bg-red-700 opacity-40',
               )}
             ></span>
             {/* Yellow Light */}
             <span
               className={cn(
                 'block h-4 w-4 rounded-full mr-1 transition-all duration-200',
-                latestReading && !latestReading.isStable
+                trafficYellow
                   ? 'bg-yellow-300 shadow-lg shadow-yellow-300/60'
                   : 'bg-yellow-600 opacity-40',
               )}
@@ -31,7 +46,7 @@ export function WeightDisplay() {
             <span
               className={cn(
                 'block h-4 w-4 rounded-full transition-all duration-200',
-                latestReading?.isStable
+                trafficGreen
                   ? 'bg-green-500 shadow-lg shadow-green-500/60'
                   : 'bg-green-700 opacity-40',
               )}

@@ -1,4 +1,3 @@
-import type { SerialStatus } from '@weight/shared/types/index';
 import { useEffect } from 'react';
 import { useWeightStore } from '../store/weightStore';
 
@@ -8,13 +7,17 @@ export function useWeightUpdates() {
 
   useEffect(() => {
     if (window.electronAPI) {
+      // Request current status immediately
+      window.electronAPI.getSerialStatus().then((status) => {
+        setSerialStatus(status);
+      });
+
       window.electronAPI.onWeightUpdate((reading) => {
         setLatestReading(reading);
         // console.log(reading)
       });
 
-      window.electronAPI.onSerialStatus((status: SerialStatus) => {
-        console.log(status);
+      window.electronAPI.onSerialStatus((status) => {
         setSerialStatus(status);
         // When disconnected, consider resetting stable reading?
         if (status === 'disconnected') {

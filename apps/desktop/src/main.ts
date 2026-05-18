@@ -1,6 +1,8 @@
 import path from 'node:path';
-import { app, BrowserWindow, screen } from 'electron';
-import { SerialManager, type SerialOptions } from './serial/serial-manager.js';
+import type { SerialOptions } from '@weight/shared/types/index';
+import { app, BrowserWindow, ipcMain, screen } from 'electron';
+import { logger } from './logger.js';
+import { SerialManager } from './serial/serial-manager.js';
 
 const __dirname = path.resolve();
 
@@ -69,10 +71,8 @@ function createMainWindow() {
 app.whenReady().then(() => {
   createMainWindow();
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createMainWindow();
-    }
+  ipcMain.handle('serial:get-status', () => {
+    return serialManager.getStatus();
   });
 
   const indicatorType = 'd300';
@@ -95,12 +95,39 @@ app.whenReady().then(() => {
       }
     },
     (status) => {
-      // Send connection status to renderer
-      mainWindow?.webContents.send('serial:status', status);
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('serial:status', status);
+      }
     },
   );
 
   serialManager.connect(serialOptions);
+
+  // Handle log messages from renderer
+  ipcMain.on('log', (_event, { level, message }: { level: string; message: string }) => {
+    switch (level) {
+      case 'error':
+        logger.error(`[renderer] ${message}`);
+        break;
+      case 'warn':
+        logger.warn(`[renderer] ${message}`);
+        break;
+      case 'info':
+        logger.info(`[renderer] ${message}`);
+        break;
+      case 'debug':
+        logger.debug(`[renderer] ${message}`);
+        break;
+      default:
+        logger.info(`[renderer] ${message}`);
+    }
+  });
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createMainWindow();
+    }
+  });
 
   app.on('before-quit', async (event) => {
     event.preventDefault();

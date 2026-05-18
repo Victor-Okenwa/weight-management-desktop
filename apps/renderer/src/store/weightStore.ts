@@ -10,7 +10,7 @@ interface WeightState {
 
 export const useWeightStore = create<WeightState>((set) => ({
   latestReading: null,
-  serialStatus: 'idle',
+  serialStatus: 'connecting',
   setLatestReading: (reading) => set({ latestReading: reading }),
   setSerialStatus: (status) => set({ serialStatus: status }),
 }));

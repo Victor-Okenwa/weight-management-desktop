@@ -11,7 +11,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   onSerialStatus: (callback: (status: string) => void) => {
     ipcRenderer.removeAllListeners('serial:status');
-    ipcRenderer.on('serial:status', (_event, status) => callback(status));
+    ipcRenderer.on('serial:status', (_event, status) => {
+      callback(status);
+    });
+  },
+  getSerialStatus: (): Promise<string> => ipcRenderer.invoke('serial:get-status'),
+  log: (level: string, message: string) => {
+    ipcRenderer.send('log', { level, message });
   },
   // Later you can add more methods:
   // getSettings, setSettings, etc.
