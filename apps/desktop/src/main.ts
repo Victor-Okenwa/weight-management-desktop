@@ -87,11 +87,18 @@ app.whenReady().then(() => {
     autoOpen: false,
   };
 
-  const serialManager = new SerialManager(indicatorType, (reading) => {
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('weight:update', reading);
-    }
-  });
+  const serialManager = new SerialManager(
+    indicatorType,
+    (reading) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('weight:update', reading);
+      }
+    },
+    (status) => {
+      // Send connection status to renderer
+      mainWindow?.webContents.send('serial:status', status);
+    },
+  );
 
   serialManager.connect(serialOptions);
 

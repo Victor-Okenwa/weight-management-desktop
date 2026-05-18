@@ -4,3 +4,5 @@ export interface WeightReading {
   raw: string;
   isStable: boolean;
 }
+
+export type SerialStatus = 'connected' | 'disconnected' | 'error' | 'idle';

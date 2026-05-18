@@ -9,6 +9,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
       callback(reading);
     });
   },
+  onSerialStatus: (callback: (status: string) => void) => {
+    ipcRenderer.removeAllListeners('serial:status');
+    ipcRenderer.on('serial:status', (_event, status) => callback(status));
+  },
   // Later you can add more methods:
   // getSettings, setSettings, etc.
 });

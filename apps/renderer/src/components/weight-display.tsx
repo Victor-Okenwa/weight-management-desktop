@@ -1,7 +1,9 @@
+import { cn } from '@/lib/utils';
 import { useWeightStore } from '@/store/weightStore';
 
 export function WeightDisplay() {
-  const latestReading = useWeightStore((s) => s.latestReading);
+  const { latestReading, serialStatus } = useWeightStore();
+  const isConnected = serialStatus === 'connected';
 
   return (
     <div className="rounded-lg relative overflow-hidden shadow">
@@ -11,31 +13,34 @@ export function WeightDisplay() {
           <div className="flex flex-row justify-between items-center h-6 w-16 bg-black rounded-full p-1 shadow-inner border border-gray-700">
             {/* Red Light */}
             <span
-              className={`block h-4 w-4 rounded-full mr-1 transition-all duration-200 ${
-                !latestReading ? 'bg-red-500 shadow-lg shadow-red-500/60' : 'bg-red-700 opacity-40'
-              }`}
+              className={cn(
+                'block h-4 w-4 rounded-full mr-1 transition-all duration-200',
+                !isConnected ? 'bg-red-500 shadow-lg shadow-red-500/60' : 'bg-red-700 opacity-40',
+              )}
             ></span>
             {/* Yellow Light */}
             <span
-              className={`block h-4 w-4 rounded-full mr-1 transition-all duration-200 ${
+              className={cn(
+                'block h-4 w-4 rounded-full mr-1 transition-all duration-200',
                 latestReading && !latestReading.isStable
                   ? 'bg-yellow-300 shadow-lg shadow-yellow-300/60'
-                  : 'bg-yellow-600 opacity-40'
-              }`}
+                  : 'bg-yellow-600 opacity-40',
+              )}
             ></span>
             {/* Green Light */}
             <span
-              className={`block h-4 w-4 rounded-full transition-all duration-200 ${
+              className={cn(
+                'block h-4 w-4 rounded-full transition-all duration-200',
                 latestReading?.isStable
                   ? 'bg-green-500 shadow-lg shadow-green-500/60'
-                  : 'bg-green-700 opacity-40'
-              }`}
+                  : 'bg-green-700 opacity-40',
+              )}
             ></span>
           </div>
 
-          <span className="ml-2 text-xs text-muted-foreground font-mono select-none tracking-tight">
+          {/* <span className="ml-2 text-xs text-muted-foreground font-mono select-none tracking-tight">
             {latestReading ? (latestReading.isStable ? 'Stable' : 'Unstable') : 'No Data'}
-          </span>
+          </span> */}
         </div>
       </header>
 

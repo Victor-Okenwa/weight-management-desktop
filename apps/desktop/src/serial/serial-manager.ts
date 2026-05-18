@@ -1,5 +1,5 @@
 import type { Transform } from 'node:stream';
-import type { WeightReading } from '@weight/shared/types/index';
+import type { SerialStatus, WeightReading } from '@weight/shared/types/index';
 import { SerialPort } from 'serialport';
 import {
   createStreamParser,
@@ -7,8 +7,6 @@ import {
   type IndicatorType,
   type IWeightParser,
 } from '../parser/index.js';
-
-export type SerialStatus = 'connected' | 'disconnected' | 'error';
 
 type COMPorts = `COM${number}`;
 type BaudRate =
