@@ -1,24 +1,56 @@
-import Database from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
+// packages/database/src/index.ts
+
+import fs from 'node:fs';
+import path from 'node:path';
+import { drizzle } from 'drizzle-orm/sql-js';
+import initSqlJs from 'sql.js';
 import * as schema from './schema/index.js';
 
-export type DatabaseInstance = ReturnType<typeof drizzle<typeof schema>>;
+export type DatabaseInstance = ReturnType<typeof drizzle<typeof schema>> & {
+  /** Save the current in‑memory database back to disk */
+  save: () => void;
+  /** Close the database (without saving) */
+  close: () => void;
+};
 
 /**
- * Initialise the database at the given file path.
- * Applies WAL mode and other optimisations.
- * Returns a Drizzle ORM instance.
+ * Initialise an SQL.js‑based database from the given file path.
+ * If the file doesn't exist, it will be created.
  */
-export function initDatabase(dbPath: string): DatabaseInstance {
-  const sqlite = new Database(dbPath);
+export async function initDatabase(dbPath: string): Promise<DatabaseInstance> {
+  // Ensure the directory exists
+  const dir = path.dirname(dbPath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
 
-  // Performance and reliability optimisations
-  sqlite.pragma('journal_mode = WAL');
-  sqlite.pragma('busy_timeout = 5000');
-  sqlite.pragma('synchronous = NORMAL');
-  sqlite.pragma('foreign_keys = ON');
+  // Load existing database or create empty
+  let buffer: Buffer;
+  try {
+    buffer = fs.readFileSync(dbPath);
+  } catch {
+    buffer = Buffer.alloc(0);
+  }
 
-  const db = drizzle(sqlite, { schema });
+  const SQL = await initSqlJs();
+  const sqldb = new SQL.Database(buffer);
 
-  return db;
+  // Apply standard optimisations (sql.js supports PRAGMA)
+  sqldb.run('PRAGMA journal_mode = WAL;'); // will be ignored (in‑memory), but harmless
+  sqldb.run('PRAGMA busy_timeout = 5000;');
+  sqldb.run('PRAGMA foreign_keys = ON;');
+
+  const db = drizzle(sqldb, { schema });
+
+  // Augment with save/close helpers
+  const save = () => {
+    const data = sqldb.export();
+    fs.writeFileSync(dbPath, Buffer.from(data));
+  };
+
+  const close = () => {
+    sqldb.close();
+  };
+
+  return Object.assign(db, { save, close });
 }

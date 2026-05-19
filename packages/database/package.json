@@ -1,11 +1,10 @@
 {
-  "name": "@packages/database",
+  "name": "@weight/database",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -46,7 +45,6 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "better-sqlite3": "^11.0.0",
     "drizzle-orm": "^0.33.0",
     "sql.js": "^1.14.1"
   },

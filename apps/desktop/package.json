@@ -11,7 +11,8 @@
     "watch": "tsc --watch",
     "electron": "electron .",
     "dev": "rimraf dist && concurrently \"pnpm watch\" \"wait-on dist/main.js && electronmon .\"",
-    "dist": "pnpm build && electron-builder"
+    "dist": "pnpm build && electron-builder",
+    "postinstall": "electron-rebuild -f -w better-sqlite3"
   },
   "keywords": [],
   "author": "",
@@ -27,6 +28,9 @@
     "@serialport/parser-delimiter": "^13.0.0",
     "@serialport/parser-readline": "^13.0.0",
     "@weight/shared": "workspace:*",
+    "@weight/database": "workspace:*",
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.33.0",
     "electron": "^42.0.1",
     "serialport": "^13.0.0"
   },

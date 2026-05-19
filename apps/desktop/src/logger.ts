@@ -27,7 +27,7 @@ logger.transports.file.archiveLogFn = (oldLogFile) => {
     const dir = info.dir;
     const files = fs
       .readdirSync(dir)
-      .filter((f) => f.startsWith(info.name) && f.endsWith('.old' + info.ext))
+      .filter((f) => f.startsWith(info.name) && f.endsWith(`.old${info.ext}`))
       .map((f) => ({ name: f, time: fs.statSync(path.join(dir, f)).mtime.getTime() }))
       .sort((a, b) => a.time - b.time); // oldest first
 
@@ -36,7 +36,7 @@ logger.transports.file.archiveLogFn = (oldLogFile) => {
       files.shift();
     }
   } catch (e) {
-    console.warn('Could not rotate log', e);
+    logger.warn('Could not rotate log', e);
   }
 };
 
