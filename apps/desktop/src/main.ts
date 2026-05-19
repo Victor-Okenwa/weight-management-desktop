@@ -17,7 +17,7 @@ const dbPath = process.env.DB_PATH
   ? path.resolve(process.env.DB_PATH)
   : path.join(app.getPath('userData'), 'data.db');
 
-const db = initDatabase(dbPath);
+// const db = initDatabase(dbPath);
 
 function createMainWindow() {
   const primaryDisplay = screen.getPrimaryDisplay();

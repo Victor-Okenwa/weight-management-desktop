@@ -9,5 +9,6 @@
     "rootDir": "src",
     "declaration": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["node_modules", "dist", "drizzle", "data", "drizzle.config.ts"]
 }

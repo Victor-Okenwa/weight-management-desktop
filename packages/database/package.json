@@ -5,6 +5,39 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./db": {
+      "import": "./dist/db.js",
+      "require": "./dist/db.js",
+      "types": "./dist/db.d.ts"
+    },
+    "./services/*": {
+      "import": "./dist/services/*.js",
+      "require": "./dist/services/*.js",
+      "types": "./dist/services/*.d.ts"
+    },
+    "./schema": {
+      "import": "./dist/schema/index.js",
+      "require": "./dist/schema/index.js",
+      "types": "./dist/schema/index.d.ts"
+    },
+    "./schema/*": {
+      "import": "./dist/schema/*.js",
+      "require": "./dist/schema/*.js",
+      "types": "./dist/schema/*.d.ts"
+    },
+    "./*.js": {
+      "import": "./dist/*.js",
+      "require": "./dist/*.js",
+      "types": "./dist/*.d.ts"
+    }
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
@@ -14,10 +47,12 @@
   },
   "dependencies": {
     "better-sqlite3": "^11.0.0",
-    "drizzle-orm": "^0.33.0"
+    "drizzle-orm": "^0.33.0",
+    "sql.js": "^1.14.1"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.0",
+    "@types/sql.js": "^1.4.11",
     "drizzle-kit": "^0.24.0",
     "tsx": "^4.7.0",
     "typescript": "catalog:"

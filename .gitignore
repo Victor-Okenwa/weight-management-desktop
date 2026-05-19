@@ -11,6 +11,7 @@ release/
 
 # DATABASE FILES
 *.db
+data/
 
 # Logs
 *.log

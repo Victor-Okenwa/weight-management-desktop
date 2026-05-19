@@ -11,7 +11,6 @@ import {
   SidebarProvider,
 } from '@/components/ui/sidebar';
 import { useWeightUpdates } from '@/hooks/use-weight-updates';
-import { useWeightStore } from '@/store/weightStore';
 
 const dashboardRoutes = [
   {
