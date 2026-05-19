@@ -2,6 +2,10 @@ import type { WeightReading } from '@weight/shared/types/index';
 import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  isSetupCompleted: (): Promise<boolean> => ipcRenderer.invoke('app:is-setup-completed'),
+  completeSetup: (settings: Record<string, string>): Promise<boolean> =>
+    ipcRenderer.invoke('app:complete-setup', settings),
+
   onWeightUpdate: (callback: (reading: WeightReading) => void) => {
     // Remove any previous listeners to avoid duplicates
     ipcRenderer.removeAllListeners('weight:update');

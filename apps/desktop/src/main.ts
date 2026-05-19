@@ -4,6 +4,7 @@ dotenv.config({ path: '.env.local' }); // load local env overrides
 
 import path from 'node:path';
 import { initDatabase } from '@weight/database';
+import { getSetting, setSetting } from '@weight/database/repositories/settings';
 import type { SerialOptions } from '@weight/shared/types/index';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { app, BrowserWindow, ipcMain, screen } from 'electron';
@@ -82,7 +83,22 @@ app.whenReady().then(async () => {
 
   await setupDatabase();
 
-  const db = getDatabase();
+  ipcMain.handle('app:is-setup-completed', () => {
+    const db = getDatabase();
+    return getSetting(db, 'setup_completed') === 'true';
+  });
+
+  ipcMain.handle('app:complete-setup', async (_event, newSettings: Record<string, string>) => {
+    const db = getDatabase();
+    // Save all provided settings
+    for (const [key, value] of Object.entries(newSettings)) {
+      setSetting(db, key, value);
+    }
+    // Mark setup as completed
+    setSetting(db, 'setup_completed', 'true');
+    db.save(); // persist immediately
+    return true;
+  });
 
   ipcMain.handle('serial:get-status', () => {
     return serialManager.getStatus();

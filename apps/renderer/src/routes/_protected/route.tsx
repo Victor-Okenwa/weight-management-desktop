@@ -15,7 +15,7 @@ import { useWeightUpdates } from '@/hooks/use-weight-updates';
 const dashboardRoutes = [
   {
     icon: LayoutDashboard,
-    link: '/dashboard',
+    link: '/',
     label: 'Dashboard',
   },
   {
@@ -32,6 +32,20 @@ const dashboardRoutes = [
 
 export const Route = createFileRoute('/_protected')({
   component: RouteComponent,
+  beforeLoad: async () => {
+    // If running in browser (not electron), skip setup check
+    if (typeof window === 'undefined' || !window.electronAPI?.isSetupCompleted) {
+      return;
+    }
+
+    const setupCompleted = await window.electronAPI.isSetupCompleted();
+    if (!setupCompleted) {
+      // Redirect to setup-wizard if setup is NOT completed
+      return {
+        redirect: '/setup-wizard',
+      };
+    }
+  },
 });
 
 function RouteComponent() {
