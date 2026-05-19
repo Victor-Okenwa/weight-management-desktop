@@ -1,7 +1,5 @@
-/* eslint-disable react-refresh/only-export-components */
-
-import { createFileRoute, Outlet } from '@tanstack/react-router';
-import { HistoryIcon, LayoutDashboard, Settings2 } from 'lucide-react';
+import { createFileRoute, Outlet, useRouterState } from '@tanstack/react-router';
+import { HistoryIcon, LayoutDashboard, Link, Settings2 } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -12,7 +10,7 @@ import {
 } from '@/components/ui/sidebar';
 import { useWeightUpdates } from '@/hooks/use-weight-updates';
 
-const dashboardRoutes = [
+const sidebarRoutes = [
   {
     icon: LayoutDashboard,
     link: '/',
@@ -64,12 +62,34 @@ function RouteComponent() {
 }
 
 function AppSidebar() {
+  // Get the current location from TanStack Router
+  const router = useRouterState();
+  const currentPath = router.location.pathname;
+
   return (
     <Sidebar>
       <SidebarHeader />
       <SidebarContent>
-        <SidebarGroup />
-        <SidebarGroup />
+        <SidebarGroup>
+          {sidebarRoutes.map(({ icon: Icon, link, label }) => {
+            const isActive =
+              currentPath === link || (link === '/' && currentPath === '/_protected/');
+            return (
+              <Link
+                key={link}
+                to={link}
+                className={`flex items-center px-4 py-2 rounded-lg transition-colors gap-2 ${
+                  isActive
+                    ? 'bg-primary text-primary-foreground font-semibold'
+                    : 'hover:bg-muted hover:text-foreground'
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+                <span>{label}</span>
+              </Link>
+            );
+          })}
+        </SidebarGroup>
       </SidebarContent>
       <SidebarFooter />
     </Sidebar>

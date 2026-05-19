@@ -9,9 +9,15 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SetupWizardRouteImport } from './routes/setup-wizard'
 import { Route as ProtectedRouteRouteImport } from './routes/_protected/route'
 import { Route as ProtectedIndexRouteImport } from './routes/_protected/index'
 
+const SetupWizardRoute = SetupWizardRouteImport.update({
+  id: '/setup-wizard',
+  path: '/setup-wizard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProtectedRouteRoute = ProtectedRouteRouteImport.update({
   id: '/_protected',
   getParentRoute: () => rootRouteImport,
@@ -24,29 +30,40 @@ const ProtectedIndexRoute = ProtectedIndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof ProtectedIndexRoute
+  '/setup-wizard': typeof SetupWizardRoute
 }
 export interface FileRoutesByTo {
+  '/setup-wizard': typeof SetupWizardRoute
   '/': typeof ProtectedIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_protected': typeof ProtectedRouteRouteWithChildren
+  '/setup-wizard': typeof SetupWizardRoute
   '/_protected/': typeof ProtectedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/setup-wizard'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/_protected' | '/_protected/'
+  to: '/setup-wizard' | '/'
+  id: '__root__' | '/_protected' | '/setup-wizard' | '/_protected/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   ProtectedRouteRoute: typeof ProtectedRouteRouteWithChildren
+  SetupWizardRoute: typeof SetupWizardRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/setup-wizard': {
+      id: '/setup-wizard'
+      path: '/setup-wizard'
+      fullPath: '/setup-wizard'
+      preLoaderRoute: typeof SetupWizardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_protected': {
       id: '/_protected'
       path: ''
@@ -78,6 +95,7 @@ const ProtectedRouteRouteWithChildren = ProtectedRouteRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   ProtectedRouteRoute: ProtectedRouteRouteWithChildren,
+  SetupWizardRoute: SetupWizardRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
