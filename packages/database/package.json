@@ -16,10 +16,10 @@
       "require": "./dist/db.js",
       "types": "./dist/db.d.ts"
     },
-    "./services/*": {
-      "import": "./dist/services/*.js",
-      "require": "./dist/services/*.js",
-      "types": "./dist/services/*.d.ts"
+    "./repositories/*": {
+      "import": "./dist/repositories/*.js",
+      "require": "./dist/repositories/*.js",
+      "types": "./dist/repositories/*.d.ts"
     },
     "./schema": {
       "import": "./dist/schema/index.js",
