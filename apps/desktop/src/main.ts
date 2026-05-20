@@ -4,7 +4,7 @@ dotenv.config({ path: '.env.local' }); // load local env overrides
 
 import path from 'node:path';
 import { initDatabase } from '@weight/database';
-import { getSetting, setSetting } from '@weight/database/repositories/settings';
+import { getAllSettings, getSetting, setSetting } from '@weight/database/repositories/settings';
 import type { SerialOptions } from '@weight/shared/types/index';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { app, BrowserWindow, ipcMain, screen } from 'electron';
@@ -98,6 +98,34 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('serial:get-status', () => {
     return serialManager.getStatus();
+  });
+
+  ipcMain.handle('settings:get', (_event, key: string) => {
+    const db = getDatabase();
+    return getSetting(db, key);
+  });
+
+  // Get all settings (useful for initialising the settings screen)
+  ipcMain.handle('settings:get-all', () => {
+    const db = getDatabase();
+    return getAllSettings(db); // import from repository
+  });
+
+  // Update a single setting
+  ipcMain.handle('settings:set', (_event, key: string, value: string) => {
+    const db = getDatabase();
+    setSetting(db, key, value);
+    db.save(); // persist immediately after change
+    return true;
+  });
+
+  ipcMain.handle('settings:set-multiple', (_event, settingsObject: Record<string, string>) => {
+    const db = getDatabase();
+    for (const [key, value] of Object.entries(settingsObject)) {
+      setSetting(db, key, value);
+    }
+    db.save(); // single save after all changes
+    return true;
   });
 
   const indicatorType = 'd300';

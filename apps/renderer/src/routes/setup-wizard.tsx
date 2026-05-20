@@ -7,7 +7,7 @@ import {
   PARITY_FLAGS,
 } from '@weight/shared/constants/index';
 import { ArrowLeft, ArrowRight, Check, InfoIcon, Settings2Icon } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import * as z from 'zod';
@@ -33,6 +33,7 @@ import {
 } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { useSettingsStore } from '@/store/settingsStore';
 
 export const Route = createFileRoute('/setup-wizard')({
   component: RouteComponent,
@@ -165,6 +166,7 @@ function RequiredLabel({ children }: { children: React.ReactNode }) {
 
 function RouteComponent() {
   const [stepIndex, setStepIndex] = useState(0);
+  const { loadSettings, updateSetting } = useSettingsStore();
 
   const currentStep = steps[stepIndex];
 
