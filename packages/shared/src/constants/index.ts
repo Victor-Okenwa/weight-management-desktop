@@ -16,3 +16,21 @@ export const FLOW_CONTROL_OPTIONS = ['none', 'xon/xoff', 'rts/cts', 'dtr/dsr'] a
 
 // Allowed data bits
 export const DATA_BITS = [5, 6, 7, 8];
+
+export const appearanceOptions = [
+  {
+    label: 'Light',
+    value: 'light' as const,
+    description: 'This will use a light theme for the application.',
+  },
+  {
+    label: 'Dark',
+    value: 'dark' as const,
+    description: 'This will use a dark theme for the application.',
+  },
+  {
+    label: 'System',
+    value: 'system' as const,
+    description: 'This will use a system theme for the application.',
+  },
+] as const;

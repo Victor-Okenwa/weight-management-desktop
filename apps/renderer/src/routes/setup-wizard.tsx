@@ -1,6 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createFileRoute } from '@tanstack/react-router';
-import { BAUD_RATES, FLOW_CONTROL_OPTIONS, PARITY_FLAGS } from '@weight/shared/constants/index';
+import {
+  appearanceOptions,
+  BAUD_RATES,
+  FLOW_CONTROL_OPTIONS,
+  PARITY_FLAGS,
+} from '@weight/shared/constants/index';
 import { ArrowLeft, ArrowRight, Check, InfoIcon, Settings2Icon } from 'lucide-react';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -23,7 +28,6 @@ import {
   Select,
   SelectContent,
   SelectItem,
-  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
@@ -147,6 +151,18 @@ const steps = [
 // COMPONENT
 // ======================================================
 
+// For field labels, add a red asterisk if required
+function RequiredLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <span>
+      {children}
+      <span className="text-red-600 pl-0.5" aria-hidden="true">
+        *
+      </span>
+    </span>
+  );
+}
+
 function RouteComponent() {
   const [stepIndex, setStepIndex] = useState(0);
 
@@ -176,10 +192,29 @@ function RouteComponent() {
 
       preferences: {
         defaultUnit: 'kg',
-        theme: 'system',
+        theme: 'light',
       },
     },
   });
+
+  // Helper functions to detect required fields given schema
+  // Map of required fields
+  const requiredFields: Record<string, boolean> = {
+    'companyDetails.name': true,
+    'companyDetails.email': false,
+    'companyDetails.address': false,
+    'companyDetails.phone': false,
+    'hardware.port': true,
+    'hardware.baudrate': true,
+    'hardware.parity': true,
+    'hardware.flowcontrol': true,
+    'hardware.stopbits': true,
+    'hardware.databits': true,
+    'hardware.autoOpen': false,
+    'hardware.indicator': true,
+    'preferences.defaultUnit': true,
+    'preferences.theme': true,
+  };
 
   // ======================================================
   // NAVIGATION
@@ -246,7 +281,6 @@ function RouteComponent() {
           <div className="flex items-start justify-between gap-2 overflow-x-auto">
             {steps.map((step, index) => {
               const isCompleted = index < stepIndex;
-
               const isActive = index === stepIndex;
 
               return (
@@ -267,11 +301,8 @@ function RouteComponent() {
                     <div
                       className={cn(
                         'flex size-12 items-center justify-center rounded-full border-2 font-semibold transition-all',
-
                         isCompleted && 'border-green-500 bg-green-500 text-white',
-
                         isActive && 'border-primary bg-primary text-white',
-
                         !isCompleted && !isActive && 'bg-background text-muted-foreground',
                       )}
                     >
@@ -281,13 +312,7 @@ function RouteComponent() {
                     {/* TEXT */}
 
                     <div className="mt-3">
-                      <p
-                        className={cn(
-                          'text-sm font-medium',
-
-                          isActive && 'text-primary',
-                        )}
-                      >
+                      <p className={cn('text-sm font-medium', isActive && 'text-primary')}>
                         {step.title}
                       </p>
 
@@ -318,17 +343,22 @@ function RouteComponent() {
           {currentStep.value === 'companyDetails' && (
             <FieldGroup className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               {/* COMPANY NAME */}
-
               <Controller
                 name="companyDetails.name"
                 control={form.control}
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="company-name">Company Name</FieldLabel>
+                    <FieldLabel htmlFor="companyDetails-name">
+                      {requiredFields['companyDetails.name'] ? (
+                        <RequiredLabel>Company Name</RequiredLabel>
+                      ) : (
+                        <>Company Name</>
+                      )}
+                    </FieldLabel>
 
                     <Input
                       {...field}
-                      id="company-name"
+                      id="companyDetails-name"
                       className="min-h-12"
                       placeholder="Solution Road Equipments and Spars Limited"
                     />
@@ -339,17 +369,22 @@ function RouteComponent() {
               />
 
               {/* EMAIL */}
-
               <Controller
                 name="companyDetails.email"
                 control={form.control}
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="company-email">Company Email</FieldLabel>
+                    <FieldLabel htmlFor="companyDetails-email">
+                      {requiredFields['companyDetails.email'] ? (
+                        <RequiredLabel>Company Email</RequiredLabel>
+                      ) : (
+                        <>Company Email</>
+                      )}
+                    </FieldLabel>
 
                     <Input
                       {...field}
-                      id="company-email"
+                      id="companyDetails-email"
                       className="min-h-12"
                       placeholder="company@example.com"
                     />
@@ -360,17 +395,22 @@ function RouteComponent() {
               />
 
               {/* ADDRESS */}
-
               <Controller
                 name="companyDetails.address"
                 control={form.control}
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="company-address">Company Address</FieldLabel>
+                    <FieldLabel htmlFor="companyDetails-address">
+                      {requiredFields['companyDetails.address'] ? (
+                        <RequiredLabel>Company Address</RequiredLabel>
+                      ) : (
+                        <>Company Address</>
+                      )}
+                    </FieldLabel>
 
                     <Input
                       {...field}
-                      id="company-address"
+                      id="companyDetails-address"
                       className="min-h-12"
                       placeholder="123 Main Street"
                     />
@@ -381,17 +421,22 @@ function RouteComponent() {
               />
 
               {/* PHONE */}
-
               <Controller
                 name="companyDetails.phone"
                 control={form.control}
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="company-phone">Phone Number</FieldLabel>
+                    <FieldLabel htmlFor="companyDetails-phone">
+                      {requiredFields['companyDetails.phone'] ? (
+                        <RequiredLabel>Phone Number</RequiredLabel>
+                      ) : (
+                        <>Phone Number</>
+                      )}
+                    </FieldLabel>
 
                     <Input
                       {...field}
-                      id="company-phone"
+                      id="companyDetails-phone"
                       className="min-h-12"
                       placeholder="+23480123456789"
                     />
@@ -414,7 +459,13 @@ function RouteComponent() {
                 control={form.control}
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="hardware-port">Port</FieldLabel>
+                    <FieldLabel htmlFor="hardware-port">
+                      {requiredFields['hardware.port'] ? (
+                        <RequiredLabel>Port</RequiredLabel>
+                      ) : (
+                        <>Port</>
+                      )}
+                    </FieldLabel>
                     <InputGroup className="min-h-12!">
                       <InputGroupInput
                         defaultValue={3}
@@ -496,7 +547,13 @@ function RouteComponent() {
                 render={({ field, fieldState }) => (
                   <Field orientation="responsive" data-invalid={fieldState.invalid}>
                     <FieldContent>
-                      <FieldLabel htmlFor="baudrate">Baud Rate</FieldLabel>
+                      <FieldLabel htmlFor="hardware-baudrate">
+                        {requiredFields['hardware.baudrate'] ? (
+                          <RequiredLabel>Baud Rate</RequiredLabel>
+                        ) : (
+                          <>Baud Rate</>
+                        )}
+                      </FieldLabel>
                     </FieldContent>
                     <Select
                       name={field.name}
@@ -505,7 +562,7 @@ function RouteComponent() {
                       onValueChange={field.onChange}
                     >
                       <SelectTrigger
-                        id="baudrate"
+                        id="hardware-baudrate"
                         className="min-h-12"
                         aria-invalid={fieldState.invalid}
                       >
@@ -513,7 +570,7 @@ function RouteComponent() {
                       </SelectTrigger>
                       <SelectContent position="item-aligned">
                         {BAUD_RATES.map((rate) => (
-                          <SelectItem key={rate} value={rate}>
+                          <SelectItem key={rate} value={String(rate)}>
                             {rate}
                           </SelectItem>
                         ))}
@@ -532,7 +589,13 @@ function RouteComponent() {
                 control={form.control}
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="hardware-parity">Parity</FieldLabel>
+                    <FieldLabel htmlFor="hardware-parity">
+                      {requiredFields['hardware.parity'] ? (
+                        <RequiredLabel>Parity</RequiredLabel>
+                      ) : (
+                        <>Parity</>
+                      )}
+                    </FieldLabel>
                     <Select
                       name={field.name}
                       value={field.value}
@@ -555,6 +618,16 @@ function RouteComponent() {
                       </SelectContent>
                     </Select>
 
+                    <FieldDescription>
+                      <span>
+                        Parity is a form of error checking used in serial communication to detect
+                        accidental changes to raw data. For most modern weighing devices,{' '}
+                        <strong>none</strong> is recommended unless your device specifically
+                        requires even, odd, mark, or space parity. Selecting <strong>none</strong>{' '}
+                        ensures simpler and more compatible communication.
+                      </span>
+                    </FieldDescription>
+
                     {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                   </Field>
                 )}
@@ -565,7 +638,13 @@ function RouteComponent() {
                 control={form.control}
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="hardware-flowcontrol">Flow Control</FieldLabel>
+                    <FieldLabel htmlFor="hardware-flowcontrol">
+                      {requiredFields['hardware.flowcontrol'] ? (
+                        <RequiredLabel>Flow Control</RequiredLabel>
+                      ) : (
+                        <>Flow Control</>
+                      )}
+                    </FieldLabel>
                     <Select
                       name={field.name}
                       value={field.value}
@@ -587,6 +666,16 @@ function RouteComponent() {
                         ))}
                       </SelectContent>
                     </Select>
+
+                    <FieldDescription>
+                      <span>
+                        Flow control manages the way data is sent between your station and the
+                        weighing device to prevent data loss or overflow. In most cases, especially
+                        for standard weighing devices, <strong>none</strong> is recommended. Use
+                        other options only if your device documentation requires them.
+                      </span>
+                    </FieldDescription>
+
                     {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                   </Field>
                 )}
@@ -597,15 +686,44 @@ function RouteComponent() {
                 control={form.control}
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="hardware-stopbits">Stop Bits</FieldLabel>
-                    <Input
-                      {...field}
-                      id="hardware-stopbits"
-                      className="min-h-12"
-                      type="number"
-                      min={1}
-                      max={2}
-                    />
+                    <FieldLabel htmlFor="hardware-stopbits">
+                      {requiredFields['hardware.stopbits'] ? (
+                        <RequiredLabel>Stop Bits</RequiredLabel>
+                      ) : (
+                        <>Stop Bits</>
+                      )}
+                    </FieldLabel>
+                    <Select
+                      name={field.name}
+                      value={String(field.value)}
+                      onValueChange={(val) => field.onChange(Number(val))}
+                      defaultValue="1"
+                    >
+                      <SelectTrigger
+                        id="hardware-stopbits"
+                        className="min-h-12 w-full"
+                        aria-invalid={fieldState.invalid}
+                      >
+                        <SelectValue placeholder="Select" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[1, 2].map((option) => (
+                          <SelectItem key={option} value={String(option)}>
+                            {option}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <FieldDescription>
+                      <span>
+                        Stop bits define the end of a byte in serial communication. For most
+                        devices, <strong>1</strong> stop bit is standard and recommended. Only
+                        choose <strong>2</strong> stop bits if your hardware documentation
+                        specifically requires it.
+                      </span>
+                    </FieldDescription>
+
                     {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                   </Field>
                 )}
@@ -616,15 +734,41 @@ function RouteComponent() {
                 control={form.control}
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="hardware-databits">Data Bits</FieldLabel>
-                    <Input
-                      {...field}
-                      id="hardware-databits"
-                      className="min-h-12"
-                      type="number"
-                      min={5}
-                      max={8}
-                    />
+                    <FieldLabel htmlFor="hardware-databits">
+                      {requiredFields['hardware.databits'] ? (
+                        <RequiredLabel>Data Bits</RequiredLabel>
+                      ) : (
+                        <>Data Bits</>
+                      )}
+                    </FieldLabel>
+                    <Select
+                      name={field.name}
+                      value={String(field.value)}
+                      onValueChange={(val) => field.onChange(Number(val))}
+                      defaultValue="8"
+                    >
+                      <SelectTrigger
+                        id="hardware-databits"
+                        className="min-h-12 w-full"
+                        aria-invalid={fieldState?.invalid}
+                      >
+                        <SelectValue placeholder="Select" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[5, 6, 7, 8].map((option) => (
+                          <SelectItem key={option} value={String(option)}>
+                            {option}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <FieldDescription>
+                      Set the number of data bits per character. Common values are 7 or 8, but check
+                      your device specifications for the correct setting. But we recommend setting
+                      it to 8 as most indicators are compatible to it.
+                    </FieldDescription>
+
                     {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                   </Field>
                 )}
@@ -645,6 +789,12 @@ function RouteComponent() {
                       />
                       <span>Auto Open Connection</span>
                     </label>
+
+                    <FieldDescription>
+                      Automatically open and connect to the device when the application starts. We
+                      recommend leaving this unchecked unless you want the connection to be
+                      established on startup.
+                    </FieldDescription>
                   </Field>
                 )}
               />
@@ -654,7 +804,13 @@ function RouteComponent() {
                 control={form.control}
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="hardware-indicator">Indicator</FieldLabel>
+                    <FieldLabel htmlFor="hardware-indicator">
+                      {requiredFields['hardware.indicator'] ? (
+                        <RequiredLabel>Indicator</RequiredLabel>
+                      ) : (
+                        <>Indicator</>
+                      )}
+                    </FieldLabel>
                     <Select
                       name={field.name}
                       value={field.value}
@@ -691,10 +847,91 @@ function RouteComponent() {
           ====================================================== */}
 
           {currentStep.value === 'preferences' && (
-            <div className="space-y-4">
-              <h2 className="text-2xl font-bold">Preferences</h2>
+            <div className="space-y-7">
+              <Controller
+                name="preferences.defaultUnit"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="preferences-defaultUnit">
+                      {requiredFields['preferences.defaultUnit'] ? (
+                        <RequiredLabel>Default Unit</RequiredLabel>
+                      ) : (
+                        <>Default Unit</>
+                      )}
+                    </FieldLabel>
+                    <Select
+                      name={field.name}
+                      value={field.value}
+                      defaultValue="kg"
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger
+                        id="preferences-defaultUnit"
+                        className="min-h-12"
+                        aria-invalid={fieldState.invalid}
+                      >
+                        <SelectValue placeholder="Select unit" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="kg">Kilograms (kg)</SelectItem>
+                        <SelectItem value="g">Grams (g)</SelectItem>
+                        <SelectItem value="lb">Pounds (lb)</SelectItem>
+                        <SelectItem value="oz">Ounces (oz)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FieldDescription>
+                      Select the default unit for weight measurements.
+                    </FieldDescription>
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  </Field>
+                )}
+              />
 
-              <p className="text-muted-foreground">Add your preferences fields here.</p>
+              <Controller
+                name="preferences.theme"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="preferences-theme">
+                      {requiredFields['preferences.theme'] ? (
+                        <RequiredLabel>Appearance</RequiredLabel>
+                      ) : (
+                        <>Appearance</>
+                      )}
+                    </FieldLabel>
+                    <Select
+                      name={field.name}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      defaultValue="light"
+                    >
+                      <SelectTrigger
+                        id="preferences-theme"
+                        className="min-h-12 w-full text-left!"
+                        aria-invalid={fieldState.invalid}
+                      >
+                        <SelectValue placeholder="Select a theme" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {appearanceOptions.map((theme) => (
+                          <SelectItem key={theme.value} value={theme.value}>
+                            <div>
+                              <div className="font-semibold">{theme.label}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {theme.description}
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <FieldDescription>Select your preferred theme(s)</FieldDescription>
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  </Field>
+                )}
+              />
             </div>
           )}
 
