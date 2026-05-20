@@ -21,8 +21,6 @@ app.setAppUserModelId('com.solutionroad.weightmanagement');
 let mainWindow: BrowserWindow | null = null;
 const iconPath = path.join(app.getAppPath(), 'assets', 'logo.png');
 
-// const db = initDatabase(dbPath);
-
 function createMainWindow() {
   const primaryDisplay = screen.getPrimaryDisplay();
 
@@ -79,8 +77,6 @@ function createMainWindow() {
 }
 
 app.whenReady().then(async () => {
-  createMainWindow();
-
   await setupDatabase();
 
   ipcMain.handle('app:is-setup-completed', () => {
@@ -151,6 +147,8 @@ app.whenReady().then(async () => {
         logger.info(`[renderer] ${message}`);
     }
   });
+
+  createMainWindow();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

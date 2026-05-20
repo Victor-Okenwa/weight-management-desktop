@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, useRouterState } from '@tanstack/react-router';
+import { createFileRoute, Outlet, redirect, useRouterState } from '@tanstack/react-router';
 import { HistoryIcon, LayoutDashboard, Link, Settings2 } from 'lucide-react';
 import {
   Sidebar,
@@ -30,18 +30,21 @@ const sidebarRoutes = [
 
 export const Route = createFileRoute('/_protected')({
   component: RouteComponent,
-  beforeLoad: async () => {
+  beforeLoad: async (ctx) => {
     // If running in browser (not electron), skip setup check
     if (typeof window === 'undefined' || !window.electronAPI?.isSetupCompleted) {
       return;
     }
 
     const setupCompleted = await window.electronAPI.isSetupCompleted();
+    console.log(setupCompleted);
     if (!setupCompleted) {
       // Redirect to setup-wizard if setup is NOT completed
-      return {
-        redirect: '/setup-wizard',
-      };
+      window.electronAPI.log('info', 'App not connected');
+
+      throw redirect({
+        to: '/setup-wizard',
+      });
     }
   },
 });
