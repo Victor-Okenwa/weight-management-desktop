@@ -15,3 +15,20 @@ export function getTicketPrefix(name: string): string {
     .join('')
     .toUpperCase();
 }
+
+/**
+ * Converts a camelCase object into snake_case keys, preserving values.
+ * Example: { mySimpleKey: 5 } => { my_simple_key: 5 }
+ */
+export function toSnakeCaseObject<T extends Record<string, any>>(obj: T): Record<string, any> {
+  function camelToSnake(str: string) {
+    return str.replace(/([A-Z])/g, '_$1').toLowerCase();
+  }
+
+  const result: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    const newKey = camelToSnake(key);
+    result[newKey] = value;
+  }
+  return result;
+}

@@ -32,7 +32,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
+import { cn, toSnakeCaseObject } from '@/lib/utils';
 import { useSettingsStore } from '@/store/settingsStore';
 
 export const Route = createFileRoute('/setup-wizard')({
@@ -247,7 +247,7 @@ function RouteComponent() {
   // ======================================================
 
   async function onSubmit(data: FormSchemaType) {
-    console.log(data);
+    console.log(toSnakeCaseObject(data));
 
     toast.success('Setup completed successfully');
   }
