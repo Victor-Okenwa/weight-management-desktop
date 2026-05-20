@@ -63,13 +63,13 @@ const formSchema = z.object({
       .regex(/^\d+$/, 'Port should only contain numbers')
       .transform((val) => (val ? `COM${val}` : val)),
 
-    baudrate: z.string().min(1, 'Baud rate is required'),
+    baudRate: z.string().min(1, 'Baud rate is required'),
 
     parity: z.enum(['none', 'even', 'odd', 'mark', 'space']),
 
-    flowcontrol: z.enum(['none', 'xon', 'xoff', 'xany', 'rtscts']),
+    flowControl: z.enum(['none', 'xon', 'xoff', 'xany', 'rtscts']),
 
-    stopbits: z
+    stopBits: z
       .number()
       .int()
       .positive()
@@ -77,7 +77,7 @@ const formSchema = z.object({
         message: 'Stop bits must be 1 or 2',
       }),
 
-    databits: z
+    dataBits: z
       .number()
       .int()
       .positive()
@@ -122,11 +122,11 @@ const steps = [
     description: 'Configure weighing device',
     fields: [
       'hardware.port',
-      'hardware.baudrate',
+      'hardware.baudRate',
       'hardware.parity',
-      'hardware.flowcontrol',
-      'hardware.stopbits',
-      'hardware.databits',
+      'hardware.flowControl',
+      'hardware.stopBits',
+      'hardware.dataBits',
       'hardware.autoOpen',
       'hardware.indicator',
     ] as const,
@@ -181,11 +181,11 @@ function RouteComponent() {
 
       hardware: {
         port: '3',
-        baudrate: '2400',
+        baudRate: '2400',
         parity: 'none',
-        flowcontrol: 'none',
-        stopbits: 1,
-        databits: 8,
+        flowControl: 'none',
+        stopBits: 1,
+        dataBits: 8,
         autoOpen: false,
         indicator: '',
       },
@@ -542,13 +542,13 @@ function RouteComponent() {
               />
 
               <Controller
-                name="hardware.baudrate"
+                name="hardware.baudRate"
                 control={form.control}
                 render={({ field, fieldState }) => (
                   <Field orientation="responsive" data-invalid={fieldState.invalid}>
                     <FieldContent>
-                      <FieldLabel htmlFor="hardware-baudrate">
-                        {requiredFields['hardware.baudrate'] ? (
+                      <FieldLabel htmlFor="hardware-baudRate">
+                        {requiredFields['hardware.baudRate'] ? (
                           <RequiredLabel>Baud Rate</RequiredLabel>
                         ) : (
                           <>Baud Rate</>
@@ -562,7 +562,7 @@ function RouteComponent() {
                       onValueChange={field.onChange}
                     >
                       <SelectTrigger
-                        id="hardware-baudrate"
+                        id="hardware-baudRate"
                         className="min-h-12"
                         aria-invalid={fieldState.invalid}
                       >
@@ -634,12 +634,12 @@ function RouteComponent() {
               />
 
               <Controller
-                name="hardware.flowcontrol"
+                name="hardware.flowControl"
                 control={form.control}
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="hardware-flowcontrol">
-                      {requiredFields['hardware.flowcontrol'] ? (
+                    <FieldLabel htmlFor="hardware-flowControl">
+                      {requiredFields['hardware.flowControl'] ? (
                         <RequiredLabel>Flow Control</RequiredLabel>
                       ) : (
                         <>Flow Control</>
@@ -652,7 +652,7 @@ function RouteComponent() {
                       onValueChange={field.onChange}
                     >
                       <SelectTrigger
-                        id="hardware-flowcontrol"
+                        id="hardware-flowControl"
                         className="min-h-12 w-full"
                         aria-invalid={fieldState.invalid}
                       >
@@ -682,12 +682,12 @@ function RouteComponent() {
               />
 
               <Controller
-                name="hardware.stopbits"
+                name="hardware.stopBits"
                 control={form.control}
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="hardware-stopbits">
-                      {requiredFields['hardware.stopbits'] ? (
+                    <FieldLabel htmlFor="hardware-stopBits">
+                      {requiredFields['hardware.stopBits'] ? (
                         <RequiredLabel>Stop Bits</RequiredLabel>
                       ) : (
                         <>Stop Bits</>
@@ -700,7 +700,7 @@ function RouteComponent() {
                       defaultValue="1"
                     >
                       <SelectTrigger
-                        id="hardware-stopbits"
+                        id="hardware-stopBits"
                         className="min-h-12 w-full"
                         aria-invalid={fieldState.invalid}
                       >
@@ -730,12 +730,12 @@ function RouteComponent() {
               />
 
               <Controller
-                name="hardware.databits"
+                name="hardware.dataBits"
                 control={form.control}
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="hardware-databits">
-                      {requiredFields['hardware.databits'] ? (
+                    <FieldLabel htmlFor="hardware-dataBits">
+                      {requiredFields['hardware.dataBits'] ? (
                         <RequiredLabel>Data Bits</RequiredLabel>
                       ) : (
                         <>Data Bits</>
@@ -748,7 +748,7 @@ function RouteComponent() {
                       defaultValue="8"
                     >
                       <SelectTrigger
-                        id="hardware-databits"
+                        id="hardware-dataBits"
                         className="min-h-12 w-full"
                         aria-invalid={fieldState?.invalid}
                       >
@@ -1004,8 +1004,8 @@ function RouteComponent() {
                   </div>
                   <div>
                     <span className="font-medium">Baudrate:</span>{' '}
-                    {form.getValues('hardware.baudrate')?.trim() ? (
-                      form.getValues('hardware.baudrate')
+                    {form.getValues('hardware.baudRate')?.trim() ? (
+                      form.getValues('hardware.baudRate')
                     ) : (
                       <span className="text-muted-foreground">-</span>
                     )}
@@ -1020,30 +1020,31 @@ function RouteComponent() {
                   </div>
                   <div>
                     <span className="font-medium">Flow Control:</span>{' '}
-                    {form.getValues('hardware.flowcontrol')?.trim() ? (
-                      form.getValues('hardware.flowcontrol')
+                    {form.getValues('hardware.flowControl')?.trim() ? (
+                      form.getValues('hardware.flowControl')
                     ) : (
                       <span className="text-muted-foreground">-</span>
                     )}
                   </div>
                   <div>
                     <span className="font-medium">Stop Bits:</span>{' '}
-                    {form.getValues('hardware.stopbits') !== undefined &&
-                    form.getValues('hardware.stopbits') !== null ? (
-                      form.getValues('hardware.stopbits')
+                    {form.getValues('hardware.stopBits') !== undefined &&
+                    form.getValues('hardware.stopBits') !== null ? (
+                      form.getValues('hardware.stopBits')
                     ) : (
                       <span className="text-muted-foreground">-</span>
                     )}
                   </div>
                   <div>
                     <span className="font-medium">Data Bits:</span>{' '}
-                    {form.getValues('hardware.databits') !== undefined &&
-                    form.getValues('hardware.databits') !== null ? (
-                      form.getValues('hardware.databits')
+                    {form.getValues('hardware.dataBits') !== undefined &&
+                    form.getValues('hardware.dataBits') !== null ? (
+                      form.getValues('hardware.dataBits')
                     ) : (
                       <span className="text-muted-foreground">-</span>
                     )}
                   </div>
+
                   <div>
                     <span className="font-medium">Auto Open:</span>{' '}
                     {typeof form.getValues('hardware.autoOpen') === 'boolean' ? (
