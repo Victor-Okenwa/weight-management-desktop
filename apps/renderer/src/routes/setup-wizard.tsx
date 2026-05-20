@@ -941,11 +941,156 @@ function RouteComponent() {
 
           {currentStep.value === 'overview' && (
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold">Overview</h2>
+              <hgroup>
+                <h2 className="text-2xl font-bold">Overview</h2>
+                <small>
+                  Please crosscheck if all fields are correct. You can modify these fields later in
+                  settings.
+                </small>
+              </hgroup>
 
-              <pre className="bg-muted overflow-auto rounded-xl p-4 text-sm">
-                {JSON.stringify(form.getValues(), null, 2)}
-              </pre>
+              {/* Company Details */}
+              <div>
+                <h3 className="font-semibold mb-2">Company Details</h3>
+                <div className="space-y-1">
+                  <div>
+                    <span className="font-medium">Name:</span>{' '}
+                    {form.getValues('companyDetails.name')?.trim() ? (
+                      form.getValues('companyDetails.name')
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </div>
+                  <div>
+                    <span className="font-medium">Email:</span>{' '}
+                    {form.getValues('companyDetails.email')?.trim() ? (
+                      form.getValues('companyDetails.email')
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </div>
+                  <div>
+                    <span className="font-medium">Address:</span>{' '}
+                    {form.getValues('companyDetails.address')?.trim() ? (
+                      form.getValues('companyDetails.address')
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </div>
+                  <div>
+                    <span className="font-medium">Phone:</span>{' '}
+                    {form.getValues('companyDetails.phone')?.trim() ? (
+                      form.getValues('companyDetails.phone')
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <hr className="my-4" />
+
+              {/* Hardware */}
+              <div>
+                <h3 className="font-semibold mb-2">Hardware</h3>
+                <div className="space-y-1">
+                  <div>
+                    <span className="font-medium">Port:</span>{' '}
+                    {form.getValues('hardware.port')?.trim() ? (
+                      form.getValues('hardware.port')
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </div>
+                  <div>
+                    <span className="font-medium">Baudrate:</span>{' '}
+                    {form.getValues('hardware.baudrate')?.trim() ? (
+                      form.getValues('hardware.baudrate')
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </div>
+                  <div>
+                    <span className="font-medium">Parity:</span>{' '}
+                    {form.getValues('hardware.parity')?.trim() ? (
+                      form.getValues('hardware.parity')
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </div>
+                  <div>
+                    <span className="font-medium">Flow Control:</span>{' '}
+                    {form.getValues('hardware.flowcontrol')?.trim() ? (
+                      form.getValues('hardware.flowcontrol')
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </div>
+                  <div>
+                    <span className="font-medium">Stop Bits:</span>{' '}
+                    {form.getValues('hardware.stopbits') !== undefined &&
+                    form.getValues('hardware.stopbits') !== null ? (
+                      form.getValues('hardware.stopbits')
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </div>
+                  <div>
+                    <span className="font-medium">Data Bits:</span>{' '}
+                    {form.getValues('hardware.databits') !== undefined &&
+                    form.getValues('hardware.databits') !== null ? (
+                      form.getValues('hardware.databits')
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </div>
+                  <div>
+                    <span className="font-medium">Auto Open:</span>{' '}
+                    {typeof form.getValues('hardware.autoOpen') === 'boolean' ? (
+                      form.getValues('hardware.autoOpen') ? (
+                        'Yes'
+                      ) : (
+                        'No'
+                      )
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </div>
+                  <div>
+                    <span className="font-medium">Indicator:</span>{' '}
+                    {form.getValues('hardware.indicator')?.trim() ? (
+                      form.getValues('hardware.indicator')
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <hr className="my-4" />
+
+              {/* Preferences */}
+              <div>
+                <h3 className="font-semibold mb-2">Preferences</h3>
+                <div className="space-y-1">
+                  <div>
+                    <span className="font-medium">Default Unit:</span>{' '}
+                    {form.getValues('preferences.defaultUnit')?.trim() ? (
+                      form.getValues('preferences.defaultUnit')
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </div>
+                  <div>
+                    <span className="font-medium">Theme:</span>{' '}
+                    {form.getValues('preferences.theme')?.trim() ? (
+                      form.getValues('preferences.theme')
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -954,23 +1099,30 @@ function RouteComponent() {
           ====================================================== */}
 
           <div className="mt-12 flex items-center justify-between">
-            <Button type="button" variant="outline" onClick={handlePrev} disabled={stepIndex === 0}>
-              <ArrowLeft />
-              Previous
-            </Button>
-
             <div className="text-muted-foreground text-sm">
               Step {stepIndex + 1} of {steps.length}
             </div>
 
-            {stepIndex === steps.length - 1 ? (
-              <Button type="submit">Complete</Button>
-            ) : (
-              <Button type="button" onClick={handleNext}>
-                Next
-                <ArrowRight />
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handlePrev}
+                disabled={stepIndex === 0}
+              >
+                <ArrowLeft />
+                Previous
               </Button>
-            )}
+
+              {stepIndex < steps.length - 1 && (
+                <Button type="button" onClick={handleNext}>
+                  Next
+                  <ArrowRight />
+                </Button>
+              )}
+
+              {stepIndex === steps.length - 1 && <Button type="submit">Complete</Button>}
+            </div>
           </div>
         </form>
       </Card>
