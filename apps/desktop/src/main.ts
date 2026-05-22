@@ -3,18 +3,27 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' }); // load local env overrides
 
 import path from 'node:path';
-import { initDatabase } from '@weight/database';
-import { getAllSettings, getSetting, setSetting } from '@weight/database/repositories/settings';
-import type { SerialOptions } from '@weight/shared/types/index';
-import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
-import { app, BrowserWindow, ipcMain, screen } from 'electron';
+import { getAllSettings } from '@weight/database/repositories/settings';
+import type { SerialOptions, SettingsRow } from '@weight/shared/types/index';
+import { app, BrowserWindow, screen } from 'electron';
 import { getDatabase, setupDatabase } from './database/connection.js';
-import { logger } from './logger.js';
+import { registerIpcHandlers } from './ipc/ipc.js';
+import type { IndicatorType } from './parser/index.js';
 import { SerialManager } from './serial/serial-manager.js';
 
 const __dirname = path.resolve();
 
 const isDev = !app.isPackaged;
+
+const harcodedSerialOptions = {
+  port: 'COM7',
+  baudRate: 2400,
+  dataBits: 8,
+  stopBits: 1,
+  parity: 'none',
+  flowControl: 'none',
+  autoOpen: false,
+};
 
 app.setAppUserModelId('com.solutionroad.weightmanagement');
 
@@ -76,72 +85,32 @@ function createMainWindow() {
   });
 }
 
-app.whenReady().then(async () => {
-  await setupDatabase();
-
-  ipcMain.handle('app:is-setup-completed', () => {
-    const db = getDatabase();
-    return getSetting(db, 'setup_completed') === 'true';
-  });
-
-  ipcMain.handle('app:complete-setup', async (_event, newSettings: Record<string, string>) => {
-    const db = getDatabase();
-    // Save all provided settings
-    for (const [key, value] of Object.entries(newSettings)) {
-      setSetting(db, key, value);
-    }
-    // Mark setup as completed
-    setSetting(db, 'setup_completed', 'true');
-    db.save(); // persist immediately
-    return true;
-  });
-
-  ipcMain.handle('serial:get-status', () => {
-    return serialManager.getStatus();
-  });
-
-  ipcMain.handle('settings:get', (_event, key: string) => {
-    const db = getDatabase();
-    return getSetting(db, key);
-  });
-
-  // Get all settings (useful for initialising the settings screen)
-  ipcMain.handle('settings:get-all', () => {
-    const db = getDatabase();
-    return getAllSettings(db); // import from repository
-  });
-
-  // Update a single setting
-  ipcMain.handle('settings:set', (_event, key: string, value: string) => {
-    const db = getDatabase();
-    setSetting(db, key, value);
-    db.save(); // persist immediately after change
-    return true;
-  });
-
-  ipcMain.handle('settings:set-multiple', (_event, settingsObject: Record<string, string>) => {
-    const db = getDatabase();
-    for (const [key, value] of Object.entries(settingsObject)) {
-      setSetting(db, key, value);
-    }
-    db.save(); // single save after all changes
-    return true;
-  });
-
-  const indicatorType = 'd300';
-
-  const serialOptions: SerialOptions = {
-    port: 'COM7',
-    baudRate: 2400,
-    dataBits: 8,
-    stopBits: 1,
-    parity: 'none',
-    flowControl: 'none',
+// Helper to read serial options from settings with fallbacks
+function getSerialOptions(settingsRow: SettingsRow): SerialOptions {
+  return {
+    port: (settingsRow.serialPort || 'COM1') as `COM${number}`,
+    baudRate: (settingsRow.baudRate || 2400) as 2400,
+    dataBits: (settingsRow.dataBits || 8) as 8,
+    stopBits: (settingsRow.stopBits || 1) as 1,
+    parity: (settingsRow.parity || 'none') as 'none',
+    flowControl: 'none', // not stored in settings yet, keep default
     autoOpen: false,
   };
+}
 
+app.whenReady().then(async () => {
+  // 1. Database ready
+  await setupDatabase();
+  const db = getDatabase();
+
+  // 2. Read current settings (there is exactly one row after seeding)
+  const settingsRow = getAllSettings(db);
+  const serialOptions = getSerialOptions(settingsRow as SettingsRow);
+  const indicatorType = settingsRow?.indicatorType || 'd300';
+
+  // 3. Create serial manager
   const serialManager = new SerialManager(
-    indicatorType,
+    indicatorType as IndicatorType,
     (reading) => {
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('weight:update', reading);
@@ -154,44 +123,32 @@ app.whenReady().then(async () => {
     },
   );
 
-  serialManager.connect(serialOptions);
+  // 4. Register all IPC handlers (now they have access to serialManager)
+  registerIpcHandlers(serialManager);
 
-  // Handle log messages from renderer
-  ipcMain.on('log', (_event, { level, message }: { level: string; message: string }) => {
-    switch (level) {
-      case 'error':
-        logger.error(`[renderer] ${message}`);
-        break;
-      case 'warn':
-        logger.warn(`[renderer] ${message}`);
-        break;
-      case 'info':
-        logger.info(`[renderer] ${message}`);
-        break;
-      case 'debug':
-        logger.debug(`[renderer] ${message}`);
-        break;
-      default:
-        logger.info(`[renderer] ${message}`);
-    }
-  });
-
+  // 5. Open the window
   createMainWindow();
 
+  // 6. Connect to serial port
+  serialManager.connect(serialOptions);
+
+  // 7. App lifecycle events
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createMainWindow();
-    }
+    if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
   });
 
   app.on('before-quit', async (event) => {
     event.preventDefault();
     serialManager.disconnect();
-    const db = getDatabase();
-    db.save(); // ensure latest data is written
-    db.close();
+    const currentDb = getDatabase();
+    currentDb.save();
+    currentDb.close();
     app.quit();
   });
+});
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') app.quit();
 });
 
 app.on('window-all-closed', () => {

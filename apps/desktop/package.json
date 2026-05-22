@@ -11,8 +11,7 @@
     "watch": "tsc --watch",
     "electron": "electron .",
     "dev": "rimraf dist && concurrently \"pnpm watch\" \"wait-on dist/main.js && electronmon .\"",
-    "dist": "pnpm build && electron-builder",
-    "postinstall": "electron-rebuild -f -w better-sqlite3"
+    "dist": "pnpm build && electron-builder"
   },
   "keywords": [],
   "author": "",

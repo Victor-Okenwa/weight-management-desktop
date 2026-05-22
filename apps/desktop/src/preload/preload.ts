@@ -1,4 +1,4 @@
-import type { WeightReading } from '@weight/shared/types/index';
+import type { SettingsRow, WeightReading } from '@weight/shared/types/index';
 import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -25,10 +25,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   // Later you can add more methods:
   // getSettings, setSettings, etc.
-  getSetting: (key: string): Promise<string | undefined> => ipcRenderer.invoke('settings:get', key),
-  getAllSettings: (): Promise<Record<string, string>> => ipcRenderer.invoke('settings:get-all'),
-  setSetting: (key: string, value: string): Promise<boolean> =>
-    ipcRenderer.invoke('settings:set', key, value),
-  setMultipleSettings: (settings: Record<string, string>): Promise<boolean> =>
-    ipcRenderer.invoke('settings:set-multiple', settings),
+  getAllSettings: (): Promise<SettingsRow | null> => ipcRenderer.invoke('settings:get-all'),
+  updateSettings: (data: Record<string, any>): Promise<boolean> =>
+    ipcRenderer.invoke('settings:update', data),
 });

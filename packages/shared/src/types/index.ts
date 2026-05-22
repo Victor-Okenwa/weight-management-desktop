@@ -45,3 +45,27 @@ export interface SerialOptions {
   flowControl: FlowControl;
   autoOpen: boolean;
 }
+
+export interface SettingsRow {
+  companyName: string;
+  companyAddress: string;
+  companyPhone: string;
+  companyLogoPath: string;
+  ticketPrefix: string;
+  ticketFooter: string;
+  nextTicketNumber: number;
+  serialPort: string;
+  baudRate: number;
+  dataBits: number;
+  parity: string;
+  stopBits: number;
+  indicatorType: string;
+  weightUnit: string;
+  stableTolerance: number;
+  stableDurationMs: number;
+  theme: string;
+  autoPrint: boolean;
+  printerName: string;
+  printCopies: number;
+  setupCompleted: boolean;
+}

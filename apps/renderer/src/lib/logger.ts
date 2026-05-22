@@ -1,6 +1,6 @@
 import type { LogLevel } from '@weight/shared/types/index';
 
-function log(level: LogLevel, ...args: never[]) {
+export function logger(level: LogLevel, ...args: never[] | string[]) {
   const message = args
     .map((arg) => (typeof arg === 'object' ? JSON.stringify(arg) : String(arg)))
     .join(' ');
@@ -11,8 +11,8 @@ function log(level: LogLevel, ...args: never[]) {
 }
 
 export const rendererLogger = {
-  error: (...args: never[]) => log('error', ...args),
-  warn: (...args: never[]) => log('warn', ...args),
-  info: (...args: never[]) => log('info', ...args),
-  debug: (...args: never[]) => log('debug', ...args),
+  error: (...args: never[]) => logger('error', ...args),
+  warn: (...args: never[]) => logger('warn', ...args),
+  info: (...args: never[]) => logger('info', ...args),
+  debug: (...args: never[]) => logger('debug', ...args),
 };

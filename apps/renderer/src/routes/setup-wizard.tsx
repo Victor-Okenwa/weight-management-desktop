@@ -32,7 +32,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { cn, toSnakeCaseObject } from '@/lib/utils';
+import { logger } from '@/lib/logger';
+import { cn, getTicketPrefix } from '@/lib/utils';
 import { useSettingsStore } from '@/store/settingsStore';
 
 export const Route = createFileRoute('/setup-wizard')({
@@ -45,11 +46,11 @@ export const Route = createFileRoute('/setup-wizard')({
 
 const formSchema = z.object({
   companyDetails: z.object({
-    name: z.string().min(1, 'Company name is required'),
+    name: z.string().min(1, 'Company name is required').trim(),
 
-    email: z.email('Invalid email address').optional().or(z.literal('')),
+    email: z.string().email('Invalid email address').trim().optional().or(z.literal('')),
 
-    address: z.string().optional().or(z.literal('')),
+    address: z.string().trim().optional().or(z.literal('')),
 
     phone: z
       .string()
@@ -60,7 +61,7 @@ const formSchema = z.object({
 
   hardware: z.object({
     port: z
-      .string('Field is required')
+      .string({ message: 'Field is required' })
       .regex(/^\d+$/, 'Port should only contain numbers')
       .transform((val) => (val ? `COM${val}` : val)),
 
@@ -93,8 +94,17 @@ const formSchema = z.object({
 
   preferences: z.object({
     defaultUnit: z.enum(['kg', 'ton', 'lb']),
-
     theme: z.enum(['light', 'dark', 'system']),
+    ticketPrefix: z
+      .string()
+      .min(1, 'Ticket prefix is required')
+      .max(3, 'You cannot go beyond 3 letters')
+      .default('SRE'),
+    ticketFooter: z
+      .string()
+      .trim()
+      .min(1, 'Ticket footer is required')
+      .default('Thank you for your custom.'),
   }),
 });
 
@@ -137,7 +147,12 @@ const steps = [
     value: 'preferences',
     title: 'Preferences',
     description: 'Default units and theme',
-    fields: ['preferences.defaultUnit', 'preferences.theme'] as const,
+    fields: [
+      'preferences.defaultUnit',
+      'preferences.theme',
+      'preferences.ticketPrefix',
+      'preferences.ticketFooter',
+    ] as const,
   },
 
   {
@@ -166,9 +181,13 @@ function RequiredLabel({ children }: { children: React.ReactNode }) {
 
 function RouteComponent() {
   const [stepIndex, setStepIndex] = useState(0);
-  // const { loadSettings, updateSetting } = useSettingsStore();
+  const { settings } = useSettingsStore();
 
   const currentStep = steps[stepIndex];
+
+  useEffect(() => {
+    console.log(settings);
+  }, [settings]);
 
   const form = useForm<FormSchemaType>({
     resolver: zodResolver(formSchema),
@@ -195,6 +214,8 @@ function RouteComponent() {
       preferences: {
         defaultUnit: 'kg',
         theme: 'light',
+        ticketPrefix: 'SRE',
+        ticketFooter: 'thank you for your custom',
       },
     },
   });
@@ -216,6 +237,8 @@ function RouteComponent() {
     'hardware.indicator': true,
     'preferences.defaultUnit': true,
     'preferences.theme': true,
+    'preferences.ticketPrefix': true,
+    'preferences.ticketFooter': true,
   };
 
   // ======================================================
@@ -247,25 +270,50 @@ function RouteComponent() {
   // ======================================================
 
   async function onSubmit(data: FormSchemaType) {
-    const transformedData = toSnakeCaseObject(data);
-    console.log(transformedData);
-    await window.electronAPI.setMultipleSettings({ ...transformedData });
+    try {
+      const prefix = data.preferences.ticketPrefix || getTicketPrefix(data.companyDetails.name);
+      await window.electronAPI.updateSettings({
+        // Map form data fields to settings structure expected by backend
+        companyName: data.companyDetails.name.toLowerCase(),
+        companyAddress: data.companyDetails.address ?? '',
+        companyPhone: data.companyDetails.phone ?? '',
+        // Settings doesn't seem to include email, so we don't include it
+        companyLogoPath: '', // No logo picker in form yet
+        ticketPrefix: prefix, // Explicit from field
+        ticketFooter: data.preferences.ticketFooter ?? 'Thank you for your custom', // From field
+        nextTicketNumber: 1, // Use default per your DB seed
+        serialPort: data.hardware.port,
+        baudRate: Number(data.hardware.baudRate),
+        dataBits: Number(data.hardware.dataBits),
+        parity: data.hardware.parity,
+        stopBits: Number(data.hardware.stopBits),
+        indicatorType: data.hardware.indicator,
+        weightUnit: data.preferences.defaultUnit,
+        stableTolerance: 0.5, // Default value, or pull from form if available
+        stableDurationMs: 3000, // Default value, or pull from form if available
+        theme: data.preferences.theme,
+        autoPrint: false, // Not present in form
+        printerName: '', // Not present in form
+        printCopies: 1, // Not present in form
+        setupCompleted: true,
+      });
 
-    toast.success('Setup completed successfully');
+      toast.success('Setup completed successfully');
+    } catch (error) {
+      logger('error', (error as Error).message);
+
+      toast.error('An error occurred while completing setup.');
+    }
   }
-
-  // ======================================================
-  // RENDER
-  // ======================================================
 
   return (
     <article className="px-4 py-12">
-      <Card className="bg-background mx-auto max-w-6xl p-6">
+      <Card className="bg-background mx-auto max-w-6xl">
         {/* ======================================================
             HEADER
         ====================================================== */}
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 px-6">
           <Badge className="size-12 rounded-md [&>svg]:size-7!">
             <Settings2Icon />
           </Badge>
@@ -281,14 +329,14 @@ function RouteComponent() {
             CUSTOM STEPPER
         ====================================================== */}
 
-        <div className="mt-10">
+        <div className="mt-10 px-6">
           <div className="flex items-start justify-between gap-2 overflow-x-auto">
             {steps.map((step, index) => {
               const isCompleted = index < stepIndex;
               const isActive = index === stepIndex;
 
               return (
-                <div key={step.value} className="flex flex-1 items-start">
+                <div key={step.value} className="flex items-center w-full">
                   {/* STEP */}
 
                   <button
@@ -327,7 +375,7 @@ function RouteComponent() {
                   {/* LINE */}
 
                   {index < steps.length - 1 && (
-                    <div className="mx-2 mt-6 h-[2px] flex-1 bg-border" />
+                    <div className="mx-2 h-[1.5px] flex-1 bg-border w-full!" />
                   )}
                 </div>
               );
@@ -339,7 +387,13 @@ function RouteComponent() {
             FORM
         ====================================================== */}
 
-        <form onSubmit={form.handleSubmit(onSubmit)} className="mt-12">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="mt-12 bg-accent/20 px-6 py-5">
+          <div className="flex items-center mb-6 gap-2 text-muted-foreground text-sm">
+            <span>
+              <span className="text-destructive">*</span> Indicates required field
+            </span>
+          </div>
+
           {/* ======================================================
               COMPANY DETAILS
           ====================================================== */}
@@ -363,7 +417,7 @@ function RouteComponent() {
                     <Input
                       {...field}
                       id="companyDetails-name"
-                      className="min-h-12"
+                      className="min-h-12 capitalize"
                       placeholder="Solution Road Equipments and Spars Limited"
                     />
 
@@ -879,9 +933,8 @@ function RouteComponent() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="kg">Kilograms (kg)</SelectItem>
-                        <SelectItem value="g">Grams (g)</SelectItem>
+                        <SelectItem value="ton">Tons (ton)</SelectItem>
                         <SelectItem value="lb">Pounds (lb)</SelectItem>
-                        <SelectItem value="oz">Ounces (oz)</SelectItem>
                       </SelectContent>
                     </Select>
                     <FieldDescription>
@@ -936,6 +989,59 @@ function RouteComponent() {
                   </Field>
                 )}
               />
+
+              <Controller
+                name="preferences.ticketPrefix"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="preferences-ticketPrefix">
+                      {requiredFields['preferences.ticketPrefix'] ? (
+                        <RequiredLabel>Ticket Prefix</RequiredLabel>
+                      ) : (
+                        <>Ticket Prefix</>
+                      )}
+                    </FieldLabel>
+                    <Input
+                      {...field}
+                      id="preferences-ticketPrefix"
+                      className="min-h-12 uppercase"
+                      placeholder="SRE"
+                      maxLength={3}
+                    />
+                    <FieldDescription>
+                      The prefix used for ticket numbers, e.g. "SRE".
+                    </FieldDescription>
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  </Field>
+                )}
+              />
+
+              <Controller
+                name="preferences.ticketFooter"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="preferences-ticketFooter">
+                      {requiredFields['preferences.ticketFooter'] ? (
+                        <RequiredLabel>Ticket Footer</RequiredLabel>
+                      ) : (
+                        <>Ticket Footer</>
+                      )}
+                    </FieldLabel>
+                    <Input
+                      {...field}
+                      id="preferences-ticketFooter"
+                      className="min-h-12"
+                      placeholder="Thank you for your custom"
+                    />
+                    <FieldDescription>
+                      The message displayed at the bottom of the printed ticket.
+                    </FieldDescription>
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  </Field>
+                )}
+              />
             </div>
           )}
 
@@ -958,7 +1064,7 @@ function RouteComponent() {
                 <h3 className="font-semibold mb-2">Company Details</h3>
                 <div className="space-y-1">
                   <div>
-                    <span className="font-medium">Name:</span>{' '}
+                    <span className="font-medium capitalize">Name:</span>{' '}
                     {form.getValues('companyDetails.name')?.trim() ? (
                       form.getValues('companyDetails.name')
                     ) : (
@@ -1062,7 +1168,7 @@ function RouteComponent() {
                     )}
                   </div>
                   <div>
-                    <span className="font-medium">Indicator:</span>{' '}
+                    <span className="font-medium capitalize">Indicator:</span>{' '}
                     {form.getValues('hardware.indicator')?.trim() ? (
                       form.getValues('hardware.indicator')
                     ) : (
@@ -1080,19 +1186,19 @@ function RouteComponent() {
                 <div className="space-y-1">
                   <div>
                     <span className="font-medium">Default Unit:</span>{' '}
-                    {form.getValues('preferences.defaultUnit')?.trim() ? (
-                      form.getValues('preferences.defaultUnit')
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
+                    {form.getValues('preferences.defaultUnit')}
                   </div>
                   <div>
                     <span className="font-medium">Theme:</span>{' '}
-                    {form.getValues('preferences.theme')?.trim() ? (
-                      form.getValues('preferences.theme')
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
+                    {form.getValues('preferences.theme')}
+                  </div>
+                  <div>
+                    <span className="font-medium">Ticket Prefix:</span>{' '}
+                    {form.getValues('preferences.ticketPrefix')}
+                  </div>
+                  <div>
+                    <span className="font-medium">Ticket Footer:</span>{' '}
+                    {form.getValues('preferences.ticketFooter') ?? 'Thank you for your custom'}
                   </div>
                 </div>
               </div>

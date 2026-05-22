@@ -1,7 +1,6 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { type DatabaseInstance, initDatabase } from '@weight/database';
-import { getAllSettings, setSetting } from '@weight/database/repositories/settings';
 import { settings } from '@weight/database/schema';
 import { eq } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/sql-js/migrator';

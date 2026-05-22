@@ -1,4 +1,5 @@
 import type { SerialStatus, WeightReading } from '@weight/shared';
+import type { SettingsRow } from '@weight/shared/types/index';
 
 declare global {
   interface Window {
@@ -14,11 +15,8 @@ declare global {
       log: (level: string, message: string) => void;
 
       // settings
-      getSetting: (key: string) => Promise<string | undefined>;
-      getAllSettings: () => Promise<Record<string, string>>;
-      setSetting: (key: string, value: string) => Promise<boolean>;
-      setSetting: (key: string, value: string) => Promise<boolean>;
-      setMultipleSettings: (settings: Record<string, string>) => Promise<boolean>;
+      getAllSettings: () => Promise<SettingsRow | null>;
+      updateSettings: (data: Partial<SettingsRow>) => Promise<boolean>;
     };
   }
 }
