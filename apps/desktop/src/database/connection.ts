@@ -2,8 +2,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { type DatabaseInstance, initDatabase } from '@weight/database';
 import { getAllSettings, setSetting } from '@weight/database/repositories/settings';
+import { settings } from '@weight/database/schema';
+import { eq } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/sql-js/migrator';
 import { app } from 'electron';
+import { logger } from '../logger.js';
 
 // ESM equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -35,32 +38,43 @@ export async function setupDatabase(): Promise<DatabaseInstance> {
   }
 
   // Seed default settings if first run
-  const existingSettings = getAllSettings(db);
-  if (Object.keys(existingSettings).length === 0) {
-    console.log('First run – seeding default settings.');
-    const defaults: Record<string, string> = {
-      company_name: '',
-      company_address: '',
-      company_phone: '',
-      company_logo_path: '',
-      ticket_prefix: 'SRW',
-      ticket_footer: 'Thank you for your custom',
-      next_ticket_number: '1',
-      serial_port: 'COM1',
-      baud_rate: '2400',
-      indicator_type: 'd300',
-      weight_unit: 'kg',
-      stable_tolerance: '0.5',
-      stable_duration_ms: '3000',
-      theme: 'system',
-      auto_print: 'false',
-      printer_name: '',
-      print_copies: '1',
-      setup_completed: 'false',
-    };
-    for (const [key, value] of Object.entries(defaults)) {
-      setSetting(db, key, value);
-    }
+  const existingSettings = db
+    .select({ id: settings.id })
+    .from(settings)
+    .where(eq(settings.id, 1))
+    .get();
+
+  if (!existingSettings) {
+    logger.log('First run – seeding default settings.');
+    db.insert(settings)
+      .values({
+        id: 1,
+        // All columns will use their default values defined in the schema,
+        // but we can explicitly set them here if we want to be explicit.
+        // For clarity, we can provide all:
+        companyName: '',
+        companyAddress: '',
+        companyPhone: '',
+        companyLogoPath: '',
+        ticketPrefix: 'SRE',
+        ticketFooter: 'Thank you for your custom',
+        nextTicketNumber: 1,
+        serialPort: 'COM1',
+        baudRate: 2400,
+        dataBits: 8,
+        parity: 'none',
+        stopBits: 1,
+        indicatorType: 'd300',
+        weightUnit: 'kg',
+        stableTolerance: 0.5,
+        stableDurationMs: 3000,
+        theme: 'system',
+        autoPrint: false,
+        printerName: '',
+        printCopies: 1,
+        setupCompleted: false,
+      })
+      .run();
     db.save();
   }
 

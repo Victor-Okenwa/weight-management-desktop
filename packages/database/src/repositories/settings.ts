@@ -3,29 +3,25 @@ import { eq } from 'drizzle-orm';
 import type { DatabaseInstance } from '../index.js';
 import { settings } from '../schema/index.js';
 
-// Get a single setting by key
-export function getSetting(db: DatabaseInstance, key: string): string | undefined {
-  const row = db.select().from(settings).where(eq(settings.key, key)).get();
-  return row?.value;
+// Get the full settings row (all columns) – returns undefined if not initialised
+export function getAllSettings(db: DatabaseInstance) {
+  return db.select().from(settings).where(eq(settings.id, 1)).get();
 }
 
-// Get all settings as a key‑value object
-export function getAllSettings(db: DatabaseInstance): Record<string, string> {
-  const rows = db.select().from(settings).all();
-  const result: Record<string, string> = {};
-  for (const row of rows) {
-    result[row.key] = row.value;
+// Update one or more fields using a partial object
+export function updateSettings(db: DatabaseInstance, data: Partial<typeof settings.$inferInsert>) {
+  // Ensure we never change the id
+  const { id, ...rest } = data;
+  if (Object.keys(rest).length === 0) return;
+
+  // Check if row exists
+  const existing = db.select({ id: settings.id }).from(settings).where(eq(settings.id, 1)).get();
+  if (existing) {
+    db.update(settings).set(rest).where(eq(settings.id, 1)).run();
+  } else {
+    // Insert first row
+    db.insert(settings)
+      .values({ id: 1, ...rest })
+      .run();
   }
-  return result;
-}
-
-// Upsert a single setting (insert or update)
-export function setSetting(db: DatabaseInstance, key: string, value: string): void {
-  db.insert(settings)
-    .values({ key, value })
-    .onConflictDoUpdate({
-      target: settings.key,
-      set: { value },
-    })
-    .run();
 }

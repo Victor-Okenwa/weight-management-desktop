@@ -2,8 +2,28 @@ import { integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 // ---------- Settings ----------
 export const settings = sqliteTable('settings', {
-  key: text('key').primaryKey(),
-  value: text('value').notNull().default(''),
+  id: integer('id').primaryKey().default(1), // always 1 – ensures single row
+  companyName: text('company_name').notNull().default(''),
+  companyAddress: text('company_address').notNull().default(''),
+  companyPhone: text('company_phone').notNull().default(''),
+  companyLogoPath: text('company_logo_path').notNull().default(''),
+  ticketPrefix: text('ticket_prefix').notNull().default('SRW'),
+  ticketFooter: text('ticket_footer').notNull().default('Thank you for your custom'),
+  nextTicketNumber: integer('next_ticket_number').notNull().default(1),
+  serialPort: text('serial_port').notNull().default('COM1'),
+  baudRate: integer('baud_rate').notNull().default(2400),
+  dataBits: integer('data_bits').notNull().default(8),
+  parity: text('parity').notNull().default('none'),
+  stopBits: integer('stop_bits').notNull().default(1),
+  indicatorType: text('indicator_type').notNull().default('d300'),
+  weightUnit: text('weight_unit').notNull().default('kg'),
+  stableTolerance: real('stable_tolerance').notNull().default(0.5),
+  stableDurationMs: integer('stable_duration_ms').notNull().default(3000),
+  theme: text('theme').notNull().default('system'),
+  autoPrint: integer('auto_print', { mode: 'boolean' }).notNull().default(false),
+  printerName: text('printer_name').notNull().default(''),
+  printCopies: integer('print_copies').notNull().default(1),
+  setupCompleted: integer('setup_completed', { mode: 'boolean' }).notNull().default(false),
 });
 
 // ---------- Vehicles ----------

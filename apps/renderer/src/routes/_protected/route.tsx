@@ -30,8 +30,9 @@ const sidebarRoutes = [
 
 export const Route = createFileRoute('/_protected')({
   component: RouteComponent,
-  beforeLoad: async (ctx) => {
+  beforeLoad: async () => {
     // If running in browser (not electron), skip setup check
+    console.log('IS SETUP?', window.electronAPI?.isSetupCompleted);
     if (typeof window === 'undefined' || !window.electronAPI?.isSetupCompleted) {
       return;
     }

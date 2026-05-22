@@ -166,7 +166,7 @@ function RequiredLabel({ children }: { children: React.ReactNode }) {
 
 function RouteComponent() {
   const [stepIndex, setStepIndex] = useState(0);
-  const { loadSettings, updateSetting } = useSettingsStore();
+  // const { loadSettings, updateSetting } = useSettingsStore();
 
   const currentStep = steps[stepIndex];
 
@@ -247,7 +247,9 @@ function RouteComponent() {
   // ======================================================
 
   async function onSubmit(data: FormSchemaType) {
-    console.log(toSnakeCaseObject(data));
+    const transformedData = toSnakeCaseObject(data);
+    console.log(transformedData);
+    await window.electronAPI.setMultipleSettings({ ...transformedData });
 
     toast.success('Setup completed successfully');
   }
