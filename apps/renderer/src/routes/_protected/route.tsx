@@ -1,5 +1,21 @@
-import { createFileRoute, Outlet, redirect, useRouterState } from '@tanstack/react-router';
-import { HistoryIcon, LayoutDashboard, Link, Settings2 } from 'lucide-react';
+import {
+  createFileRoute,
+  Outlet,
+  redirect,
+  useLoaderData,
+  useRouterState,
+} from '@tanstack/react-router';
+import {
+  HistoryIcon,
+  LayoutDashboard,
+  Link,
+  Settings2,
+  SignalHighIcon,
+  SignalLowIcon,
+  SignalMediumIcon,
+} from 'lucide-react';
+import { useEffect } from 'react';
+import { Badge } from '@/components/ui/badge';
 import {
   Sidebar,
   SidebarContent,
@@ -7,8 +23,12 @@ import {
   SidebarGroup,
   SidebarHeader,
   SidebarProvider,
+  SidebarTrigger,
 } from '@/components/ui/sidebar';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useWeightUpdates } from '@/hooks/use-weight-updates';
+import { useSettingsStore } from '@/store/settingsStore';
+import { useWeightStore } from '@/store/weightStore';
 
 const sidebarRoutes = [
   {
@@ -32,13 +52,12 @@ export const Route = createFileRoute('/_protected')({
   component: RouteComponent,
   beforeLoad: async () => {
     // If running in browser (not electron), skip setup check
-    console.log('IS SETUP?', window.electronAPI?.isSetupCompleted);
     if (typeof window === 'undefined' || !window.electronAPI?.isSetupCompleted) {
       return;
     }
 
     const setupCompleted = await window.electronAPI.isSetupCompleted();
-    console.log(setupCompleted);
+
     if (!setupCompleted) {
       // Redirect to setup-wizard if setup is NOT completed
       window.electronAPI.log('info', 'App not connected');
@@ -52,6 +71,15 @@ export const Route = createFileRoute('/_protected')({
 
 function RouteComponent() {
   useWeightUpdates(); // start listening to updates
+
+  const { loadSettings } = useSettingsStore();
+
+  useEffect(() => {
+    async function fetchSettings() {
+      await loadSettings();
+    }
+    fetchSettings();
+  });
 
   return (
     <SidebarProvider>
@@ -72,7 +100,7 @@ function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader />
+      {/* <SidebarHeader /> */}
       <SidebarContent>
         <SidebarGroup>
           {sidebarRoutes.map(({ icon: Icon, link, label }) => {
@@ -101,5 +129,71 @@ function AppSidebar() {
 }
 
 function TopBar() {
-  return <nav className="bg-sidebar px-2 py-3 sticky top-0 w-full"></nav>;
+  const { serialStatus, latestReading } = useWeightStore();
+  const { settings } = useSettingsStore();
+
+  const signalRed =
+    serialStatus === 'disconnected' ||
+    serialStatus === 'error' ||
+    serialStatus === 'idle' ||
+    serialStatus === 'reconnecting' ||
+    !latestReading;
+
+  const signalYellow = serialStatus === 'connecting' || serialStatus === 'reconnecting';
+
+  // console.log(serialStatus);
+
+  return (
+    <nav className="bg-sidebar px-2 py-3 sticky top-0 w-full flex items-center justify-between">
+      <section className="flex items-center gap-1">
+        <SidebarTrigger />
+
+        <span className="text-sm">Weight Management</span>
+      </section>
+
+      <section className="flex items-center gap-2">
+        <div className="flex items-center font-light text-sm border-r pr-2 gap-0">
+          <span className="flex justify-start h-full">
+            {signalRed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <SignalLowIcon className="text-red-700 dark:text-red-400 -mr-2" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <span>
+                    Connection lost or unstable. Please check the device connection or go to
+                    settings and change he COM port.
+                  </span>
+                </TooltipContent>
+              </Tooltip>
+            ) : signalYellow ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <SignalMediumIcon className="text-yellow-700 dark:text-yellow-400" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <span>Connecting to the device. Please wait...</span>
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <SignalHighIcon className="text-green-700 dark:text-green-400" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <span>Connected and receiving stable readings.</span>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </span>
+
+          <span>{settings?.serialPort}</span>
+        </div>
+
+        <div>
+          <Badge>{serialStatus}</Badge>
+        </div>
+      </section>
+    </nav>
+  );
 }

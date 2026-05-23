@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useRouter } from '@tanstack/react-router';
 import {
   appearanceOptions,
   BAUD_RATES,
@@ -183,6 +183,8 @@ function RouteComponent() {
   const [stepIndex, setStepIndex] = useState(0);
   const { settings } = useSettingsStore();
 
+  const router = useRouter();
+
   const currentStep = steps[stepIndex];
 
   useEffect(() => {
@@ -299,9 +301,9 @@ function RouteComponent() {
       });
 
       toast.success('Setup completed successfully');
+      router.navigate({ to: '/' });
     } catch (error) {
       logger('error', (error as Error).message);
-
       toast.error('An error occurred while completing setup.');
     }
   }

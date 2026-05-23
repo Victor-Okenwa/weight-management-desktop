@@ -18,6 +18,8 @@ export function WeightDisplay() {
 
   const trafficGreen = serialStatus === 'connected' && latestReading?.isStable;
 
+  console.log(serialStatus);
+
   return (
     <div className="rounded-lg relative overflow-hidden shadow">
       <header className="bg-accent flex justify-end py-3 px-2">

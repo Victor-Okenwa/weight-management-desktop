@@ -39,6 +39,7 @@ export function registerIpcHandlers(serialManager: SerialManager) {
   });
 
   ipcMain.handle('settings:update', (_event, data: Record<string, any>) => {
+    console.log('REACHING HERE');
     const db = getDatabase();
     updateSettings(db, data);
     db.save();
