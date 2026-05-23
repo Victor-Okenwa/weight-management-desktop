@@ -1,27 +1,20 @@
-import {
-  createFileRoute,
-  Outlet,
-  redirect,
-  useLoaderData,
-  useRouterState,
-} from '@tanstack/react-router';
+import { createFileRoute, Link, Outlet, redirect, useRouterState } from '@tanstack/react-router';
 import {
   HistoryIcon,
   LayoutDashboard,
-  Link,
   Settings2,
   SignalHighIcon,
   SignalLowIcon,
   SignalMediumIcon,
 } from 'lucide-react';
 import { useEffect } from 'react';
+import { NotFound } from '@/components/not-found';
 import { Badge } from '@/components/ui/badge';
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
-  SidebarHeader,
   SidebarProvider,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
@@ -67,6 +60,9 @@ export const Route = createFileRoute('/_protected')({
       });
     }
   },
+  notFoundComponent: () => {
+    return <NotFound />;
+  },
 });
 
 function RouteComponent() {
@@ -99,7 +95,7 @@ function AppSidebar() {
   const currentPath = router.location.pathname;
 
   return (
-    <Sidebar>
+    <Sidebar collapsible="icon">
       {/* <SidebarHeader /> */}
       <SidebarContent>
         <SidebarGroup>
@@ -122,6 +118,7 @@ function AppSidebar() {
             );
           })}
         </SidebarGroup>
+        svjdhsjjdku
       </SidebarContent>
       <SidebarFooter />
     </Sidebar>
