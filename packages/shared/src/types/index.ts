@@ -33,7 +33,7 @@ export type BaudRate =
   | 921600;
 export type Parity = 'none' | 'even' | 'mark' | 'odd' | 'space';
 export type StopBits = 1 | 2;
-export type FlowControl = 'none' | 'xon' | 'xoff' | 'xany' | 'rtscts';
+export type FlowControl = 'none' | 'xon/xoff' | 'hardware';
 export type DataBits = 5 | 6 | 7 | 8;
 
 export interface SerialOptions {

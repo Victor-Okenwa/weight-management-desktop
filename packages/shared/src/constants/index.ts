@@ -6,13 +6,13 @@ export const BAUD_RATES = [
 ];
 
 // Allowed stop bits
-export const STOP_BITS = [1, 1.5, 2];
+export const STOP_BITS = [1, 2];
 
 // Parity options
 export const PARITY_FLAGS = ['none', 'even', 'odd', 'mark', 'space'] as const;
 
 // Flow control options
-export const FLOW_CONTROL_OPTIONS = ['none', 'xon/xoff', 'rts/cts', 'dtr/dsr'] as const;
+export const FLOW_CONTROL_OPTIONS = ['none', 'xon/xoff', 'hardware'] as const;
 
 // Allowed data bits
 export const DATA_BITS = [5, 6, 7, 8];

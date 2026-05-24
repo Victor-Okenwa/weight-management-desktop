@@ -78,7 +78,7 @@ export const hardwareSchema = z.object({
     .transform((val) => (val ? `COM${val}` : val)),
   baudRate: z.string().min(1, 'Baud rate is required'),
   parity: z.enum(['none', 'even', 'odd', 'mark', 'space']),
-  flowControl: z.enum(['none', 'xon', 'xoff', 'xany', 'rtscts']),
+  flowControl: z.enum(['none', 'xon/xoff', 'hardware']),
   stopBits: z
     .number()
     .int()
@@ -313,6 +313,8 @@ function RouteComponent() {
         dataBits: data.hardware.dataBits as unknown as DataBits,
         parity: data.hardware.parity,
         stopBits: data.hardware.stopBits as unknown as StopBits,
+        flowControl: data.hardware.flowControl,
+        autoOpen: data.hardware.autoOpen,
         indicatorType: data.hardware.indicator,
         weightUnit: data.preferences.defaultUnit,
         stableTolerance: 0.5, // Default value, or pull from form if available

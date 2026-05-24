@@ -1,9 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { BAUD_RATES, FLOW_CONTROL_OPTIONS, PARITY_FLAGS } from '@weight/shared/constants/index';
-import type { SerialPortInfo } from '@weight/shared/types/index';
+import type { BaudRate, DataBits, SerialPortInfo } from '@weight/shared/types/index';
 import { EthernetPortIcon, InfoIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -29,6 +30,7 @@ import {
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { logger } from '@/lib/logger';
 import { useSettingsStore } from '@/store/settingsStore';
 import { type Hardware, hardwareSchema } from '../routes/setup-wizard';
 
@@ -61,7 +63,23 @@ export function SerialConfigurationsTab() {
   }, []);
 
   async function onSubmit(data: Hardware) {
-    console.log(data);
+    try {
+      await window.electronAPI.updateSettings({
+        serialPort: data.port,
+        baudRate: data.baudRate as unknown as BaudRate,
+        parity: data.parity,
+        flowControl: data.flowControl,
+        stopBits: data.stopBits,
+        dataBits: data.dataBits as DataBits,
+        autoOpen: data.autoOpen,
+        indicatorType: data.indicator,
+      });
+
+      toast.success('Updates are successful');
+    } catch (error) {
+      toast.error((error as Error).message || 'Something went wrong');
+      logger('error', (error as Error).message || 'Failed to update serial config');
+    }
   }
 
   return (
