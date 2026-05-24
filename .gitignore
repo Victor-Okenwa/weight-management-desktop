@@ -9,6 +9,12 @@ build/
 out/
 release/
 
+drizzle/
+drizzle/*.json
+drizzle/*.sql
+drizzle/meta/
+drizzle/meta/*.json
+
 # DATABASE FILES
 *.db
 data/

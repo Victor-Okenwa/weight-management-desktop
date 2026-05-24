@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "a1c21bd6-02ce-4966-b45a-1ab866d0a769",
+  "id": "f23e566d-ab00-43a6-a3b7-2cb3c475d2d7",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "materials": {
@@ -281,6 +281,14 @@
           "autoincrement": false,
           "default": "'none'"
         },
+        "flow_control": {
+          "name": "flow_control",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'none'"
+        },
         "stop_bits": {
           "name": "stop_bits",
           "type": "integer",
@@ -288,6 +296,14 @@
           "notNull": true,
           "autoincrement": false,
           "default": 1
+        },
+        "auto_open": {
+          "name": "auto_open",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
         },
         "indicator_type": {
           "name": "indicator_type",

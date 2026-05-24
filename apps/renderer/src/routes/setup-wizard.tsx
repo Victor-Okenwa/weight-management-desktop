@@ -70,6 +70,7 @@ export const companyDetailsSchema = z.object({
 });
 
 export type CompanyDetails = z.infer<typeof companyDetailsSchema>;
+
 export const hardwareSchema = z.object({
   port: z
     .string({ message: 'Field is required' })

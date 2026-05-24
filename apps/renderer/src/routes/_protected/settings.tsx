@@ -1,4 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { CompanyDetailsTab } from '@/components/company-details-tab';
+import { PreferencesTab } from '@/components/preferences-tab';
 import { SerialConfigurationsTab } from '@/components/serial-configurations-tab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -18,8 +20,14 @@ function RouteComponent() {
         <TabsContent value="serial">
           <SerialConfigurationsTab />
         </TabsContent>
-        <TabsContent value="preferences">Change your preferences here.</TabsContent>
-        <TabsContent value="company">Company Details.</TabsContent>
+
+        <TabsContent value="preferences">
+          <PreferencesTab />
+        </TabsContent>
+
+        <TabsContent value="company">
+          <CompanyDetailsTab />
+        </TabsContent>
       </Tabs>
     </article>
   );

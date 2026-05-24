@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "a05268e7-920d-46dc-9542-e51ef53273bc",
-  "prevId": "a1c21bd6-02ce-4966-b45a-1ab866d0a769",
+  "id": "60770994-17ef-46fa-b536-00c7f18b295a",
+  "prevId": "f23e566d-ab00-43a6-a3b7-2cb3c475d2d7",
   "tables": {
     "materials": {
       "name": "materials",
@@ -203,6 +203,14 @@
         },
         "company_address": {
           "name": "company_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "''"
+        },
+        "company_email": {
+          "name": "company_email",
           "type": "text",
           "primaryKey": false,
           "notNull": true,

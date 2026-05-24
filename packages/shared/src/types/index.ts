@@ -50,6 +50,7 @@ export interface SettingsRow {
   companyName: string;
   companyAddress: string;
   companyPhone: string;
+  companyEmail: string;
   companyLogoPath: string;
   ticketPrefix: string;
   ticketFooter: string;

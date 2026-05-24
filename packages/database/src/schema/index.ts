@@ -5,6 +5,7 @@ export const settings = sqliteTable('settings', {
   id: integer('id').primaryKey().default(1), // always 1 – ensures single row
   companyName: text('company_name').notNull().default(''),
   companyAddress: text('company_address').notNull().default(''),
+  companyEmail: text('company_email').notNull().default(''),
   companyPhone: text('company_phone').notNull().default(''),
   companyLogoPath: text('company_logo_path').notNull().default(''),
   ticketPrefix: text('ticket_prefix').notNull().default('SRW'),
