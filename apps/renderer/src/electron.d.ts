@@ -7,6 +7,8 @@ declare global {
       isSetupCompleted: () => Promise<boolean>;
       completeSetup: (settings: Record<string, string>) => Promise<boolean>;
 
+      listSerialPorts: () => Promise<SerialPortInfo[]>;
+
       onWeightUpdate: (callback: (reading: WeightReading) => void) => void;
 
       onSerialStatus: (callback: (status: SerialStatus) => void) => void;

@@ -69,3 +69,11 @@ export interface SettingsRow {
   printCopies: number;
   setupCompleted: boolean;
 }
+
+export interface SerialPortInfo {
+  path: string;
+  manufacturer: string;
+  serialNumber?: string;
+  pnpId?: string;
+  friendlyName?: string;
+}

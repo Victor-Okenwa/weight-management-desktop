@@ -2,11 +2,25 @@
 
 import { getAllSettings, updateSettings } from '@weight/database/repositories/settings';
 import { ipcMain } from 'electron';
+import { SerialPort } from 'serialport';
 import { getDatabase } from '../database/connection.js';
 import { logger } from '../logger.js';
 import type { SerialManager } from '../serial/serial-manager.js';
 
 export function registerIpcHandlers(serialManager: SerialManager) {
+  // Serial-port
+  ipcMain.handle('serial:list-ports', async () => {
+    const ports = await SerialPort.list();
+    // Return only the fields the renderer needs
+    return ports.map((p) => ({
+      path: p.path,
+      manufacturer: p.manufacturer || 'Unknown',
+      serialNumber: p.serialNumber,
+      pnpId: p.pnpId,
+      productId: p.productId,
+    }));
+  });
+
   // ---------- Settings ----------
   ipcMain.handle('settings:get-all', () => {
     const db = getDatabase();

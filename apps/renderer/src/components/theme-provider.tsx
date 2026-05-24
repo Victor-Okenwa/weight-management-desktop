@@ -3,7 +3,7 @@
 import { createContext, type ReactNode, useContext, useEffect, useState } from 'react';
 
 // Defines a type alias for the possible theme values.
-type Theme = 'dark' | 'light' | 'system';
+export type Theme = 'dark' | 'light' | 'system';
 
 // Describes the shape of the context's value.
 interface ThemeProviderContextType {

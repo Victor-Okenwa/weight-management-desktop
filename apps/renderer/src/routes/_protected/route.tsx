@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useEffect } from 'react';
 import { NotFound } from '@/components/not-found';
+import { type Theme, useTheme } from '@/components/theme-provider';
 import { Badge } from '@/components/ui/badge';
 import {
   Sidebar,
@@ -68,14 +69,20 @@ export const Route = createFileRoute('/_protected')({
 function RouteComponent() {
   useWeightUpdates(); // start listening to updates
 
-  const { loadSettings } = useSettingsStore();
+  const { loadSettings, settings } = useSettingsStore();
+  const { setTheme } = useTheme();
 
   useEffect(() => {
     async function fetchSettings() {
       await loadSettings();
+
+      setTheme(settings?.theme as Theme);
+
+      const ports = await window.electronAPI.listSerialPorts();
+      console.log(ports);
     }
     fetchSettings();
-  });
+  }, [loadSettings, setTheme, settings?.theme]);
 
   return (
     <SidebarProvider>
