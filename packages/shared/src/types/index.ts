@@ -32,8 +32,8 @@ export type BaudRate =
   | 460800
   | 921600;
 export type Parity = 'none' | 'even' | 'mark' | 'odd' | 'space';
-export type StopBits = 1 | 1.5 | 2;
-export type FlowControl = 'none' | 'hardware' | 'software';
+export type StopBits = 1 | 2;
+export type FlowControl = 'none' | 'xon' | 'xoff' | 'xany' | 'rtscts';
 export type DataBits = 5 | 6 | 7 | 8;
 
 export interface SerialOptions {
@@ -55,10 +55,12 @@ export interface SettingsRow {
   ticketFooter: string;
   nextTicketNumber: number;
   serialPort: string;
-  baudRate: number;
-  dataBits: number;
-  parity: string;
-  stopBits: number;
+  baudRate: BaudRate;
+  dataBits: DataBits;
+  flowControl: FlowControl;
+  parity: Parity;
+  stopBits: StopBits;
+  autoOpen: boolean;
   indicatorType: string;
   weightUnit: string;
   stableTolerance: number;

@@ -77,9 +77,6 @@ function RouteComponent() {
       await loadSettings();
 
       setTheme(settings?.theme as Theme);
-
-      const ports = await window.electronAPI.listSerialPorts();
-      console.log(ports);
     }
     fetchSettings();
   }, [loadSettings, setTheme, settings?.theme]);
@@ -102,7 +99,7 @@ function AppSidebar() {
   const currentPath = router.location.pathname;
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar>
       {/* <SidebarHeader /> */}
       <SidebarContent>
         <SidebarGroup>
@@ -125,7 +122,6 @@ function AppSidebar() {
             );
           })}
         </SidebarGroup>
-        svjdhsjjdku
       </SidebarContent>
       <SidebarFooter />
     </Sidebar>
@@ -148,7 +144,7 @@ function TopBar() {
   // console.log(serialStatus);
 
   return (
-    <nav className="bg-sidebar px-2 py-3 sticky top-0 w-full flex items-center justify-between">
+    <nav className="bg-sidebar/70 px-2 py-3 sticky top-0 w-full flex items-center justify-between z-50 backdrop-blur-lg">
       <section className="flex items-center gap-1">
         <SidebarTrigger />
 

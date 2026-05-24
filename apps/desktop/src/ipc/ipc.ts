@@ -64,6 +64,7 @@ export function registerIpcHandlers(serialManager: SerialManager) {
   ipcMain.handle('app:is-setup-completed', () => {
     const db = getDatabase();
     const row = getAllSettings(db);
+    console.log('is app setup?', row?.setupCompleted);
     return row?.setupCompleted === true;
   });
 

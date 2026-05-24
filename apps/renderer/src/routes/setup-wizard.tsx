@@ -6,7 +6,15 @@ import {
   FLOW_CONTROL_OPTIONS,
   PARITY_FLAGS,
 } from '@weight/shared/constants/index';
-import { ArrowLeft, ArrowRight, Check, InfoIcon, Settings2Icon } from 'lucide-react';
+import type { BaudRate, DataBits, SerialPortInfo, StopBits } from '@weight/shared/types/index';
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  EthernetPortIcon,
+  InfoIcon,
+  Settings2Icon,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -23,7 +31,13 @@ import {
   FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group';
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from '@/components/ui/input-group';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -44,68 +58,67 @@ export const Route = createFileRoute('/setup-wizard')({
 // SCHEMA
 // ======================================================
 
-const formSchema = z.object({
-  companyDetails: z.object({
-    name: z.string().min(1, 'Company name is required').trim(),
+export const companyDetailsSchema = z.object({
+  name: z.string().min(1, 'Company name is required').trim(),
+  email: z.string().email('Invalid email address').trim().optional().or(z.literal('')),
+  address: z.string().trim().optional().or(z.literal('')),
+  phone: z
+    .string()
+    .regex(/^\+?[0-9]*$/, 'Phone number can only contain + and numbers')
+    .optional()
+    .or(z.literal('')),
+});
 
-    email: z.string().email('Invalid email address').trim().optional().or(z.literal('')),
+export type CompanyDetails = z.infer<typeof companyDetailsSchema>;
+export const hardwareSchema = z.object({
+  port: z
+    .string({ message: 'Field is required' })
+    .regex(/^\d+$/, 'Port should only contain numbers')
+    .transform((val) => (val ? `COM${val}` : val)),
+  baudRate: z.string().min(1, 'Baud rate is required'),
+  parity: z.enum(['none', 'even', 'odd', 'mark', 'space']),
+  flowControl: z.enum(['none', 'xon', 'xoff', 'xany', 'rtscts']),
+  stopBits: z
+    .number()
+    .int()
+    .positive()
+    .refine((v) => v === 1 || v === 2, {
+      message: 'Stop bits must be 1 or 2',
+    }),
+  dataBits: z
+    .number()
+    .int()
+    .positive()
+    .refine((v) => [5, 6, 7, 8].includes(v), {
+      message: 'Data bits must be 5, 6, 7, or 8',
+    }),
+  autoOpen: z.boolean(),
+  indicator: z.string().min(1, 'Indicator is required'),
+});
 
-    address: z.string().trim().optional().or(z.literal('')),
+export type Hardware = z.infer<typeof hardwareSchema>;
 
-    phone: z
-      .string()
-      .regex(/^\+?[0-9]*$/, 'Phone number can only contain + and numbers')
-      .optional()
-      .or(z.literal('')),
-  }),
+export const preferencesSchema = z.object({
+  defaultUnit: z.enum(['kg', 'ton', 'lb']),
+  theme: z.enum(['light', 'dark', 'system']),
+  ticketPrefix: z
+    .string()
+    .min(1, 'Ticket prefix is required')
+    .max(3, 'You cannot go beyond 3 letters')
+    .default('SRE'),
+  ticketFooter: z
+    .string()
+    .trim()
+    .min(1, 'Ticket footer is required')
+    .default('Thank you for your custom.'),
+});
 
-  hardware: z.object({
-    port: z
-      .string({ message: 'Field is required' })
-      .regex(/^\d+$/, 'Port should only contain numbers')
-      .transform((val) => (val ? `COM${val}` : val)),
+export type Preferences = z.infer<typeof preferencesSchema>;
 
-    baudRate: z.string().min(1, 'Baud rate is required'),
-
-    parity: z.enum(['none', 'even', 'odd', 'mark', 'space']),
-
-    flowControl: z.enum(['none', 'xon', 'xoff', 'xany', 'rtscts']),
-
-    stopBits: z
-      .number()
-      .int()
-      .positive()
-      .refine((v) => v === 1 || v === 2, {
-        message: 'Stop bits must be 1 or 2',
-      }),
-
-    dataBits: z
-      .number()
-      .int()
-      .positive()
-      .refine((v) => [5, 6, 7, 8].includes(v), {
-        message: 'Data bits must be 5, 6, 7, or 8',
-      }),
-
-    autoOpen: z.boolean(),
-
-    indicator: z.string().min(1, 'Indicator is required'),
-  }),
-
-  preferences: z.object({
-    defaultUnit: z.enum(['kg', 'ton', 'lb']),
-    theme: z.enum(['light', 'dark', 'system']),
-    ticketPrefix: z
-      .string()
-      .min(1, 'Ticket prefix is required')
-      .max(3, 'You cannot go beyond 3 letters')
-      .default('SRE'),
-    ticketFooter: z
-      .string()
-      .trim()
-      .min(1, 'Ticket footer is required')
-      .default('Thank you for your custom.'),
-  }),
+export const formSchema = z.object({
+  companyDetails: companyDetailsSchema,
+  hardware: hardwareSchema,
+  preferences: preferencesSchema,
 });
 
 type FormSchemaType = z.infer<typeof formSchema>;
@@ -163,6 +176,27 @@ const steps = [
   },
 ] as const;
 
+// Helper functions to detect required fields given schema
+// Map of required fields
+const requiredFields: Record<string, boolean> = {
+  'companyDetails.name': true,
+  'companyDetails.email': false,
+  'companyDetails.address': false,
+  'companyDetails.phone': false,
+  'hardware.port': true,
+  'hardware.baudrate': true,
+  'hardware.parity': true,
+  'hardware.flowcontrol': true,
+  'hardware.stopbits': true,
+  'hardware.databits': true,
+  'hardware.autoOpen': false,
+  'hardware.indicator': true,
+  'preferences.defaultUnit': true,
+  'preferences.theme': true,
+  'preferences.ticketPrefix': true,
+  'preferences.ticketFooter': true,
+};
+
 // ======================================================
 // COMPONENT
 // ======================================================
@@ -181,6 +215,7 @@ function RequiredLabel({ children }: { children: React.ReactNode }) {
 
 function RouteComponent() {
   const [stepIndex, setStepIndex] = useState(0);
+  const [ports, setPorts] = useState<SerialPortInfo[]>([]);
   const { settings } = useSettingsStore();
 
   const router = useRouter();
@@ -190,6 +225,15 @@ function RouteComponent() {
   useEffect(() => {
     console.log(settings);
   }, [settings]);
+
+  useEffect(() => {
+    async function fetchPorts() {
+      const ports = await window.electronAPI.listSerialPorts();
+      setPorts(ports);
+    }
+
+    fetchPorts();
+  }, []);
 
   const form = useForm<FormSchemaType>({
     resolver: zodResolver(formSchema),
@@ -221,27 +265,6 @@ function RouteComponent() {
       },
     },
   });
-
-  // Helper functions to detect required fields given schema
-  // Map of required fields
-  const requiredFields: Record<string, boolean> = {
-    'companyDetails.name': true,
-    'companyDetails.email': false,
-    'companyDetails.address': false,
-    'companyDetails.phone': false,
-    'hardware.port': true,
-    'hardware.baudrate': true,
-    'hardware.parity': true,
-    'hardware.flowcontrol': true,
-    'hardware.stopbits': true,
-    'hardware.databits': true,
-    'hardware.autoOpen': false,
-    'hardware.indicator': true,
-    'preferences.defaultUnit': true,
-    'preferences.theme': true,
-    'preferences.ticketPrefix': true,
-    'preferences.ticketFooter': true,
-  };
 
   // ======================================================
   // NAVIGATION
@@ -285,10 +308,10 @@ function RouteComponent() {
         ticketFooter: data.preferences.ticketFooter ?? 'Thank you for your custom', // From field
         nextTicketNumber: 1, // Use default per your DB seed
         serialPort: data.hardware.port,
-        baudRate: Number(data.hardware.baudRate),
-        dataBits: Number(data.hardware.dataBits),
+        baudRate: data.hardware.baudRate as unknown as BaudRate,
+        dataBits: data.hardware.dataBits as unknown as DataBits,
         parity: data.hardware.parity,
-        stopBits: Number(data.hardware.stopBits),
+        stopBits: data.hardware.stopBits as unknown as StopBits,
         indicatorType: data.hardware.indicator,
         weightUnit: data.preferences.defaultUnit,
         stableTolerance: 0.5, // Default value, or pull from form if available
@@ -535,6 +558,82 @@ function RouteComponent() {
                         placeholder="3"
                       />
                       <InputGroupAddon>COM</InputGroupAddon>
+
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <InputGroupButton>
+                            <EthernetPortIcon />
+                          </InputGroupButton>
+                        </PopoverTrigger>
+
+                        {/* Popover content: Map of available serial ports */}
+                        <PopoverContent className="w-80 p-4">
+                          <h4 className="text-md font-semibold mb-2">Available Ports</h4>
+                          {ports && ports.length > 0 ? (
+                            <ul className="grid gap-2">
+                              {ports.map((port, idx) => (
+                                <Button
+                                  type="button"
+                                  variant={
+                                    String(port.path).replace('COM', '') === String(field.value)
+                                      ? 'secondary'
+                                      : 'outline'
+                                  }
+                                  key={port.path ?? idx}
+                                  className={`border rounded-lg p-2 flex gap-1 transition cursor-pointer text-left justify-between ${
+                                    String(port.path).replace('COM', '') === String(field.value)
+                                      ? 'border-primary bg-primary/10'
+                                      : 'border-border'
+                                  }`}
+                                  onClick={() => {
+                                    // Extract just the numeric part of 'COM#', fallback to whole
+                                    const match = /COM(\d+)/i.exec(port.path || '');
+                                    if (match?.[1]) {
+                                      form.setValue('hardware.port', match[1]);
+                                      console.log(field.value);
+                                    } else if (typeof port.path === 'string') {
+                                      form.setValue('hardware.port', port.path);
+                                    }
+                                  }}
+                                  onKeyUp={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                      // accessibility for keyboard users
+                                      const match = /COM(\d+)/i.exec(port.path || '');
+                                      if (match?.[1]) {
+                                        form.setValue('hardware.port', match[1]);
+                                      } else if (typeof port.path === 'string') {
+                                        form.setValue('hardware.port', port.path);
+                                      }
+                                    }
+                                  }}
+                                  tabIndex={0}
+                                >
+                                  <span className="font-mono font-medium text-sm">{port.path}</span>
+                                  {port.manufacturer && (
+                                    <span className="text-xs text-muted-foreground">
+                                      {port.manufacturer}
+                                    </span>
+                                  )}
+                                  {port.serialNumber && (
+                                    <span className="text-xs text-muted-foreground">
+                                      Serial: {port.serialNumber}
+                                    </span>
+                                  )}
+                                  {port.friendlyName && (
+                                    <span className="text-xs text-muted-foreground">
+                                      {port.friendlyName}
+                                    </span>
+                                  )}
+                                </Button>
+                              ))}
+                            </ul>
+                          ) : (
+                            <span className="text-muted-foreground text-sm block p-2">
+                              No serial ports found.
+                            </span>
+                          )}
+                        </PopoverContent>
+                      </Popover>
                     </InputGroup>
 
                     <Tooltip>

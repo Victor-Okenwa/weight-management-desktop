@@ -64,6 +64,8 @@ export async function setupDatabase(): Promise<DatabaseInstance> {
         parity: 'none',
         stopBits: 1,
         indicatorType: 'd300',
+        autoOpen: false,
+        flowControl: 'none',
         weightUnit: 'kg',
         stableTolerance: 0.5,
         stableDurationMs: 3000,
