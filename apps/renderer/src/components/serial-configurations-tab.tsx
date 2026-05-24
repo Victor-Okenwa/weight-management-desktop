@@ -41,15 +41,14 @@ export function SerialConfigurationsTab() {
   const form = useForm<Hardware>({
     resolver: zodResolver(hardwareSchema),
     defaultValues: {
-      port: settings?.serialPort ? String(settings.serialPort).replace(/^COM/i, '') : '',
-
+      port: settings?.serialPort,
       flowControl: settings?.flowControl || 'none',
       stopBits: settings?.stopBits || 1,
       baudRate: String(settings?.baudRate) || '2400',
       parity: settings?.parity || 'none',
       dataBits: Number(settings?.parity) || 8,
       autoOpen: settings?.autoOpen || false,
-      indicator: settings?.indicatorType,
+      indicator: settings?.indicatorType.toLowerCase() || '',
     },
   });
 
@@ -98,7 +97,11 @@ export function SerialConfigurationsTab() {
                   <FieldLabel htmlFor="port">Port</FieldLabel>
                   <InputGroup className="min-h-12!">
                     <InputGroupInput
-                      defaultValue={3}
+                      defaultValue={(() => {
+                        const port = settings?.serialPort;
+                        const match = typeof port === 'string' ? /COM(\d+)/i.exec(port) : null;
+                        return match?.[1] ?? '';
+                      })()}
                       {...field}
                       type="number"
                       id="port"
@@ -245,6 +248,7 @@ export function SerialConfigurationsTab() {
             />
             <Controller
               name="baudRate"
+              defaultValue={String(settings?.baudRate)}
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field orientation="responsive" data-invalid={fieldState.invalid}>
@@ -254,7 +258,7 @@ export function SerialConfigurationsTab() {
                   <Select
                     name={field.name}
                     value={field.value}
-                    defaultValue="2400"
+                    defaultValue={String(settings?.baudRate)}
                     onValueChange={field.onChange}
                   >
                     <SelectTrigger
@@ -288,7 +292,7 @@ export function SerialConfigurationsTab() {
                   <Select
                     name={field.name}
                     value={field.value}
-                    defaultValue="none"
+                    defaultValue={settings?.parity}
                     onValueChange={field.onChange}
                   >
                     <SelectTrigger
@@ -330,7 +334,7 @@ export function SerialConfigurationsTab() {
                   <Select
                     name={field.name}
                     value={field.value}
-                    defaultValue="none"
+                    defaultValue={settings?.flowControl}
                     onValueChange={field.onChange}
                   >
                     <SelectTrigger
@@ -372,7 +376,7 @@ export function SerialConfigurationsTab() {
                     name={field.name}
                     value={String(field.value)}
                     onValueChange={(val) => field.onChange(Number(val))}
-                    defaultValue="1"
+                    defaultValue={String(settings?.stopBits)}
                   >
                     <SelectTrigger
                       id="stopBits"
@@ -413,7 +417,7 @@ export function SerialConfigurationsTab() {
                     name={field.name}
                     value={String(field.value)}
                     onValueChange={(val) => field.onChange(Number(val))}
-                    defaultValue="8"
+                    defaultValue={String(settings?.dataBits)}
                   >
                     <SelectTrigger
                       id="dataBits"
@@ -444,6 +448,7 @@ export function SerialConfigurationsTab() {
             <Controller
               name="autoOpen"
               control={form.control}
+              defaultValue={settings?.autoOpen}
               render={({ field }) => (
                 <Field>
                   <label className="inline-flex items-center gap-2">
@@ -475,7 +480,7 @@ export function SerialConfigurationsTab() {
                     name={field.name}
                     value={field.value}
                     onValueChange={field.onChange}
-                    defaultValue={'d300'}
+                    defaultValue={settings?.indicatorType.toLowerCase()}
                   >
                     <SelectTrigger
                       id="indicator"
@@ -485,7 +490,9 @@ export function SerialConfigurationsTab() {
                       <SelectValue placeholder="Select indicator" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="d300">D300</SelectItem>
+                      <SelectItem value="d300" defaultChecked>
+                        D300
+                      </SelectItem>
                     </SelectContent>
                   </Select>
 

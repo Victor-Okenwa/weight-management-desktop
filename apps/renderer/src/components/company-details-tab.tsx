@@ -69,6 +69,7 @@ export function CompanyDetailsTab() {
               {/* EMAIL */}
               <Controller
                 name="email"
+                defaultValue={settings?.companyEmail}
                 control={form.control}
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
@@ -109,6 +110,7 @@ export function CompanyDetailsTab() {
               {/* PHONE */}
               <Controller
                 name="phone"
+                defaultValue={settings?.companyPhone}
                 control={form.control}
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>

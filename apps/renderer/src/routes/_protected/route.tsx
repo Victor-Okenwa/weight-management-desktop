@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createFileRoute, Link, Outlet, redirect, useRouterState } from '@tanstack/react-router';
 import {
   HistoryIcon,

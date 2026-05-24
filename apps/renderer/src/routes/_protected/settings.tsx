@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createFileRoute } from '@tanstack/react-router';
 import { CompanyDetailsTab } from '@/components/company-details-tab';
 import { PreferencesTab } from '@/components/preferences-tab';
