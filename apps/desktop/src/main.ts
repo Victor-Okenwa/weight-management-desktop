@@ -93,8 +93,8 @@ function getSerialOptions(settingsRow: SettingsRow): SerialOptions {
     dataBits: (settingsRow.dataBits || 8) as 8,
     stopBits: (settingsRow.stopBits || 1) as 1,
     parity: (settingsRow.parity || 'none') as 'none',
-    flowControl: 'none', // not stored in settings yet, keep default
-    autoOpen: false,
+    flowControl: (settingsRow.flowControl || 'none') as 'none', // not stored in settings yet, keep default
+    autoOpen: settingsRow.autoOpen || false,
   };
 }
 
@@ -128,7 +128,7 @@ app.whenReady().then(async () => {
 
   // 5. Open the window
   createMainWindow();
-
+  console.log(serialOptions);
   // 6. Connect to serial port
   serialManager.connect(serialOptions);
 

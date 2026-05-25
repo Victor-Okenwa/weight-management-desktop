@@ -31,6 +31,7 @@ export function CompanyDetailsTab() {
       });
 
       toast.success('Updates are successful');
+      location.reload();
     } catch (error) {
       console.log((error as Error).message || 'Something went wrong');
     }

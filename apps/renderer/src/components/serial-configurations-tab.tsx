@@ -62,10 +62,11 @@ export function SerialConfigurationsTab() {
   }, []);
 
   async function onSubmit(data: Hardware) {
+    console.log(data);
     try {
       await window.electronAPI.updateSettings({
         serialPort: data.port,
-        baudRate: data.baudRate as unknown as BaudRate,
+        baudRate: Number(data.baudRate) as unknown as BaudRate,
         parity: data.parity,
         flowControl: data.flowControl,
         stopBits: data.stopBits,
@@ -75,6 +76,7 @@ export function SerialConfigurationsTab() {
       });
 
       toast.success('Updates are successful');
+      location.reload();
     } catch (error) {
       toast.error((error as Error).message || 'Something went wrong');
       logger('error', (error as Error).message || 'Failed to update serial config');

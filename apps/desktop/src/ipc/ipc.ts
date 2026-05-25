@@ -1,6 +1,7 @@
 // apps/desktop/src/ipc/ipc.ts
 
 import { getAllSettings, updateSettings } from '@weight/database/repositories/settings';
+import type { SerialOptions } from '@weight/shared/types/index';
 import { ipcMain } from 'electron';
 import { SerialPort } from 'serialport';
 import { getDatabase } from '../database/connection.js';
@@ -57,6 +58,38 @@ export function registerIpcHandlers(serialManager: SerialManager) {
     const db = getDatabase();
     updateSettings(db, data);
     db.save();
+
+    // Check if any serial‑related settings were changed
+    const serialKeys = [
+      'serialPort',
+      'baudRate',
+      'dataBits',
+      'parity',
+      'stopBits',
+      'indicatorType',
+      'flowControl',
+    ];
+
+    const hasSerialChange = Object.keys(data).some((key) => serialKeys.includes(key));
+
+    if (hasSerialChange) {
+      // Read the full settings row to get all serial options
+      const row = getAllSettings(db);
+      if (row) {
+        const newOptions: SerialOptions = {
+          port: (row.serialPort || 'COM1') as `COM${number}`,
+          baudRate: (row.baudRate || 2400) as 2400,
+          dataBits: (row.dataBits || 8) as 8,
+          stopBits: (row.stopBits || 1) as 1,
+          parity: (row.parity || 'none') as 'none',
+          flowControl: (row.flowControl || 'none') as 'none',
+          autoOpen: row.autoOpen || false,
+        };
+        // Instruct the serial manager to reconnect with the new settings
+        serialManager.reconnect(newOptions);
+      }
+    }
+
     return true;
   });
 

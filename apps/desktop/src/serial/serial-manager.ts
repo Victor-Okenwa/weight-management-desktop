@@ -205,4 +205,29 @@ export class SerialManager {
       this.reconnectTimer = null;
     }
   }
+
+  /**
+   * Disconnect from the current port (if any) and connect with new options.
+   * Does NOT mark the disconnection as "manual", so auto‑reconnect logic remains active.
+   */
+  public reconnect(serialOptions: SerialOptions): void {
+    // Stop any pending reconnect timer
+    this.clearReconnectTimer();
+
+    // Close the current port without triggering manualDisconnect
+    if (this.port?.isOpen) {
+      // Remove listeners so the 'close' event doesn't start the reconnect loop
+      this.port.removeAllListeners();
+      this.port.close((err) => {
+        if (err) console.error('Error closing port during reconnect:', err.message);
+        else console.log('Port closed for reconfiguration');
+      });
+    }
+    this.cleanupPort();
+
+    // Reset reconnect attempts and proceed with fresh connect
+    this.reconnectAttempts = 0;
+    this.manualDisconnect = false; // allow future auto‑reconnection
+    this.connect(serialOptions);
+  }
 }

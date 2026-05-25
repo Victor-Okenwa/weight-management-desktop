@@ -1,9 +1,12 @@
+import { HardDriveIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useSettingsStore } from '@/store/settingsStore';
 import { useWeightStore } from '@/store/weightStore';
 import { Spinner } from './ui/spinner';
 
 export function WeightDisplay() {
   const { latestReading, serialStatus } = useWeightStore();
+  const { settings } = useSettingsStore();
 
   const retrying = serialStatus === 'connecting' || serialStatus === 'reconnecting';
 
@@ -21,10 +24,10 @@ export function WeightDisplay() {
   console.log(serialStatus);
 
   return (
-    <div className="rounded-lg relative overflow-hidden shadow">
-      <header className="bg-accent flex justify-end py-3 px-2">
+    <div className="rounded-lg relative overflow-hidden shadow dark:shadow-2xl dark:shadow-white/5">
+      <header className="bg-black/90 flex justify-end py-3 px-2">
         <div className="flex items-center gap-2">
-          {retrying && <Spinner />}
+          {retrying && <Spinner className="text-white" />}
 
           {/* Traffic light container */}
           <div className="flex flex-row justify-between items-center h-6 w-16 bg-black rounded-full p-1 shadow-inner border border-gray-700">
@@ -54,10 +57,6 @@ export function WeightDisplay() {
               )}
             ></span>
           </div>
-
-          {/* <span className="ml-2 text-xs text-muted-foreground font-mono select-none tracking-tight">
-            {latestReading ? (latestReading.isStable ? 'Stable' : 'Unstable') : 'No Data'}
-          </span> */}
         </div>
       </header>
 
@@ -66,26 +65,32 @@ export function WeightDisplay() {
           aria-hidden
           className="font-classic absolute inset-0 select-none flex justify-end items-center text-[4rem] text-red-700 opacity-20 px-2"
         >
-          888888
+          888888 <sub></sub>
         </div>
         <div
           className="relative font-classic tabular-nums text-[4rem] text-red-600"
           style={{
             textShadow: `
-              0 0 8px #ff1744, 
-              0 0 20px #ff1744, 
-              0 0 36px #ff1744, 
-              0 0 60px #ff1744,
-              0 0 4px #fff1,
-              0 0 1px #fff4
-            `,
+             0 0 8px #ff1744, 
+             0 0 20px #ff1744, 
+             0 0 36px #ff1744, 
+             0 0 60px #ff1744,
+             0 0 4px #fff1,
+             0 0 1px #fff4
+           `,
           }}
         >
           {latestReading?.weight ?? <span className="opacity-20">------</span>}
         </div>
       </div>
 
-      <footer className="px-2 py-3 bg-accent"></footer>
+      <footer className="px-2 py-3 bg-black/90 flex justify-between items-center text-white">
+        <section className="flex items-center gap-2 uppercase">
+          <HardDriveIcon className="text-red-700 dark:text-red-400" /> {settings?.indicatorType}
+        </section>
+
+        <section>Unit: {settings?.weightUnit}</section>
+      </footer>
     </div>
   );
 }
