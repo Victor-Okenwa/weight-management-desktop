@@ -128,7 +128,7 @@ app.whenReady().then(async () => {
 
   // 5. Open the window
   createMainWindow();
-  console.log(serialOptions);
+
   // 6. Connect to serial port
   serialManager.connect(serialOptions);
 

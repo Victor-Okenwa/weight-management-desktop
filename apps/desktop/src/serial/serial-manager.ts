@@ -18,6 +18,9 @@ export class SerialManager {
   private onStatus?: (status: SerialStatus) => void;
   private unit = 'kg';
 
+  private noDataTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly NO_DATA_DELAY = 5000; // 5 seconds
+
   // Reconnection state
   private serialOptions: SerialOptions | null = null;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -72,6 +75,12 @@ export class SerialManager {
       const line = typeof chunk === 'string' ? chunk : chunk.toString();
       const reading = this.weightParser.parse(line.trim(), this.unit);
       if (reading) {
+        this.clearNoDataTimer();
+        if (this.currentStatus !== 'connected') {
+          this.currentStatus = 'connected';
+          this.onStatus?.('connected');
+        }
+
         logger.debug(
           `[${this.indicatorType}] Weight: ${reading.weight} ${reading.unit} ${reading.isStable ? 'STABLE' : ''}`,
         );
@@ -138,11 +147,16 @@ export class SerialManager {
       this.onStatus?.('connected');
       this.clearReconnectTimer();
       this.reconnectAttempts = 0;
+
+      // Start watching for initial weight data
+      this.startNoDataTimer();
     });
   }
 
   // Public method to explicitly disconnect (e.g., when the user changes settings)
   disconnect() {
+    this.clearNoDataTimer();
+
     this.manualDisconnect = true;
     this.clearReconnectTimer();
     if (this.port?.isOpen) {
@@ -161,6 +175,8 @@ export class SerialManager {
   // --- Private helpers ---
 
   private cleanupPort() {
+    this.clearNoDataTimer();
+
     // Remove listeners to avoid memory leaks, then null references
     if (this.port) {
       this.port.removeAllListeners();
@@ -207,6 +223,31 @@ export class SerialManager {
   }
 
   /**
+   * Start a timer that will set the status to 'no_data' if no weight reading
+   * arrives before the timeout expires.
+   */
+  private startNoDataTimer() {
+    this.clearNoDataTimer();
+    this.noDataTimer = setTimeout(() => {
+      // If we are still in 'connected' state (i.e., no data arrived), change to no_data
+      if (this.currentStatus === 'connected') {
+        this.currentStatus = 'error'; // or 'idle' – whatever you prefer
+        this.onStatus?.('error');
+      }
+    }, this.NO_DATA_DELAY);
+  }
+
+  /**
+   * Cancel the no‑data timer (called when a valid weight is received).
+   */
+  private clearNoDataTimer() {
+    if (this.noDataTimer) {
+      clearTimeout(this.noDataTimer);
+      this.noDataTimer = null;
+    }
+  }
+
+  /**
    * Disconnect from the current port (if any) and connect with new options.
    * Does NOT mark the disconnection as "manual", so auto‑reconnect logic remains active.
    */
@@ -219,8 +260,8 @@ export class SerialManager {
       // Remove listeners so the 'close' event doesn't start the reconnect loop
       this.port.removeAllListeners();
       this.port.close((err) => {
-        if (err) console.error('Error closing port during reconnect:', err.message);
-        else console.log('Port closed for reconfiguration');
+        if (err) logger.error('Error closing port during reconnect:', err.message);
+        else logger.log('Port closed for reconfiguration');
       });
     }
     this.cleanupPort();
