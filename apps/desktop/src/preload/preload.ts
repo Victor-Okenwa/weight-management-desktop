@@ -2,11 +2,12 @@ import type { SerialPortInfo, SettingsRow, WeightReading } from '@weight/shared/
 import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  listSerialPorts: (): Promise<SerialPortInfo[]> => ipcRenderer.invoke('serial:list-ports'),
+  reconnectPort: () => ipcRenderer.invoke('serial:reconnect'),
+
   isSetupCompleted: (): Promise<boolean> => ipcRenderer.invoke('app:is-setup-completed'),
   completeSetup: (settings: Record<string, string>): Promise<boolean> =>
     ipcRenderer.invoke('app:complete-setup', settings),
-
-  listSerialPorts: (): Promise<SerialPortInfo[]> => ipcRenderer.invoke('serial:list-ports'),
 
   onWeightUpdate: (callback: (reading: WeightReading) => void) => {
     // Remove any previous listeners to avoid duplicates

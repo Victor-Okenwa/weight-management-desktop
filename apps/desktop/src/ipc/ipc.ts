@@ -22,6 +22,26 @@ export function registerIpcHandlers(serialManager: SerialManager) {
     }));
   });
 
+  // Serial Reconnection
+  ipcMain.handle('serial:reconnect', async () => {
+    const db = getDatabase();
+    const row = getAllSettings(db);
+
+    if (row) {
+      const newOptions: SerialOptions = {
+        port: (row.serialPort || 'COM1') as `COM${number}`,
+        baudRate: (row.baudRate || 2400) as 2400,
+        dataBits: (row.dataBits || 8) as 8,
+        stopBits: (row.stopBits || 1) as 1,
+        parity: (row.parity || 'none') as 'none',
+        flowControl: (row.flowControl || 'none') as 'none',
+        autoOpen: row.autoOpen || false,
+      };
+      // Instruct the serial manager to reconnect with the new settings
+      serialManager.reconnect(newOptions);
+    }
+  });
+
   // ---------- Settings ----------
   ipcMain.handle('settings:get-all', () => {
     const db = getDatabase();
@@ -53,8 +73,7 @@ export function registerIpcHandlers(serialManager: SerialManager) {
     };
   });
 
-  ipcMain.handle('settings:update', (_event, data: Record<string, any>) => {
-    console.log('REACHING HERE');
+  ipcMain.handle('settings:update', (_event, data: Record<string, never>) => {
     const db = getDatabase();
     updateSettings(db, data);
     db.save();

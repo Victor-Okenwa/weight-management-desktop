@@ -4,10 +4,11 @@ import type { SettingsRow } from '@weight/shared/types/index';
 declare global {
   interface Window {
     electronAPI: {
+      listSerialPorts: () => Promise<SerialPortInfo[]>;
+      reconnectPort: () => void;
+
       isSetupCompleted: () => Promise<boolean>;
       completeSetup: (settings: Record<string, string>) => Promise<boolean>;
-
-      listSerialPorts: () => Promise<SerialPortInfo[]>;
 
       onWeightUpdate: (callback: (reading: WeightReading) => void) => void;
 

@@ -3,15 +3,18 @@ import { createFileRoute, Link, Outlet, redirect, useRouterState } from '@tansta
 import {
   HistoryIcon,
   LayoutDashboard,
+  Loader2,
   Settings2,
   SignalHighIcon,
   SignalLowIcon,
   SignalMediumIcon,
 } from 'lucide-react';
 import { useEffect } from 'react';
+import { toast } from 'sonner';
 import { NotFound } from '@/components/not-found';
 import { type Theme, useTheme } from '@/components/theme-provider';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Sidebar,
   SidebarContent,
@@ -22,6 +25,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useWeightUpdates } from '@/hooks/use-weight-updates';
+import { logger } from '@/lib/logger';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useWeightStore } from '@/store/weightStore';
 
@@ -137,12 +141,21 @@ function TopBar() {
     serialStatus === 'disconnected' ||
     serialStatus === 'error' ||
     serialStatus === 'idle' ||
-    serialStatus === 'reconnecting' ||
     !latestReading;
 
   const signalYellow = serialStatus === 'connecting' || serialStatus === 'reconnecting';
 
-  // console.log(serialStatus);
+  const signalLoading = serialStatus === 'reconnecting' || serialStatus === 'connecting';
+
+  async function handleReconnect() {
+    try {
+      await window.electronAPI.reconnectPort();
+      toast.loading('Reconnecting...');
+    } catch (error) {
+      toast.error((error as Error).message);
+      logger('error', (error as Error).message);
+    }
+  }
 
   return (
     <nav className="bg-sidebar/70 px-2 py-3 sticky top-0 w-full flex items-center justify-between z-50 backdrop-blur-lg">
@@ -191,9 +204,18 @@ function TopBar() {
           <span>{settings?.serialPort}</span>
         </div>
 
-        <div>
-          <Badge>{serialStatus}</Badge>
+        <div className="pr-2 border-r">
+          <Badge variant={signalRed ? 'destructive' : 'outline'}>
+            {signalLoading && <Loader2 />}
+            {serialStatus}
+          </Badge>
         </div>
+
+        {signalRed && (
+          <Button className="max-h-10" onClick={handleReconnect}>
+            Reconnect
+          </Button>
+        )}
       </section>
     </nav>
   );
