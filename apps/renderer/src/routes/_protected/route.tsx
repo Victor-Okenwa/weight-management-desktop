@@ -149,7 +149,7 @@ function TopBar() {
 
   async function handleReconnect() {
     try {
-      await window.electronAPI.reconnectPort();
+      window.electronAPI.reconnectPort();
       toast.loading('Reconnecting...');
     } catch (error) {
       toast.error((error as Error).message);

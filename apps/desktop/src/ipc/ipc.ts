@@ -23,7 +23,7 @@ export function registerIpcHandlers(serialManager: SerialManager) {
   });
 
   // Serial Reconnection
-  ipcMain.handle('serial:reconnect', async () => {
+  ipcMain.handle('serial:reconnect', () => {
     const db = getDatabase();
     const row = getAllSettings(db);
 
