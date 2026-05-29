@@ -48,10 +48,9 @@ export async function setupDatabase(): Promise<DatabaseInstance> {
     db.insert(settings)
       .values({
         id: 1,
-        // All columns will use their default values defined in the schema,
-        // but we can explicitly set them here if we want to be explicit.
-        // For clarity, we can provide all:
+
         companyName: '',
+        companyEmail: '',
         companyAddress: '',
         companyPhone: '',
         companyLogoPath: '',

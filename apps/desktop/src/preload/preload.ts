@@ -29,6 +29,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Later you can add more methods:
   // getSettings, setSettings, etc.
   getAllSettings: (): Promise<SettingsRow | null> => ipcRenderer.invoke('settings:get-all'),
-  updateSettings: (data: Record<string, any>): Promise<boolean> =>
+  updateSettings: (data: Record<string, never>): Promise<boolean> =>
     ipcRenderer.invoke('settings:update', data),
 });

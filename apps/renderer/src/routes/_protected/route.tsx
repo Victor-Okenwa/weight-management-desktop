@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createFileRoute, Link, Outlet, redirect, useRouterState } from '@tanstack/react-router';
+import type { SettingsRow } from '@weight/shared/types/index';
 import {
   HistoryIcon,
   LayoutDashboard,
@@ -12,7 +13,8 @@ import {
 import { useEffect } from 'react';
 import { toast } from 'sonner';
 import { NotFound } from '@/components/not-found';
-import { type Theme, useTheme } from '@/components/theme-provider';
+import { type Theme, useTheme } from '@/components/providers/theme-provider';
+import { AlertDialog, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -88,7 +90,7 @@ function RouteComponent() {
 
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <AppSidebar settings={settings} />
 
       <main className="w-full">
         <TopBar />
@@ -98,7 +100,7 @@ function RouteComponent() {
   );
 }
 
-function AppSidebar() {
+function AppSidebar({ settings }: { settings: SettingsRow | null }) {
   // Get the current location from TanStack Router
   const router = useRouterState();
   const currentPath = router.location.pathname;
@@ -128,7 +130,20 @@ function AppSidebar() {
           })}
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter />
+      <SidebarFooter>
+        <AlertDialog>
+          <AlertDialogTrigger className="flex gap-2 items-center">
+            <span className="size-10 rounded-full bg-secondary capitalize font-bold text-base text-center place-content-center">
+              {settings?.companyName?.[0]}
+            </span>
+
+            <div className="*:truncate">
+              <b className="capitalize text-sm">{settings?.companyName}</b>
+              <p className="text-xs text-accent">{settings?.companyEmail}</p>
+            </div>
+          </AlertDialogTrigger>
+        </AlertDialog>
+      </SidebarFooter>
     </Sidebar>
   );
 }

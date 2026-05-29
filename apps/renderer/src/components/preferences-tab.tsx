@@ -5,7 +5,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import z from 'zod';
 import { useSettingsStore } from '@/store/settingsStore';
-import { type Theme, useTheme } from './theme-provider';
+import { type Theme, useTheme } from './providers/theme-provider';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Field, FieldDescription, FieldError, FieldLabel } from './ui/field';

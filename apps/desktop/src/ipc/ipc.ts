@@ -50,6 +50,7 @@ export function registerIpcHandlers(serialManager: SerialManager) {
     // Return a plain object (camelCase keys)
     return {
       companyName: row.companyName,
+      companyEmail: row.companyEmail,
       companyAddress: row.companyAddress,
       companyPhone: row.companyPhone,
       companyLogoPath: row.companyLogoPath,
