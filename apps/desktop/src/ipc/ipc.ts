@@ -70,6 +70,8 @@ export function registerIpcHandlers(serialManager: SerialManager) {
       printerName: row.printerName,
       printCopies: row.printCopies,
       setupCompleted: row.setupCompleted,
+      flowControl: row.flowControl,
+      autoOpen: row.autoOpen,
     };
   });
 

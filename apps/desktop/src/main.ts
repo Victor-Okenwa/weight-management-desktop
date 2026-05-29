@@ -108,6 +108,8 @@ app.whenReady().then(async () => {
   const serialOptions = getSerialOptions(settingsRow as SettingsRow);
   const indicatorType = settingsRow?.indicatorType || 'd300';
 
+  console.log(settingsRow);
+
   // 3. Create serial manager
   const serialManager = new SerialManager(
     indicatorType as IndicatorType,

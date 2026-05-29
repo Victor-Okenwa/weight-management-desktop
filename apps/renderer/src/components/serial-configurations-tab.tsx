@@ -31,20 +31,21 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { logger } from '@/lib/logger';
+import { getPortNumber } from '@/lib/utils';
 import { useSettingsStore } from '@/store/settingsStore';
 import { type Hardware, hardwareSchema } from '../routes/setup-wizard';
 
 export function SerialConfigurationsTab() {
   const [ports, setPorts] = useState<SerialPortInfo[]>([]);
   const { settings } = useSettingsStore();
-
+  const [currentPort, setCurrentPort] = useState(getPortNumber(String(settings?.serialPort)));
   const form = useForm<Hardware>({
     resolver: zodResolver(hardwareSchema),
     defaultValues: {
       port: settings?.serialPort,
       flowControl: settings?.flowControl || 'none',
       stopBits: settings?.stopBits || 1,
-      baudRate: String(settings?.baudRate) || '2400',
+      baudRate: 2400,
       parity: settings?.parity || 'none',
       dataBits: Number(settings?.parity) || 8,
       autoOpen: settings?.autoOpen || false,
@@ -56,10 +57,12 @@ export function SerialConfigurationsTab() {
     async function fetchPorts() {
       const ports = await window.electronAPI.listSerialPorts();
       setPorts(ports);
+
+      setCurrentPort(getPortNumber(String(settings?.serialPort)));
     }
 
     fetchPorts();
-  }, []);
+  }, [settings?.serialPort]);
 
   async function onSubmit(data: Hardware) {
     console.log(data);
@@ -93,22 +96,13 @@ export function SerialConfigurationsTab() {
           <div className="space-y-4 gap-4 grid md:grid-cols-2 grid-cols-1 items-start">
             <Controller
               name="port"
+              defaultValue={currentPort}
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor="port">Port</FieldLabel>
                   <InputGroup className="min-h-12!">
-                    <InputGroupInput
-                      defaultValue={(() => {
-                        const port = settings?.serialPort;
-                        const match = typeof port === 'string' ? /COM(\d+)/i.exec(port) : null;
-                        return match?.[1] ?? '';
-                      })()}
-                      {...field}
-                      type="number"
-                      id="port"
-                      placeholder="3"
-                    />
+                    <InputGroupInput {...field} type="number" id="port" placeholder="3" />
                     <InputGroupAddon>COM</InputGroupAddon>
                     <Popover>
                       <PopoverTrigger asChild>
@@ -248,6 +242,7 @@ export function SerialConfigurationsTab() {
                 </Field>
               )}
             />
+
             <Controller
               name="baudRate"
               defaultValue={String(settings?.baudRate)}
@@ -258,6 +253,7 @@ export function SerialConfigurationsTab() {
                     <FieldLabel htmlFor="baudRate">Baud Rate</FieldLabel>
                   </FieldContent>
                   <Select
+                    {...field}
                     name={field.name}
                     value={field.value}
                     defaultValue={String(settings?.baudRate)}
@@ -279,9 +275,8 @@ export function SerialConfigurationsTab() {
                     </SelectContent>
                   </Select>
 
-                  <FieldDescription>Set Baud Rate to 2400 if you are unsure</FieldDescription>
-
                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  <FieldDescription>Set Baud Rate to 2400 if you are unsure</FieldDescription>
                 </Field>
               )}
             />
@@ -354,6 +349,7 @@ export function SerialConfigurationsTab() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
 
                   <FieldDescription>
                     <span>
@@ -363,8 +359,6 @@ export function SerialConfigurationsTab() {
                       options only if your device documentation requires them.
                     </span>
                   </FieldDescription>
-
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )}
             />
@@ -396,6 +390,8 @@ export function SerialConfigurationsTab() {
                     </SelectContent>
                   </Select>
 
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+
                   <FieldDescription>
                     <span>
                       Stop bits define the end of a byte in serial communication. For most devices,{' '}
@@ -404,8 +400,6 @@ export function SerialConfigurationsTab() {
                       requires it.
                     </span>
                   </FieldDescription>
-
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )}
             />
