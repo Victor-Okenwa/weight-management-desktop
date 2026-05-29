@@ -48,7 +48,6 @@ export async function setupDatabase(): Promise<DatabaseInstance> {
     db.insert(settings)
       .values({
         id: 1,
-
         companyName: '',
         companyEmail: '',
         companyAddress: '',
@@ -84,7 +83,7 @@ export async function setupDatabase(): Promise<DatabaseInstance> {
 
 export function getDatabase(): DatabaseInstance {
   if (!dbInstance) {
-    throw new Error('Database not initialised. Call setupDatabase() first.');
+    throw new Error('Database not initialized. Call setupDatabase() first.');
   }
   return dbInstance;
 }

@@ -45,7 +45,7 @@ export function SerialConfigurationsTab() {
       port: settings?.serialPort,
       flowControl: settings?.flowControl || 'none',
       stopBits: settings?.stopBits || 1,
-      baudRate: 2400,
+      baudRate: '2400',
       parity: settings?.parity || 'none',
       dataBits: Number(settings?.parity) || 8,
       autoOpen: settings?.autoOpen || false,
@@ -96,7 +96,7 @@ export function SerialConfigurationsTab() {
           <div className="space-y-4 gap-4 grid md:grid-cols-2 grid-cols-1 items-start">
             <Controller
               name="port"
-              defaultValue={currentPort}
+              defaultValue={currentPort.toString()}
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>

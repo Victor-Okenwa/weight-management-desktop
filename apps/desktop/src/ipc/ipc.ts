@@ -123,7 +123,7 @@ export function registerIpcHandlers(serialManager: SerialManager) {
     return row?.setupCompleted === true;
   });
 
-  ipcMain.handle('app:complete-setup', async (_event, newSettings: Record<string, any>) => {
+  ipcMain.handle('app:complete-setup', async (_event, newSettings: Record<string, never>) => {
     const db = getDatabase();
     updateSettings(db, { ...newSettings, setupCompleted: true });
     db.save();

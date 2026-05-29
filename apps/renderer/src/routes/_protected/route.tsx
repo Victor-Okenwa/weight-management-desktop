@@ -5,16 +5,28 @@ import {
   HistoryIcon,
   LayoutDashboard,
   Loader2,
+  ScaleIcon,
   Settings2,
   SignalHighIcon,
   SignalLowIcon,
   SignalMediumIcon,
+  X,
 } from 'lucide-react';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
+import { NewWeightDialog } from '@/components/new-weight-dialog';
 import { NotFound } from '@/components/not-found';
 import { type Theme, useTheme } from '@/components/providers/theme-provider';
-import { AlertDialog, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -29,6 +41,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { useWeightUpdates } from '@/hooks/use-weight-updates';
 import { logger } from '@/lib/logger';
 import { useSettingsStore } from '@/store/settingsStore';
+import { useWeightDialogsStore } from '@/store/weightDialog';
 import { useWeightStore } from '@/store/weightStore';
 
 const sidebarRoutes = [
@@ -79,6 +92,8 @@ function RouteComponent() {
   const { loadSettings, settings } = useSettingsStore();
   const { setTheme } = useTheme();
 
+  const { setNewWeightDialogOpen } = useWeightDialogsStore();
+
   useEffect(() => {
     async function fetchSettings() {
       await loadSettings();
@@ -92,10 +107,37 @@ function RouteComponent() {
     <SidebarProvider>
       <AppSidebar settings={settings} />
 
-      <main className="w-full">
-        <TopBar />
-        <Outlet />
-      </main>
+      <div className="w-full">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              className="fixed z-20 rounded-full bottom-7 right-5 group"
+              onClick={() => setNewWeightDialogOpen(true)}
+            >
+              <ScaleIcon />
+            </Button>
+          </TooltipTrigger>
+
+          <TooltipContent>Capture new weight. Save and Edit</TooltipContent>
+        </Tooltip>
+        <main>
+          <TopBar />
+          <Outlet />
+
+          <NewWeightDialog />
+        </main>
+        <footer className="border-t px-4 py-3">
+          <p className="text-center text-sm">
+            In case of any bugs,issues or tech support please contact{' '}
+            <b>Solution Road Equipment and Spars limited</b>
+          </p>
+          <hr className="my-3" />
+          <p className="text-center text-sm">
+            This sharing and remaking of this software is strictly prohibited except licensed by{' '}
+            <b>Solution Road Equipment and Spars limited</b> Tech Support
+          </p>
+        </footer>
+      </div>
     </SidebarProvider>
   );
 }
@@ -132,16 +174,79 @@ function AppSidebar({ settings }: { settings: SettingsRow | null }) {
       </SidebarContent>
       <SidebarFooter>
         <AlertDialog>
-          <AlertDialogTrigger className="flex gap-2 items-center">
-            <span className="size-10 rounded-full bg-secondary capitalize font-bold text-base text-center place-content-center">
+          <AlertDialogTrigger className="flex gap-2 items-center max-w-full bg-secondary py-2 px-1 border-t">
+            <span className="size-10 rounded-full bg-secondary capitalize font-bold text-base text-center place-content-center shadow">
               {settings?.companyName?.[0]}
             </span>
 
-            <div className="*:truncate">
-              <b className="capitalize text-sm">{settings?.companyName}</b>
-              <p className="text-xs text-accent">{settings?.companyEmail}</p>
+            <div className="overflow-clip max-w-[80%]">
+              <span className="capitalize truncate text-sm">{settings?.companyName}</span>
+              <p className="text-xs truncate text-accent">{settings?.companyEmail}</p>
             </div>
           </AlertDialogTrigger>
+
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogCancel className="absolute top-3 right-3">
+                <X />
+              </AlertDialogCancel>
+              <AlertDialogTitle>Company Details</AlertDialogTitle>
+            </AlertDialogHeader>
+
+            <div>
+              <div className="space-y-4">
+                <div>
+                  <span className="block font-semibold text-sm mb-1">Name</span>
+                  <span className="capitalize">
+                    {settings?.companyName?.trim() ? (
+                      settings.companyName
+                    ) : (
+                      <span className="text-muted-foreground">--</span>
+                    )}
+                  </span>
+                </div>
+                <hr />
+                <div>
+                  <span className="block font-semibold text-sm mb-1">Email</span>
+                  <span>
+                    {settings?.companyEmail?.trim() ? (
+                      settings.companyEmail
+                    ) : (
+                      <span className="text-muted-foreground">--</span>
+                    )}
+                  </span>
+                </div>
+                <hr />
+                <div>
+                  <span className="block font-semibold text-sm mb-1">Phone</span>
+                  <span>
+                    {settings?.companyPhone?.trim() ? (
+                      settings.companyPhone
+                    ) : (
+                      <span className="text-muted-foreground">--</span>
+                    )}
+                  </span>
+                </div>
+                <hr />
+                <div>
+                  <span className="block font-semibold text-sm mb-1">Address</span>
+                  <span>
+                    {settings?.companyAddress?.trim() ? (
+                      settings.companyAddress
+                    ) : (
+                      <span className="text-muted-foreground">--</span>
+                    )}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <AlertDialogFooter>
+              <AlertDialogAction asChild>
+                <Link to="/settings">Update Information</Link>
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
         </AlertDialog>
       </SidebarFooter>
     </Sidebar>

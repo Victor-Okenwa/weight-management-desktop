@@ -55,7 +55,7 @@ function RouteComponent() {
               <p>{settings?.stopBits}</p>
             </div>
 
-            <div className="py-4 border-b flex justify-between items-center px-4">
+            <div className="pt-4 flex justify-between items-center px-4">
               <strong>Flow Control:</strong>
 
               <p>{settings?.flowControl}</p>
