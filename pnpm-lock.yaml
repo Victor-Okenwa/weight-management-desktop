@@ -200,6 +200,9 @@ importers:
 
   packages/database:
     dependencies:
+      '@weight/shared':
+        specifier: workspace:*
+        version: link:../shared
       drizzle-orm:
         specifier: ^0.33.0
         version: 0.33.0(@types/better-sqlite3@7.6.13)(@types/react@19.2.14)(@types/sql.js@1.4.11)(better-sqlite3@11.10.0)(react@19.2.6)(sql.js@1.14.1)

@@ -46,7 +46,8 @@
   },
   "dependencies": {
     "drizzle-orm": "^0.33.0",
-    "sql.js": "^1.14.1"
+    "sql.js": "^1.14.1",
+    "@weight/shared": "workspace:*"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.0",

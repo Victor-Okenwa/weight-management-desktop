@@ -80,3 +80,39 @@ export interface SerialPortInfo {
   pnpId?: string;
   friendlyName?: string;
 }
+
+export interface Vehicle {
+  id: number;
+  name: string;
+  tareWeight: number | null;
+  createdAt: string;
+}
+
+export interface Material {
+  id: number;
+  name: string;
+  createdAt: string;
+}
+
+export interface Record {
+  id: number;
+  ticketId: string;
+  operator: string | null;
+  operationType: 'single' | 'double';
+  grossWeight: number | null;
+  tareWeight: number | null;
+  netWeight: number | null;
+  status: 'pending' | 'completed';
+  vehicleId: number | null;
+  materialId: number | null;
+  remark: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaginatedResult<T> {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+}

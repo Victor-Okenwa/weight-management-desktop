@@ -33,6 +33,7 @@ export const settings = sqliteTable('settings', {
 export const vehicles = sqliteTable('vehicles', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   name: text('name').notNull().unique(),
+  tareWeight: real('tare_weight'),
   createdAt: text('created_at').default('CURRENT_TIMESTAMP'),
 });
 
