@@ -1,4 +1,17 @@
-import type { SerialPortInfo, SettingsRow, WeightReading } from '@weight/shared/types/index';
+import type {
+  CreateRecordInput,
+  RecordFilters,
+  UpdateRecordInput,
+} from '@weight/database/repositories/record';
+import type {
+  Material,
+  PaginatedResult,
+  Record as RecordType,
+  SerialPortInfo,
+  SettingsRow,
+  Vehicle,
+  WeightReading,
+} from '@weight/shared/types/index';
 import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -31,4 +44,28 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getAllSettings: (): Promise<SettingsRow | null> => ipcRenderer.invoke('settings:get-all'),
   updateSettings: (data: Record<string, never>): Promise<boolean> =>
     ipcRenderer.invoke('settings:update', data),
+
+  // Materials
+  getAllMaterials: (): Promise<Material[]> => ipcRenderer.invoke('materials:get-all'),
+  getMaterialsPaginated: (page: number, pageSize: number): Promise<PaginatedResult<Material>> =>
+    ipcRenderer.invoke('materials:get-paginated', page, pageSize),
+
+  // Vehicles
+  getAllVehicles: (): Promise<Vehicle[]> => ipcRenderer.invoke('vehicles:get-all'),
+  getVehiclesPaginated: (page: number, pageSize: number): Promise<PaginatedResult<Vehicle>> =>
+    ipcRenderer.invoke('vehicles:get-paginated', page, pageSize),
+
+  // Records
+  createRecord: (data: CreateRecordInput): Promise<RecordType> =>
+    ipcRenderer.invoke('records:create', data),
+  updateRecord: (id: number, data: UpdateRecordInput): Promise<RecordType | null> =>
+    ipcRenderer.invoke('records:update', id, data),
+  getRecordById: (id: number): Promise<RecordType | null> =>
+    ipcRenderer.invoke('records:get-by-id', id),
+  getRecordsPaginated: (
+    page: number,
+    pageSize: number,
+    filters?: RecordFilters,
+  ): Promise<PaginatedResult<RecordType>> =>
+    ipcRenderer.invoke('records:get-paginated', page, pageSize, filters),
 });

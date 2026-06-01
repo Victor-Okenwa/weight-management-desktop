@@ -1,6 +1,14 @@
 // apps/desktop/src/ipc/ipc.ts
 
+import { getAllMaterials, getMaterialsPaginated } from '@weight/database/repositories/materials';
+import {
+  createRecord,
+  getRecordById,
+  getRecordsPaginated,
+  updateRecord,
+} from '@weight/database/repositories/record';
 import { getAllSettings, updateSettings } from '@weight/database/repositories/settings';
+import { getAllVehicles, getVehiclesPaginated } from '@weight/database/repositories/vehicles';
 import type { SerialOptions } from '@weight/shared/types/index';
 import { ipcMain } from 'electron';
 import { SerialPort } from 'serialport';
@@ -133,6 +141,53 @@ export function registerIpcHandlers(serialManager: SerialManager) {
   // ---------- Serial status ----------
   ipcMain.handle('serial:get-status', () => {
     return serialManager.getStatus();
+  });
+
+  // ---------- Materials ----------
+  ipcMain.handle('materials:get-all', () => {
+    const db = getDatabase();
+    return getAllMaterials(db);
+  });
+
+  ipcMain.handle('materials:get-paginated', (_event, page: number, pageSize: number) => {
+    const db = getDatabase();
+    return getMaterialsPaginated(db, page, pageSize);
+  });
+
+  // ---------- Vehicles ----------
+  ipcMain.handle('vehicles:get-all', () => {
+    const db = getDatabase();
+    return getAllVehicles(db);
+  });
+
+  ipcMain.handle('vehicles:get-paginated', (_event, page: number, pageSize: number) => {
+    const db = getDatabase();
+    return getVehiclesPaginated(db, page, pageSize);
+  });
+
+  // ---------- Records ----------
+  ipcMain.handle('records:create', (_event, data) => {
+    const db = getDatabase();
+    const record = createRecord(db, data);
+    db.save();
+    return record;
+  });
+
+  ipcMain.handle('records:update', (_event, id: number, data) => {
+    const db = getDatabase();
+    const record = updateRecord(db, id, data);
+    db.save();
+    return record;
+  });
+
+  ipcMain.handle('records:get-by-id', (_event, id: number) => {
+    const db = getDatabase();
+    return getRecordById(db, id);
+  });
+
+  ipcMain.handle('records:get-paginated', (_event, page: number, pageSize: number, filters?) => {
+    const db = getDatabase();
+    return getRecordsPaginated(db, page, pageSize, filters);
   });
 
   // ---------- Renderer logging ----------
