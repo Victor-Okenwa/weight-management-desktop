@@ -11,9 +11,9 @@ export function getOrCreateVehicle(
   db: DatabaseInstance,
   name: string,
   tareWeight?: number | null,
+  tareUnit?: string | null, // new parameter
 ): number {
   const trimmed = name.trim();
-  // Find existing
   const existing = db
     .select({ id: vehicles.id })
     .from(vehicles)
@@ -22,19 +22,18 @@ export function getOrCreateVehicle(
 
   if (existing) return existing.id;
 
-  // Insert new
   const result = db
     .insert(vehicles)
     .values({
       name: trimmed,
       tareWeight: tareWeight ?? null,
+      tareUnit: tareUnit ?? null, // store the unit
     })
     .returning({ id: vehicles.id })
     .get();
 
   return result.id;
 }
-
 /**
  * Get all vehicles ordered by name.
  */
@@ -63,4 +62,17 @@ export function getVehiclesPaginated(
   const total = db.select({ count: count() }).from(vehicles).get()?.count ?? 0;
 
   return { data: data as Vehicle[], total, page, pageSize };
+}
+
+export function updateVehicleTare(
+  db: DatabaseInstance,
+  vehicleId: number,
+  tareWeight: number,
+  tareUnit?: string | null,
+): void {
+  const data: Partial<typeof vehicles.$inferInsert> = { tareWeight };
+  if (tareUnit !== undefined) {
+    data.tareUnit = tareUnit;
+  }
+  db.update(vehicles).set(data).where(eq(vehicles.id, vehicleId)).run();
 }

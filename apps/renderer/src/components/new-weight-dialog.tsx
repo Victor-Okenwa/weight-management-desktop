@@ -21,10 +21,10 @@ export function NewWeightDialog() {
 
           <AlertDialogTitle>Record New Weight</AlertDialogTitle>
           <AlertDialogDescription className="flex! flex-col gap-1">
-            <p className="flex items-center">
+            <span className="flex items-center">
               Make sure to fill in all required fields marked by
               <AsteriskIcon className="text-red-500" />.
-            </p>
+            </span>
             Make sure indicator is connected and displaying correct live weight. it is best to
             Record weight when the traffic light is green (Stable).
           </AlertDialogDescription>

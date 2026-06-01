@@ -44,13 +44,19 @@ export interface CreateRecordInput {
   materialName?: string | null;
   remark?: string | null;
   vehicleTareWeight?: number | null; // if vehicle is new, set its tare weight
+  vehicleTareUnit?: string | null;
 }
 
 export function createRecord(db: DatabaseInstance, data: CreateRecordInput): Record {
   // Upsert vehicle if name provided
   let vehicleId: number | null = null;
   if (data.vehicleName) {
-    vehicleId = getOrCreateVehicle(db, data.vehicleName, data.vehicleTareWeight);
+    vehicleId = getOrCreateVehicle(
+      db,
+      data.vehicleName,
+      data.vehicleTareWeight,
+      data.vehicleTareUnit,
+    );
   }
 
   // Upsert material if name provided
@@ -93,6 +99,7 @@ export interface UpdateRecordInput {
   materialName?: string | null;
   remark?: string | null;
   vehicleTareWeight?: number | null;
+  vehicleTareUnit?: string | null;
   vehicleId?: number | null;
   materialId?: number | null;
   updatedAt?: string;
@@ -106,7 +113,12 @@ export function updateRecord(
   // Upsert vehicle if a new name is provided
   let vehicleId: number | undefined;
   if (data.vehicleName) {
-    vehicleId = getOrCreateVehicle(db, data.vehicleName, data.vehicleTareWeight);
+    vehicleId = getOrCreateVehicle(
+      db,
+      data.vehicleName,
+      data.vehicleTareWeight,
+      data.vehicleTareUnit,
+    );
   }
 
   // Upsert material if a new name is provided

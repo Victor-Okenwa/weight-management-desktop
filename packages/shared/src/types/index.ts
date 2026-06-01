@@ -85,6 +85,7 @@ export interface Vehicle {
   id: number;
   name: string;
   tareWeight: number | null;
+  tareUnit: string | null;
   createdAt: string;
 }
 
