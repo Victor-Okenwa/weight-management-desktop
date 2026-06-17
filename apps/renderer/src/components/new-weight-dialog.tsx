@@ -121,12 +121,7 @@ function VehicleCombobox({
         <ComboboxList>
           {filteredVehicles.length > 0 ? (
             filteredVehicles.map((v) => (
-              <ComboboxItem
-                key={v.id}
-                value={v.name}
-                onClick={() => console.log(v.name)}
-                onSelect={() => console.log(v.name)}
-              >
+              <ComboboxItem key={v.id} value={v.name}>
                 <span>{v.name}</span>
                 {v.tareWeight != null && (
                   <span className="ml-auto text-xs text-muted-foreground">
