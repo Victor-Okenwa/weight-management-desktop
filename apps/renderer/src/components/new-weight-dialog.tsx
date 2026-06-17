@@ -82,7 +82,10 @@ function VehicleCombobox({
 
   // Keep local input in sync when form value changes externally (e.g. reset)
   useEffect(() => {
-    setSearchValue(value || '');
+    (() => {
+      setSearchValue(value || '');
+      return null;
+    })();
   }, [value]);
 
   const filteredVehicles = useMemo(
@@ -100,7 +103,10 @@ function VehicleCombobox({
   return (
     <Combobox
       value={value}
-      onValueChange={onChange}
+      onValueChange={(value) => {
+        onChange(value as string);
+        console.log(value);
+      }}
       inputValue={searchValue}
       onInputValueChange={setSearchValue}
     >
@@ -109,12 +115,18 @@ function VehicleCombobox({
         disabled={disabled}
         onBlur={handleBlur}
         showClear={!!value}
+        // value={value}
       />
       <ComboboxContent>
         <ComboboxList>
           {filteredVehicles.length > 0 ? (
             filteredVehicles.map((v) => (
-              <ComboboxItem key={v.id} value={v.name}>
+              <ComboboxItem
+                key={v.id}
+                value={v.name}
+                onClick={() => console.log(v.name)}
+                onSelect={() => console.log(v.name)}
+              >
                 <span>{v.name}</span>
                 {v.tareWeight != null && (
                   <span className="ml-auto text-xs text-muted-foreground">
@@ -152,7 +164,11 @@ function MaterialCombobox({
   const [searchValue, setSearchValue] = useState(value || '');
 
   useEffect(() => {
-    setSearchValue(value || '');
+    (() => {
+      setSearchValue(value || '');
+      // Your logic goes in here
+      return null;
+    })();
   }, [value]);
 
   const filteredMaterials = useMemo(
@@ -171,7 +187,7 @@ function MaterialCombobox({
       value={value}
       onValueChange={(newVal) => {
         // Convert sentinel "__none__" back to empty string for the form
-        onChange(newVal === '__none__' ? '' : newVal);
+        onChange(String(newVal === '__none__' ? '' : newVal));
       }}
       inputValue={searchValue}
       onInputValueChange={setSearchValue}
@@ -820,7 +836,7 @@ export function NewWeightDialog() {
     setCapturedTareWeight(null);
     setCapturedGrossWeight(null);
     loadData();
-  }, [isNewWeightDialogOpen]);
+  }, [form, isNewWeightDialogOpen]);
 
   const canCapture = latestReading?.isStable === true && latestReading?.weight != null;
 
@@ -960,7 +976,7 @@ export function NewWeightDialog() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [buildSubmitPayload, setNewWeightDialogOpen]);
+  }, [form, buildSubmitPayload, setNewWeightDialogOpen]);
 
   // Complete — validate, submit as completed, then close
   const handleComplete = useCallback(async () => {
@@ -1111,7 +1127,7 @@ export function NewWeightDialog() {
                 weightUnit={weightUnit}
                 vehicleValue={vehicleName}
                 onVehicleChange={(val) => form.setValue('vehicleName', val)}
-                materialValue={materialName}
+                materialValue={String(materialName)}
                 onMaterialChange={(val) => form.setValue('materialName', val)}
               />
             )}
@@ -1131,7 +1147,7 @@ export function NewWeightDialog() {
                 netWeight={netWeight}
                 vehicleValue={vehicleName}
                 onVehicleChange={(val) => form.setValue('vehicleName', val)}
-                materialValue={materialName}
+                materialValue={String(materialName)}
                 onMaterialChange={(val) => form.setValue('materialName', val)}
               />
             )}
