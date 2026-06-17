@@ -22,19 +22,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
   completeSetup: (settings: Record<string, string>): Promise<boolean> =>
     ipcRenderer.invoke('app:complete-setup', settings),
 
-  onWeightUpdate: (callback: (reading: WeightReading) => void) => {
-    // Remove any previous listeners to avoid duplicates
-    ipcRenderer.removeAllListeners('weight:update');
-    ipcRenderer.on('weight:update', (_event, reading) => {
-      callback(reading);
-    });
-  },
-  onSerialStatus: (callback: (status: string) => void) => {
-    ipcRenderer.removeAllListeners('serial:status');
-    ipcRenderer.on('serial:status', (_event, status) => {
-      callback(status);
-    });
-  },
+ onWeightUpdate: (callback: (reading: WeightReading) => void) => {
+  const handler = (_event: any, reading: WeightReading) => callback(reading);
+  ipcRenderer.on('weight:update', handler);
+  return () => ipcRenderer.removeListener('weight:update', handler);
+},
+
+onSerialStatus: (callback: (status: string) => void) => {
+  const handler = (_event: any, status: string) => callback(status);
+  ipcRenderer.on('serial:status', handler);
+  return () => ipcRenderer.removeListener('serial:status', handler);
+},
   getSerialStatus: (): Promise<string> => ipcRenderer.invoke('serial:get-status'),
   log: (level: string, message: string) => {
     ipcRenderer.send('log', { level, message });
