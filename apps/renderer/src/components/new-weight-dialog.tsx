@@ -41,6 +41,7 @@ import { cn } from '@/lib/utils';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useWeightDialogsStore } from '@/store/weightDialog';
 import { useWeightStore } from '@/store/weightStore';
+import { WeightDisplay } from './weight-display';   // reuse existing live weight display
 
 function RequiredLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -61,6 +62,7 @@ const schema = z.object({
   materialName: z.string().optional().transform((v) => v?.trim()),
   operator: z.string().optional().transform((v) => v?.trim()),
   remark: z.string().optional().transform((v) => v?.trim()),
+  // tareWeight and tareUnit are no longer user‑filled; they are set programmatically
   tareWeight: z.coerce.number().positive('Tare weight must be greater than 0').optional(),
   tareUnit: z.enum(WEIGHT_UNITS).optional(),
   grossWeight: z.coerce.number().positive('Gross weight must be greater than 0').optional(),
@@ -70,9 +72,352 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-// --- Sub-components (VehicleComboboxField, MaterialComboboxField, ExistingVehicleComboboxField, WeightFormFields) remain exactly the same as in your original code ---
-// They are omitted here for brevity, but you must keep them in the file.
+// ------------------------------------------------
+// 1. Fixed VehicleComboboxField – saves on blur
+// ------------------------------------------------
+function VehicleComboboxField({
+  vehicles,
+  control,
+  error,
+}: {
+  vehicles: Vehicle[];
+  control: ReturnType<typeof useForm<FormValues>>['control'];
+  error?: { message?: string };
+}) {
+  const [inputValue, setInputValue] = useState('');
 
+  const filteredVehicles = useMemo(() => {
+    if (!inputValue) return vehicles;
+    return vehicles.filter((v) => v.name.toLowerCase().includes(inputValue.toLowerCase()));
+  }, [vehicles, inputValue]);
+
+  return (
+    <Controller
+      name="vehicleName"
+      control={control}
+      render={({ field }) => {
+        const typed = field.value || '';
+        // display the raw value if it's new, otherwise the matched vehicle name
+        const displayValue = typed
+          ? vehicles.find((v) => v.name.toLowerCase() === typed.toLowerCase())?.name || typed
+          : '';
+
+        const handleBlur = () => {
+          // On blur, if the user typed something that doesn't exactly match an existing vehicle, treat it as a new vehicle name
+          if (inputValue.trim() && !vehicles.some(v => v.name.toLowerCase() === inputValue.trim().toLowerCase())) {
+            field.onChange(inputValue.trim());
+          } else if (!inputValue.trim()) {
+            // if empty, keep existing value
+          } else {
+            // exact match – ensure it's set (already set by onInputChange)
+            field.onChange(inputValue.trim());
+          }
+          setInputValue(''); // clear internal input after blur
+        };
+
+        return (
+          <Field data-invalid={!!error}>
+            <FieldLabel htmlFor="vehicle-name">
+              <RequiredLabel>Vehicle Number</RequiredLabel>
+            </FieldLabel>
+            <Combobox
+              value={displayValue}
+              onValueChange={(value) => {
+                setInputValue(value);
+                field.onChange(value);
+              }}
+              onInputChange={(value) => {
+                setInputValue(value);
+                // Don't update field yet; only on blur or explicit selection
+              }}
+            >
+              <ComboboxInput id="vehicle-name" showTrigger onBlur={handleBlur} />
+              <ComboboxValue placeholder="Select or enter vehicle" />
+              <ComboboxContent>
+                <ComboboxList>
+                  {filteredVehicles.map((v) => (
+                    <ComboboxItem key={v.id} value={v.name}>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{v.name}</span>
+                        {v.tareWeight !== null && v.tareUnit && (
+                          <span className="text-xs text-muted-foreground">
+                            Tare: {v.tareWeight} {v.tareUnit}
+                          </span>
+                        )}
+                      </div>
+                    </ComboboxItem>
+                  ))}
+                  {inputValue &&
+                    !vehicles.some((v) => v.name.toLowerCase() === inputValue.toLowerCase()) && (
+                      <ComboboxItem value={inputValue}>
+                        <span className="flex items-center gap-2 text-sm">
+                          <Plus className="size-3.5" />
+                          Create new vehicle &quot;{inputValue}&quot;
+                        </span>
+                      </ComboboxItem>
+                    )}
+                  {filteredVehicles.length === 0 && !inputValue && (
+                    <span className="px-2 py-3 text-sm text-muted-foreground">
+                      No vehicles found. Start typing to create.
+                    </span>
+                  )}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
+            <FieldDescription>Select an existing vehicle or type a new one.</FieldDescription>
+            <FieldError errors={error ? [error] : []} />
+          </Field>
+        );
+      }}
+    />
+  );
+}
+
+// ------------------------------------------------
+// 2. Fixed MaterialComboboxField – saves on blur
+// ------------------------------------------------
+function MaterialComboboxField({
+  materials,
+  control,
+  error,
+}: {
+  materials: Material[];
+  control: ReturnType<typeof useForm<FormValues>>['control'];
+  error?: { message?: string };
+}) {
+  const [inputValue, setInputValue] = useState('');
+
+  const filteredMaterials = useMemo(() => {
+    if (!inputValue) return materials;
+    return materials.filter((m) => m.name.toLowerCase().includes(inputValue.toLowerCase()));
+  }, [materials, inputValue]);
+
+  return (
+    <Controller
+      name="materialName"
+      control={control}
+      render={({ field }) => {
+        const typed = field.value || '';
+        const displayValue = typed
+          ? materials.find((m) => m.name.toLowerCase() === typed.toLowerCase())?.name || typed
+          : '';
+
+        const handleBlur = () => {
+          if (inputValue.trim() && !materials.some(m => m.name.toLowerCase() === inputValue.trim().toLowerCase())) {
+            field.onChange(inputValue.trim());
+          } else if (!inputValue.trim()) {
+            // stay
+          } else {
+            field.onChange(inputValue.trim());
+          }
+          setInputValue('');
+        };
+
+        return (
+          <Field data-invalid={!!error}>
+            <FieldLabel htmlFor="material-name">Material</FieldLabel>
+            <Combobox
+              value={displayValue}
+              onValueChange={(value) => {
+                setInputValue(value);
+                field.onChange(value);
+                console.log(value)
+              }}
+              onInputChange={(value) => {
+                setInputValue(value);
+                console.log(value)
+              }}
+            >
+              <ComboboxInput id="material-name" showTrigger onBlur={handleBlur} />
+              <ComboboxValue placeholder="Select material" />
+              <ComboboxContent>
+                <ComboboxList>
+                  <ComboboxItem value="">None</ComboboxItem>
+                  <ComboboxItem value="__create__">
+                    <span className="flex items-center gap-2 text-sm">
+                      <Plus className="size-3.5" />
+                      Create new material
+                    </span>
+                  </ComboboxItem>
+                  <ComboboxItem
+                    value="__separator__"
+                    disabled
+                    className="pointer-events-none opacity-50"
+                  >
+                    <span className="h-px bg-border block my-1" />
+                  </ComboboxItem>
+                  {filteredMaterials.map((m) => (
+                    <ComboboxItem key={m.id} value={m.name}>
+                      <span className="font-medium">{m.name}</span>
+                    </ComboboxItem>
+                  ))}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
+            <FieldDescription>Material being weighed (optional).</FieldDescription>
+            <FieldError errors={error ? [error] : []} />
+          </Field>
+        );
+      }}
+    />
+  );
+}
+
+// ------------------------------------------------
+// 3. ExistingVehicleComboboxField – unchanged
+// ------------------------------------------------
+function ExistingVehicleComboboxField({
+  vehicles,
+  control,
+  form,
+  error,
+}: {
+  vehicles: Vehicle[];
+  control: ReturnType<typeof useForm<FormValues>>['control'];
+  form: ReturnType<typeof useForm<FormValues>>;
+  error?: { message?: string };
+}) {
+  const [inputValue, setInputValue] = useState('');
+
+  const selectedVehicle = useMemo(
+    () => vehicles.find((v) => v.id === Number(inputValue)),
+    [vehicles, inputValue],
+  );
+
+  return (
+    <Controller
+      name="selectedVehicleId"
+      control={control}
+      render={({ field }) => (
+        <Field data-invalid={!!error}>
+          <FieldLabel htmlFor="existing-vehicle">
+            <RequiredLabel>Existing Vehicle</RequiredLabel>
+          </FieldLabel>
+          <Combobox
+            value={inputValue}
+            onValueChange={(val) => {
+              if (val) {
+                setInputValue(val);
+                field.onChange(Number(val));
+                form.setValue('vehicleName', selectedVehicle?.name ?? '');
+              }
+            }}
+            onInputChange={(val) => setInputValue(val)}
+          >
+            <ComboboxInput id="existing-vehicle" showTrigger />
+            <ComboboxValue placeholder="Select a vehicle" />
+            <ComboboxContent>
+              <ComboboxList>
+                {vehicles.map((v) => (
+                  <ComboboxItem key={v.id} value={String(v.id)}>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{v.name}</span>
+                      {v.tareWeight !== null && v.tareUnit && (
+                        <span className="text-xs text-muted-foreground">
+                          Tare: {v.tareWeight} {v.tareUnit}
+                        </span>
+                      )}
+                    </div>
+                  </ComboboxItem>
+                ))}
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
+          <FieldDescription>Select a vehicle with an existing tare weight.</FieldDescription>
+          <FieldError errors={error ? [error] : []} />
+        </Field>
+      )}
+    />
+  );
+}
+
+// ------------------------------------------------
+// 4. WeightFormFields – used in steps 3 and 4
+// ------------------------------------------------
+interface WeightFormFieldsProps {
+  form: ReturnType<typeof useForm<FormValues>>;
+  vehicles: Vehicle[];
+  materials: Material[];
+  showTareCapture: boolean;   // if true, show the live weight capture
+  ticketId: string;
+}
+
+function WeightFormFields({
+  form,
+  vehicles,
+  materials,
+  showTareCapture,
+  ticketId,
+}: WeightFormFieldsProps) {
+  const vehicleError = form.formState.errors.vehicleName;
+  const materialError = form.formState.errors.materialName;
+
+  return (
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <Controller
+        name="ticketId"
+        control={form.control}
+        render={({ field }) => (
+          <Field>
+            <FieldLabel htmlFor="ticket-id">Ticket ID</FieldLabel>
+            <Input
+              {...field}
+              id="ticket-id"
+              className="min-h-12"
+              value={ticketId}
+              disabled
+              placeholder="TKT-0001"
+            />
+            <FieldDescription>Auto-generated ticket identifier.</FieldDescription>
+          </Field>
+        )}
+      />
+
+      <Controller
+        name="operator"
+        control={form.control}
+        render={({ field, fieldState }) => (
+          <Field data-invalid={!!fieldState.error}>
+            <FieldLabel htmlFor="operator">Operator</FieldLabel>
+            <Input {...field} id="operator" className="min-h-12" placeholder="e.g. John Doe" />
+            <FieldDescription>Name of the operator (optional).</FieldDescription>
+            <FieldError errors={fieldState.error ? [fieldState.error] : []} />
+          </Field>
+        )}
+      />
+
+      <VehicleComboboxField vehicles={vehicles} control={form.control} error={vehicleError} />
+
+      <MaterialComboboxField materials={materials} control={form.control} error={materialError} />
+
+      {/* No manual tare weight fields */}
+      {/* If capture is required, the parent will render the WeightDisplay and capture button */}
+
+      <Controller
+        name="remark"
+        control={form.control}
+        render={({ field, fieldState }) => (
+          <Field data-invalid={!!fieldState.error} className="lg:col-span-2">
+            <FieldLabel htmlFor="remark">Remark</FieldLabel>
+            <Textarea
+              {...field}
+              id="remark"
+              className="min-h-20"
+              placeholder="Optional notes..."
+              onChange={(e) => field.onChange(e.target.value)}
+            />
+            <FieldDescription>Any additional notes for this record.</FieldDescription>
+            <FieldError errors={fieldState.error ? [fieldState.error] : []} />
+          </Field>
+        )}
+      />
+    </div>
+  );
+}
+
+// ------------------------------------------------
+// 5. Main Dialog Component
+// ------------------------------------------------
 export function NewWeightDialog() {
   const { isNewWeightDialogOpen, setNewWeightDialogOpen } = useWeightDialogsStore();
   const { settings, loadSettings } = useSettingsStore();
@@ -81,11 +426,18 @@ export function NewWeightDialog() {
   const setLatestReading = useWeightStore((s) => s.setLatestReading);
   const setSerialStatus = useWeightStore((s) => s.setSerialStatus);
 
-  const [stepIndex, setStepIndex] = useState(0);   // index in the stepper array
+  const [stepIndex, setStepIndex] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
+
+  // Captured tare weight
+  const [capturedTareWeight, setCapturedTareWeight] = useState<number | null>(null);
+  const [capturedTareUnit, setCapturedTareUnit] = useState<string | null>(null);
+  const [capturedTareStable, setCapturedTareStable] = useState(false);
+
+  // Gross weight capture (only for step 4)
   const [capturedGross, setCapturedGross] = useState<number | null>(null);
   const [capturedGrossUnit, setCapturedGrossUnit] = useState<string | null>(null);
   const [capturedGrossStable, setCapturedGrossStable] = useState(false);
@@ -114,7 +466,6 @@ export function NewWeightDialog() {
   const isSingle = weighingType === 'single';
   const isDouble = weighingType === 'double';
 
-  // Map stepper array index to actual content step
   const getRealStep = useCallback(
     (stepperIdx: number) => (isSingle && stepperIdx === 1 ? 2 : stepperIdx),
     [isSingle],
@@ -170,6 +521,9 @@ export function NewWeightDialog() {
   useEffect(() => {
     if (isNewWeightDialogOpen) {
       setStepIndex(0);
+      setCapturedTareWeight(null);
+      setCapturedTareUnit(null);
+      setCapturedTareStable(false);
       setCapturedGross(null);
       setCapturedGrossUnit(null);
       setCapturedGrossStable(false);
@@ -182,7 +536,7 @@ export function NewWeightDialog() {
         operator: '',
         remark: '',
         tareWeight: undefined,
-        tareUnit: undefined,
+        tareUnit: settings?.weightUnit || 'kg',   // default unit from settings
         grossWeight: undefined,
         netWeight: undefined,
         ticketId: '',
@@ -190,26 +544,28 @@ export function NewWeightDialog() {
       loadSettings();
       loadLookups();
     }
-  }, [isNewWeightDialogOpen, loadSettings, loadLookups, form]);
+  }, [isNewWeightDialogOpen, loadSettings, loadLookups, form, settings?.weightUnit]);
 
-  // Subscribe to weight updates (only on step 4 in double mode)
+  // Subscribe to weight updates (only on step 4 in double mode, or step 3 when capturing tare)
   useEffect(() => {
-    if (!isDouble || realStep !== 3) return;
+    const needUpdates = (isDouble && realStep === 3) || (realStep === 2 && (isSingle || vehicleMode === 'new'));
+    if (!needUpdates) return;
     const unsub = window.electronAPI.onWeightUpdate((reading: WeightReading) => {
       setLatestReading(reading);
     });
     return () => { unsub(); };
-  }, [isDouble, realStep, setLatestReading]);
+  }, [isDouble, realStep, isSingle, vehicleMode, setLatestReading]);
 
   useEffect(() => {
-    if (!isDouble || realStep !== 3) return;
+    const needUpdates = (isDouble && realStep === 3) || (realStep === 2 && (isSingle || vehicleMode === 'new'));
+    if (!needUpdates) return;
     const unsubStatus = window.electronAPI.onSerialStatus((status) => {
       setSerialStatus(status);
     });
     return () => { unsubStatus(); };
-  }, [isDouble, realStep, setSerialStatus]);
+  }, [isDouble, realStep, isSingle, vehicleMode, setSerialStatus]);
 
-  // Navigation
+  // Navigation handlers
   const handleNext = useCallback(async () => {
     let fields: (keyof FormValues)[] = [];
     if (realStep === 0) {
@@ -219,7 +575,7 @@ export function NewWeightDialog() {
       if (vehicleMode === 'existing') fields.push('selectedVehicleId');
     } else if (realStep === 2) {
       fields = ['vehicleName', 'materialName', 'operator', 'remark'];
-      if (isSingle) fields.push('tareWeight', 'tareUnit');
+      // No manual tare weight fields; we'll check capturedTareWeight below
     } else if (realStep === 3) {
       fields = ['grossWeight'];
     }
@@ -230,12 +586,27 @@ export function NewWeightDialog() {
       return;
     }
 
+    // Extra validations
+    if (realStep === 1 && isDouble && vehicleMode === 'existing') {
+      if (!selectedVehicleId || selectedVehicleId <= 0) {
+        form.setError('selectedVehicleId', { message: 'Please select an existing vehicle.' });
+        return;
+      }
+    }
+    if (realStep === 2 && (isSingle || (isDouble && vehicleMode === 'new'))) {
+      // must have captured a tare weight
+      if (!capturedTareWeight) {
+        toast.info('Please capture a stable tare weight before continuing.');
+        return;
+      }
+    }
+
     if (isSingle) {
-      if (stepIndex === 0) setStepIndex(1);   // stepper 1 -> real step 2
+      if (stepIndex === 0) setStepIndex(1);
     } else {
       if (realStep < 3) setStepIndex((prev) => prev + 1);
     }
-  }, [realStep, stepIndex, isSingle, isDouble, vehicleMode, form]);
+  }, [realStep, stepIndex, isSingle, isDouble, vehicleMode, selectedVehicleId, capturedTareWeight, form]);
 
   const handlePrev = useCallback(() => {
     if (isSingle) {
@@ -244,6 +615,20 @@ export function NewWeightDialog() {
       if (stepIndex > 0) setStepIndex((prev) => prev - 1);
     }
   }, [isSingle, stepIndex]);
+
+  const handleCaptureTare = useCallback(() => {
+    if (!latestReading?.isStable) {
+      toast.info('Please wait for a stable weight reading.');
+      return;
+    }
+    setCapturedTareWeight(latestReading.weight);
+    setCapturedTareUnit(latestReading.unit);
+    setCapturedTareStable(true);
+    // Update form fields so they are saved later
+    form.setValue('tareWeight', latestReading.weight);
+    form.setValue('tareUnit', latestReading.unit as typeof WEIGHT_UNITS[number]);
+    toast.success(`Tare weight captured: ${latestReading.weight} ${latestReading.unit}`);
+  }, [latestReading, form]);
 
   const handleSaveExit = useCallback(async () => {
     try {
@@ -259,22 +644,25 @@ export function NewWeightDialog() {
         status: 'pending',
       };
 
-      if (data.weighingType === 'single' && data.tareWeight != null && data.tareUnit) {
-        payload.tareWeight = data.tareWeight;
-        payload.vehicleTareWeight = data.tareWeight;
-        payload.vehicleTareUnit = data.tareUnit;
-      }
-
-      if (data.weighingType === 'double') {
+      if (data.weighingType === 'single') {
+        if (capturedTareWeight != null) {
+          payload.tareWeight = capturedTareWeight;
+          payload.vehicleTareWeight = capturedTareWeight;
+          payload.vehicleTareUnit = capturedTareUnit ?? settings?.weightUnit;
+        }
+      } else if (data.weighingType === 'double') {
         if (vehicleMode === 'existing' && selectedVehicleForTare) {
           payload.tareWeight = selectedVehicleForTare.tareWeight;
           payload.vehicleTareWeight = selectedVehicleForTare.tareWeight;
           payload.vehicleTareUnit = selectedVehicleForTare.tareUnit;
-        } else if (vehicleMode === 'new' && capturedGross !== null && capturedGrossStable) {
-          const tare = data.tareWeight ?? 0;
-          payload.tareWeight = tare;
-          payload.grossWeight = capturedGross;
-          payload.netWeight = capturedGross - tare;
+        } else if (vehicleMode === 'new') {
+          // captured tare weight (already set via handleCaptureTare)
+          if (capturedTareWeight != null) {
+            payload.tareWeight = capturedTareWeight;
+            payload.vehicleTareWeight = capturedTareWeight;
+            payload.vehicleTareUnit = capturedTareUnit ?? settings?.weightUnit;
+          }
+          // If also captured gross (maybe in step 4), we could include, but save & exit keeps pending
         }
       }
 
@@ -287,7 +675,7 @@ export function NewWeightDialog() {
     } finally {
       setIsSaving(false);
     }
-  }, [form, vehicleMode, selectedVehicleForTare, capturedGross, capturedGrossStable, setNewWeightDialogOpen]);
+  }, [form, vehicleMode, selectedVehicleForTare, capturedTareWeight, capturedTareUnit, capturedGross, capturedGrossStable, settings?.weightUnit, setNewWeightDialogOpen]);
 
   const handleComplete = useCallback(async () => {
     try {
@@ -302,7 +690,7 @@ export function NewWeightDialog() {
       const net = (capturedGross ?? 0) - tare;
 
       const payload: CreateRecordInput = {
-        operationType: data.weighingType!,
+        operationType: 'double',
         vehicleName: data.vehicleName || undefined,
         materialName: data.materialName || undefined,
         operator: data.operator || undefined,
@@ -334,12 +722,12 @@ export function NewWeightDialog() {
     setCapturedGross(latestReading.weight);
     setCapturedGrossUnit(latestReading.unit);
     setCapturedGrossStable(true);
+    form.setValue('grossWeight', latestReading.weight);
     toast.success(`Gross weight captured: ${latestReading.weight} ${latestReading.unit}`);
-  }, [latestReading]);
+  }, [latestReading, form]);
 
   const isSaveEnabled = (isSingle && realStep === 2) || (isDouble && realStep >= 2);
 
-  // Stepper click
   const handleStepClick = (idx: number) => {
     if (idx <= stepIndex) setStepIndex(idx);
   };
@@ -385,6 +773,7 @@ export function NewWeightDialog() {
 
   const renderStepContent = () => {
     if (realStep === 0) {
+      // ... (same as original, no changes)
       return (
         <div className="space-y-4">
           <Controller
@@ -394,30 +783,22 @@ export function NewWeightDialog() {
               <Field>
                 <FieldLabel><RequiredLabel>Weighing Type</RequiredLabel></FieldLabel>
                 <RadioGroup value={field.value} onValueChange={field.onChange} className="grid grid-cols-2 gap-4">
-                  <div
-                    className={cn('flex items-center gap-3 rounded-lg border border-input p-4', {
-                      'bg-foreground text-background!': field.value === 'single',
-                    })}
-                  >
+                  <div className={cn('flex items-center gap-3 rounded-lg border border-input p-4', {
+                    'bg-foreground text-background!': field.value === 'single',
+                  })}>
                     <RadioGroupItem value="single" id="single" />
                     <label htmlFor="single" className="text-sm font-medium cursor-pointer">
                       Single Weighing
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Record/update vehicle tare weight only.
-                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Record/update vehicle tare weight only.</p>
                     </label>
                   </div>
-                  <div
-                    className={cn('flex items-center gap-3 rounded-lg border border-input p-4', {
-                      'bg-foreground text-background!': field.value === 'double',
-                    })}
-                  >
+                  <div className={cn('flex items-center gap-3 rounded-lg border border-input p-4', {
+                    'bg-foreground text-background!': field.value === 'double',
+                  })}>
                     <RadioGroupItem value="double" id="double" />
                     <label htmlFor="double" className="text-sm font-medium cursor-pointer">
                       Double Weighing
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Full gross/tare/net workflow.
-                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Full gross/tare/net workflow.</p>
                     </label>
                   </div>
                 </RadioGroup>
@@ -443,15 +824,11 @@ export function NewWeightDialog() {
                 <RadioGroup value={field.value} onValueChange={field.onChange} className="grid grid-cols-1 gap-3">
                   <div className="flex items-center gap-3 rounded-lg border border-input p-4">
                     <RadioGroupItem value="existing" id="existing" />
-                    <label htmlFor="existing" className="text-sm font-medium cursor-pointer">
-                      Use existing tare weight
-                    </label>
+                    <label htmlFor="existing" className="text-sm font-medium cursor-pointer">Use existing tare weight</label>
                   </div>
                   <div className="flex items-center gap-3 rounded-lg border border-input p-4">
                     <RadioGroupItem value="new" id="new" />
-                    <label htmlFor="new" className="text-sm font-medium cursor-pointer">
-                      Record new weight
-                    </label>
+                    <label htmlFor="new" className="text-sm font-medium cursor-pointer">Record new weight</label>
                   </div>
                 </RadioGroup>
                 <FieldDescription>
@@ -473,19 +850,41 @@ export function NewWeightDialog() {
     }
 
     if (realStep === 2) {
-      const showTareFields = isSingle || (isDouble && vehicleMode === 'new');
+      // Determine if we need to show tare capture
+      const needTareCapture = isSingle || (isDouble && vehicleMode === 'new');
       return (
         <div className="space-y-4">
           <WeightFormFields
             form={form}
             vehicles={vehicles}
             materials={materials}
-            showTareFields={showTareFields}
+            showTareCapture={needTareCapture}
             ticketId={ticketId}
           />
-          {isDouble && vehicleMode === 'new' && (
+          {needTareCapture && (
+            <div className="space-y-4">
+              {/* Live weight display */}
+              <WeightDisplay />
+              <div className="flex items-center gap-4">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={handleCaptureTare}
+                  disabled={capturedTareStable || !latestReading || latestReading.weight <= 0 || serialStatus !== 'connected'}
+                >
+                  {capturedTareStable ? 'Tare Captured' : 'Capture Tare'}
+                </Button>
+                {capturedTareWeight != null && (
+                  <p className="text-lg font-semibold">
+                    Captured: {capturedTareWeight} {capturedTareUnit}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+          {!needTareCapture && (
             <div className="rounded-md border border-input bg-accent/30 p-3 text-sm text-muted-foreground">
-              <strong>Note:</strong> Tare weight will be captured from the scale in the next step.
+              Tare weight from selected vehicle: {selectedVehicleForTare?.tareWeight} {selectedVehicleForTare?.tareUnit}
             </div>
           )}
         </div>
@@ -498,6 +897,7 @@ export function NewWeightDialog() {
   const renderStep4Content = () => {
     const displayGross = capturedGross ?? latestReading?.weight ?? null;
     const isStableNow = (capturedGrossStable || latestReading?.isStable) ?? false;
+
     const tareValue = (() => {
       if (vehicleMode === 'existing' && selectedVehicleForTare?.tareWeight) return selectedVehicleForTare.tareWeight;
       const manual = form.getValues('tareWeight');
@@ -513,7 +913,7 @@ export function NewWeightDialog() {
       <div className="space-y-6">
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div className="lg:col-span-2">
-            <WeightFormFields form={form} vehicles={vehicles} materials={materials} showTareFields={false} ticketId={ticketId} />
+            <WeightFormFields form={form} vehicles={vehicles} materials={materials} showTareCapture={false} ticketId={ticketId} />
           </div>
           <Card className="col-span-1 lg:col-span-2">
             <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-3">
@@ -530,14 +930,12 @@ export function NewWeightDialog() {
                     {displayGross != null ? `${displayGross} ${capturedGrossUnit ?? latestReading?.unit ?? ''}` : '—'}
                   </p>
                   {latestReading && (
-                    <span
-                      className={cn(
-                        'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
-                        latestReading.isStable
-                          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                          : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-                      )}
-                    >
+                    <span className={cn(
+                      'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
+                      latestReading.isStable
+                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                        : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+                    )}>
                       <span className={cn('size-1.5 rounded-full', latestReading.isStable ? 'bg-green-600' : 'bg-amber-600')} />
                       {latestReading.isStable ? 'Stable' : 'Unstable'}
                     </span>
@@ -570,9 +968,7 @@ export function NewWeightDialog() {
     <AlertDialog open={isNewWeightDialogOpen} onOpenChange={setNewWeightDialogOpen}>
       <AlertDialogContent className="min-w-[90%] max-h-[90vh] overflow-y-auto">
         <AlertDialogHeader>
-          <AlertDialogCancel className="absolute top-2 right-2">
-            <X />
-          </AlertDialogCancel>
+          <AlertDialogCancel className="absolute top-2 right-2"><X /></AlertDialogCancel>
           <AlertDialogTitle>Record New Weight</AlertDialogTitle>
           <AlertDialogDescription className="flex flex-col gap-1">
             <span className="flex items-center">
