@@ -1,1032 +1,1193 @@
-// renderer/src/routes/new-weight-dialog.tsx
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { CreateRecordInput } from '@weight/database/repositories/record';
-import type { Material, Vehicle, WeightReading } from '@weight/shared/types/index';
-import { AsteriskIcon, Check, Plus, X } from 'lucide-react';
+import type { Material, Vehicle } from '@weight/shared/types/index';
+import { Check, ChevronLeft, ChevronRight, Save, Scale, Weight, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { Control } from 'react-hook-form';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import * as z from 'zod';
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogContent, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Combobox,
   ComboboxContent,
+  ComboboxEmpty,
   ComboboxInput,
   ComboboxItem,
   ComboboxList,
-  ComboboxValue,
 } from '@/components/ui/combobox';
-import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
+import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
-import { logger } from '@/lib/logger';
+import { WeightDisplay } from '@/components/weight-display';
 import { cn } from '@/lib/utils';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useWeightDialogsStore } from '@/store/weightDialog';
 import { useWeightStore } from '@/store/weightStore';
-import { WeightDisplay } from './weight-display';   // reuse existing live weight display
 
-function RequiredLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <span>
-      {children}
-      <span className="text-red-600 pl-0.5" aria-hidden="true">*</span>
-    </span>
-  );
-}
+// ======================================================
+// SCHEMA
+// ======================================================
 
-const WEIGHT_UNITS = ['kg', 't', 'lb'] as const;
-
-const schema = z.object({
-  weighingType: z.enum(['single', 'double'], { message: 'Weighing type is required' }),
-  vehicleMode: z.enum(['existing', 'new']).optional(),
-  selectedVehicleId: z.coerce.number().optional(),
-  vehicleName: z.string().min(1, 'Vehicle number is required').transform((v) => v.trim()),
-  materialName: z.string().optional().transform((v) => v?.trim()),
-  operator: z.string().optional().transform((v) => v?.trim()),
-  remark: z.string().optional().transform((v) => v?.trim()),
-  // tareWeight and tareUnit are no longer user‑filled; they are set programmatically
-  tareWeight: z.coerce.number().positive('Tare weight must be greater than 0').optional(),
-  tareUnit: z.enum(WEIGHT_UNITS).optional(),
-  grossWeight: z.coerce.number().positive('Gross weight must be greater than 0').optional(),
-  netWeight: z.coerce.number().optional(),
-  ticketId: z.string().optional(),
+const newWeightSchema = z.object({
+  operationType: z.enum(['single', 'double']),
+  tareSource: z.enum(['existing', 'new']).optional(),
+  vehicleName: z.string().min(1, 'Vehicle number is required'),
+  materialName: z.string().optional(),
+  operator: z.string().optional(),
+  remark: z.string().optional(),
 });
 
-type FormValues = z.infer<typeof schema>;
+type NewWeightForm = z.infer<typeof newWeightSchema>;
 
-// ------------------------------------------------
-// 1. Fixed VehicleComboboxField – saves on blur
-// ------------------------------------------------
-function VehicleComboboxField({
+// ======================================================
+// STEP DEFINITIONS
+// ======================================================
+
+interface StepDef {
+  id: string;
+  label: string;
+  showFor: 'both' | 'double';
+}
+
+const allSteps: StepDef[] = [
+  { id: 'type', label: 'Weighing Type', showFor: 'both' },
+  { id: 'vehicle', label: 'Vehicle', showFor: 'double' },
+  { id: 'tare', label: 'Tare Weight', showFor: 'both' },
+  { id: 'gross', label: 'Gross Weight', showFor: 'double' },
+];
+
+// ======================================================
+// VEHICLE COMBOBOX
+// ======================================================
+
+function VehicleCombobox({
   vehicles,
-  control,
-  error,
+  value,
+  onChange,
+  disabled = false,
 }: {
   vehicles: Vehicle[];
-  control: ReturnType<typeof useForm<FormValues>>['control'];
-  error?: { message?: string };
+  value: string;
+  onChange: (val: string) => void;
+  disabled?: boolean;
 }) {
-  const [inputValue, setInputValue] = useState('');
+  // Local input text — syncs from / to the form value
+  const [searchValue, setSearchValue] = useState(value || '');
 
-  const filteredVehicles = useMemo(() => {
-    if (!inputValue) return vehicles;
-    return vehicles.filter((v) => v.name.toLowerCase().includes(inputValue.toLowerCase()));
-  }, [vehicles, inputValue]);
+  // Keep local input in sync when form value changes externally (e.g. reset)
+  useEffect(() => {
+    setSearchValue(value || '');
+  }, [value]);
 
-  return (
-    <Controller
-      name="vehicleName"
-      control={control}
-      render={({ field }) => {
-        const typed = field.value || '';
-        // display the raw value if it's new, otherwise the matched vehicle name
-        const displayValue = typed
-          ? vehicles.find((v) => v.name.toLowerCase() === typed.toLowerCase())?.name || typed
-          : '';
-
-        const handleBlur = () => {
-          // On blur, if the user typed something that doesn't exactly match an existing vehicle, treat it as a new vehicle name
-          if (inputValue.trim() && !vehicles.some(v => v.name.toLowerCase() === inputValue.trim().toLowerCase())) {
-            field.onChange(inputValue.trim());
-          } else if (!inputValue.trim()) {
-            // if empty, keep existing value
-          } else {
-            // exact match – ensure it's set (already set by onInputChange)
-            field.onChange(inputValue.trim());
-          }
-          setInputValue(''); // clear internal input after blur
-        };
-
-        return (
-          <Field data-invalid={!!error}>
-            <FieldLabel htmlFor="vehicle-name">
-              <RequiredLabel>Vehicle Number</RequiredLabel>
-            </FieldLabel>
-            <Combobox
-              value={displayValue}
-              onValueChange={(value) => {
-                setInputValue(value);
-                field.onChange(value);
-              }}
-              onInputChange={(value) => {
-                setInputValue(value);
-                // Don't update field yet; only on blur or explicit selection
-              }}
-            >
-              <ComboboxInput id="vehicle-name" showTrigger onBlur={handleBlur} />
-              <ComboboxValue placeholder="Select or enter vehicle" />
-              <ComboboxContent>
-                <ComboboxList>
-                  {filteredVehicles.map((v) => (
-                    <ComboboxItem key={v.id} value={v.name}>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{v.name}</span>
-                        {v.tareWeight !== null && v.tareUnit && (
-                          <span className="text-xs text-muted-foreground">
-                            Tare: {v.tareWeight} {v.tareUnit}
-                          </span>
-                        )}
-                      </div>
-                    </ComboboxItem>
-                  ))}
-                  {inputValue &&
-                    !vehicles.some((v) => v.name.toLowerCase() === inputValue.toLowerCase()) && (
-                      <ComboboxItem value={inputValue}>
-                        <span className="flex items-center gap-2 text-sm">
-                          <Plus className="size-3.5" />
-                          Create new vehicle &quot;{inputValue}&quot;
-                        </span>
-                      </ComboboxItem>
-                    )}
-                  {filteredVehicles.length === 0 && !inputValue && (
-                    <span className="px-2 py-3 text-sm text-muted-foreground">
-                      No vehicles found. Start typing to create.
-                    </span>
-                  )}
-                </ComboboxList>
-              </ComboboxContent>
-            </Combobox>
-            <FieldDescription>Select an existing vehicle or type a new one.</FieldDescription>
-            <FieldError errors={error ? [error] : []} />
-          </Field>
-        );
-      }}
-    />
-  );
-}
-
-// ------------------------------------------------
-// 2. Fixed MaterialComboboxField – saves on blur
-// ------------------------------------------------
-function MaterialComboboxField({
-  materials,
-  control,
-  error,
-}: {
-  materials: Material[];
-  control: ReturnType<typeof useForm<FormValues>>['control'];
-  error?: { message?: string };
-}) {
-  const [inputValue, setInputValue] = useState('');
-
-  const filteredMaterials = useMemo(() => {
-    if (!inputValue) return materials;
-    return materials.filter((m) => m.name.toLowerCase().includes(inputValue.toLowerCase()));
-  }, [materials, inputValue]);
-
-  return (
-    <Controller
-      name="materialName"
-      control={control}
-      render={({ field }) => {
-        const typed = field.value || '';
-        const displayValue = typed
-          ? materials.find((m) => m.name.toLowerCase() === typed.toLowerCase())?.name || typed
-          : '';
-
-        const handleBlur = () => {
-          if (inputValue.trim() && !materials.some(m => m.name.toLowerCase() === inputValue.trim().toLowerCase())) {
-            field.onChange(inputValue.trim());
-          } else if (!inputValue.trim()) {
-            // stay
-          } else {
-            field.onChange(inputValue.trim());
-          }
-          setInputValue('');
-        };
-
-        return (
-          <Field data-invalid={!!error}>
-            <FieldLabel htmlFor="material-name">Material</FieldLabel>
-            <Combobox
-              value={displayValue}
-              onValueChange={(value) => {
-                setInputValue(value);
-                field.onChange(value);
-                console.log(value)
-              }}
-              onInputChange={(value) => {
-                setInputValue(value);
-                console.log(value)
-              }}
-            >
-              <ComboboxInput id="material-name" showTrigger onBlur={handleBlur} />
-              <ComboboxValue placeholder="Select material" />
-              <ComboboxContent>
-                <ComboboxList>
-                  <ComboboxItem value="">None</ComboboxItem>
-                  <ComboboxItem value="__create__">
-                    <span className="flex items-center gap-2 text-sm">
-                      <Plus className="size-3.5" />
-                      Create new material
-                    </span>
-                  </ComboboxItem>
-                  <ComboboxItem
-                    value="__separator__"
-                    disabled
-                    className="pointer-events-none opacity-50"
-                  >
-                    <span className="h-px bg-border block my-1" />
-                  </ComboboxItem>
-                  {filteredMaterials.map((m) => (
-                    <ComboboxItem key={m.id} value={m.name}>
-                      <span className="font-medium">{m.name}</span>
-                    </ComboboxItem>
-                  ))}
-                </ComboboxList>
-              </ComboboxContent>
-            </Combobox>
-            <FieldDescription>Material being weighed (optional).</FieldDescription>
-            <FieldError errors={error ? [error] : []} />
-          </Field>
-        );
-      }}
-    />
-  );
-}
-
-// ------------------------------------------------
-// 3. ExistingVehicleComboboxField – unchanged
-// ------------------------------------------------
-function ExistingVehicleComboboxField({
-  vehicles,
-  control,
-  form,
-  error,
-}: {
-  vehicles: Vehicle[];
-  control: ReturnType<typeof useForm<FormValues>>['control'];
-  form: ReturnType<typeof useForm<FormValues>>;
-  error?: { message?: string };
-}) {
-  const [inputValue, setInputValue] = useState('');
-
-  const selectedVehicle = useMemo(
-    () => vehicles.find((v) => v.id === Number(inputValue)),
-    [vehicles, inputValue],
+  const filteredVehicles = useMemo(
+    () => vehicles.filter((v) => v.name.toLowerCase().includes(searchValue.toLowerCase())),
+    [vehicles, searchValue],
   );
 
-  return (
-    <Controller
-      name="selectedVehicleId"
-      control={control}
-      render={({ field }) => (
-        <Field data-invalid={!!error}>
-          <FieldLabel htmlFor="existing-vehicle">
-            <RequiredLabel>Existing Vehicle</RequiredLabel>
-          </FieldLabel>
-          <Combobox
-            value={inputValue}
-            onValueChange={(val) => {
-              if (val) {
-                setInputValue(val);
-                field.onChange(Number(val));
-                form.setValue('vehicleName', selectedVehicle?.name ?? '');
-              }
-            }}
-            onInputChange={(val) => setInputValue(val)}
-          >
-            <ComboboxInput id="existing-vehicle" showTrigger />
-            <ComboboxValue placeholder="Select a vehicle" />
-            <ComboboxContent>
-              <ComboboxList>
-                {vehicles.map((v) => (
-                  <ComboboxItem key={v.id} value={String(v.id)}>
-                    <div className="flex flex-col">
-                      <span className="font-medium">{v.name}</span>
-                      {v.tareWeight !== null && v.tareUnit && (
-                        <span className="text-xs text-muted-foreground">
-                          Tare: {v.tareWeight} {v.tareUnit}
-                        </span>
-                      )}
-                    </div>
-                  </ComboboxItem>
-                ))}
-              </ComboboxList>
-            </ComboboxContent>
-          </Combobox>
-          <FieldDescription>Select a vehicle with an existing tare weight.</FieldDescription>
-          <FieldError errors={error ? [error] : []} />
-        </Field>
-      )}
-    />
-  );
-}
-
-// ------------------------------------------------
-// 4. WeightFormFields – used in steps 3 and 4
-// ------------------------------------------------
-interface WeightFormFieldsProps {
-  form: ReturnType<typeof useForm<FormValues>>;
-  vehicles: Vehicle[];
-  materials: Material[];
-  showTareCapture: boolean;   // if true, show the live weight capture
-  ticketId: string;
-}
-
-function WeightFormFields({
-  form,
-  vehicles,
-  materials,
-  showTareCapture,
-  ticketId,
-}: WeightFormFieldsProps) {
-  const vehicleError = form.formState.errors.vehicleName;
-  const materialError = form.formState.errors.materialName;
+  // On blur, persist whatever the user typed (supports creating new vehicles)
+  const handleBlur = () => {
+    if (searchValue && searchValue !== value) {
+      onChange(searchValue);
+    }
+  };
 
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-      <Controller
-        name="ticketId"
-        control={form.control}
-        render={({ field }) => (
-          <Field>
-            <FieldLabel htmlFor="ticket-id">Ticket ID</FieldLabel>
-            <Input
-              {...field}
-              id="ticket-id"
-              className="min-h-12"
-              value={ticketId}
-              disabled
-              placeholder="TKT-0001"
-            />
-            <FieldDescription>Auto-generated ticket identifier.</FieldDescription>
-          </Field>
-        )}
+    <Combobox
+      value={value}
+      onValueChange={onChange}
+      inputValue={searchValue}
+      onInputValueChange={setSearchValue}
+    >
+      <ComboboxInput
+        placeholder="Search or type vehicle number..."
+        disabled={disabled}
+        onBlur={handleBlur}
+        showClear={!!value}
       />
+      <ComboboxContent>
+        <ComboboxList>
+          {filteredVehicles.length > 0 ? (
+            filteredVehicles.map((v) => (
+              <ComboboxItem key={v.id} value={v.name}>
+                <span>{v.name}</span>
+                {v.tareWeight != null && (
+                  <span className="ml-auto text-xs text-muted-foreground">
+                    Tare: {v.tareWeight} {v.tareUnit ?? 'kg'}
+                  </span>
+                )}
+              </ComboboxItem>
+            ))
+          ) : (
+            <ComboboxEmpty>
+              {searchValue ? `Create "${searchValue}" as new vehicle` : 'No vehicles found'}
+            </ComboboxEmpty>
+          )}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
+  );
+}
 
+// ======================================================
+// MATERIAL COMBOBOX
+// ======================================================
+
+function MaterialCombobox({
+  materials,
+  value,
+  onChange,
+  disabled = false,
+}: {
+  materials: Material[];
+  value: string;
+  onChange: (val: string) => void;
+  disabled?: boolean;
+}) {
+  const [searchValue, setSearchValue] = useState(value || '');
+
+  useEffect(() => {
+    setSearchValue(value || '');
+  }, [value]);
+
+  const filteredMaterials = useMemo(
+    () => materials.filter((m) => m.name.toLowerCase().includes(searchValue.toLowerCase())),
+    [materials, searchValue],
+  );
+
+  const handleBlur = () => {
+    if (searchValue && searchValue !== value) {
+      onChange(searchValue);
+    }
+  };
+
+  return (
+    <Combobox
+      value={value}
+      onValueChange={(newVal) => {
+        // Convert sentinel "__none__" back to empty string for the form
+        onChange(newVal === '__none__' ? '' : newVal);
+      }}
+      inputValue={searchValue}
+      onInputValueChange={setSearchValue}
+    >
+      <ComboboxInput
+        placeholder="Search or type material..."
+        disabled={disabled}
+        onBlur={handleBlur}
+        showClear={!!value}
+      />
+      <ComboboxContent>
+        <ComboboxList>
+          {/* "None" sentinel at the top of the list */}
+          <ComboboxItem value="__none__">
+            <span className="text-muted-foreground">None</span>
+          </ComboboxItem>
+          {filteredMaterials.length > 0 ? (
+            filteredMaterials.map((m) => (
+              <ComboboxItem key={m.id} value={m.name}>
+                {m.name}
+              </ComboboxItem>
+            ))
+          ) : (
+            <ComboboxEmpty>
+              {searchValue ? `Create "${searchValue}" as new material` : 'No materials found'}
+            </ComboboxEmpty>
+          )}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
+  );
+}
+
+// ======================================================
+// FORM FIELDS — shared between Tare (step 2) & Gross (step 3)
+// ======================================================
+
+function FormFields({
+  ticketId,
+  control,
+  vehicles,
+  materials,
+  vehicleValue,
+  onVehicleChange,
+  materialValue,
+  onMaterialChange,
+  disabled = false,
+}: {
+  ticketId: string;
+  control: Control<NewWeightForm>;
+  vehicles: Vehicle[];
+  materials: Material[];
+  vehicleValue: string;
+  onVehicleChange: (val: string) => void;
+  materialValue: string;
+  onMaterialChange: (val: string) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      {/* Operator */}
       <Controller
         name="operator"
-        control={form.control}
-        render={({ field, fieldState }) => (
-          <Field data-invalid={!!fieldState.error}>
-            <FieldLabel htmlFor="operator">Operator</FieldLabel>
-            <Input {...field} id="operator" className="min-h-12" placeholder="e.g. John Doe" />
-            <FieldDescription>Name of the operator (optional).</FieldDescription>
-            <FieldError errors={fieldState.error ? [fieldState.error] : []} />
+        control={control}
+        render={({ field }) => (
+          <Field>
+            <FieldLabel htmlFor="weight-operator">Operator</FieldLabel>
+            <Input
+              {...field}
+              id="weight-operator"
+              placeholder="Operator name (optional)"
+              disabled={disabled}
+            />
           </Field>
         )}
       />
 
-      <VehicleComboboxField vehicles={vehicles} control={form.control} error={vehicleError} />
+      {/* Ticket ID — read-only display generated from settings */}
+      <Field>
+        <FieldLabel htmlFor="weight-ticket">Ticket ID</FieldLabel>
+        <Input id="weight-ticket" value={ticketId} disabled />
+      </Field>
 
-      <MaterialComboboxField materials={materials} control={form.control} error={materialError} />
-
-      {/* No manual tare weight fields */}
-      {/* If capture is required, the parent will render the WeightDisplay and capture button */}
-
+      {/* Vehicle Number — combobox with free-text & blur persistence */}
       <Controller
-        name="remark"
-        control={form.control}
-        render={({ field, fieldState }) => (
-          <Field data-invalid={!!fieldState.error} className="lg:col-span-2">
-            <FieldLabel htmlFor="remark">Remark</FieldLabel>
-            <Textarea
-              {...field}
-              id="remark"
-              className="min-h-20"
-              placeholder="Optional notes..."
-              onChange={(e) => field.onChange(e.target.value)}
+        name="vehicleName"
+        control={control}
+        render={({ fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel>
+              Vehicle Number
+              <span className="text-destructive">*</span>
+            </FieldLabel>
+            <VehicleCombobox
+              vehicles={vehicles}
+              value={vehicleValue}
+              onChange={onVehicleChange}
+              disabled={disabled}
             />
-            <FieldDescription>Any additional notes for this record.</FieldDescription>
-            <FieldError errors={fieldState.error ? [fieldState.error] : []} />
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
           </Field>
         )}
+      />
+
+      {/* Material — combobox with "None" option at the top */}
+      <Field>
+        <FieldLabel>Material</FieldLabel>
+        <MaterialCombobox
+          materials={materials}
+          value={materialValue}
+          onChange={onMaterialChange}
+          disabled={disabled}
+        />
+      </Field>
+
+      {/* Remark */}
+      <Controller
+        name="remark"
+        control={control}
+        render={({ field }) => (
+          <Field className="md:col-span-2">
+            <FieldLabel htmlFor="weight-remark">Remark</FieldLabel>
+            <Textarea
+              {...field}
+              id="weight-remark"
+              placeholder="Additional notes (optional)"
+              className="min-h-20"
+              disabled={disabled}
+            />
+          </Field>
+        )}
+      />
+    </FieldGroup>
+  );
+}
+
+// ======================================================
+// STEP 0 — WEIGHING TYPE
+// ======================================================
+
+function WeighingTypeStep({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (val: 'single' | 'double') => void;
+}) {
+  return (
+    <div className="space-y-6 py-4">
+      <h3 className="text-lg font-semibold">Select Weighing Type</h3>
+
+      <RadioGroup
+        value={value}
+        onValueChange={onChange}
+        className="grid grid-cols-1 gap-4 sm:grid-cols-2"
+      >
+        {/* Single Weighing card */}
+        <Label
+          className={cn(
+            'flex cursor-pointer flex-col items-center gap-4 rounded-lg border-2 p-8 transition-all',
+            value === 'single' && 'border-primary bg-primary/5',
+            value !== 'single' && 'border-border hover:border-muted-foreground/30',
+          )}
+        >
+          <RadioGroupItem value="single" className="sr-only" />
+          <Weight className="size-10 text-muted-foreground" />
+          <div className="text-center">
+            <p className="text-base font-semibold">Single Weighing</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Record only the tare weight of the vehicle
+            </p>
+          </div>
+        </Label>
+
+        {/* Double Weighing card */}
+        <Label
+          className={cn(
+            'flex cursor-pointer flex-col items-center gap-4 rounded-lg border-2 p-8 transition-all',
+            value === 'double' && 'border-primary bg-primary/5',
+            value !== 'double' && 'border-border hover:border-muted-foreground/30',
+          )}
+        >
+          <RadioGroupItem value="double" className="sr-only" />
+          <Scale className="size-10 text-muted-foreground" />
+          <div className="text-center">
+            <p className="text-base font-semibold">Double Weighing</p>
+            <p className="mt-1 text-sm text-muted-foreground">Full gross / tare / net workflow</p>
+          </div>
+        </Label>
+      </RadioGroup>
+    </div>
+  );
+}
+
+// ======================================================
+// STEP 1 — VEHICLE SELECTION (double only)
+// ======================================================
+
+function VehicleSelectionStep({
+  tareSource,
+  onTareSourceChange,
+  vehicles,
+  vehicleName,
+  onVehicleChange,
+}: {
+  tareSource: string | undefined;
+  onTareSourceChange: (val: 'existing' | 'new') => void;
+  vehicles: Vehicle[];
+  vehicleName: string;
+  onVehicleChange: (val: string) => void;
+}) {
+  const selectedVehicle = useMemo(
+    () => vehicles.find((v) => v.name === vehicleName) ?? null,
+    [vehicles, vehicleName],
+  );
+
+  return (
+    <div className="space-y-6 py-4">
+      <h3 className="text-lg font-semibold">Vehicle &amp; Tare Source</h3>
+
+      <RadioGroup
+        value={tareSource}
+        onValueChange={onTareSourceChange}
+        className="grid grid-cols-1 gap-4 sm:grid-cols-2"
+      >
+        {/* Record new weight */}
+        <Label
+          className={cn(
+            'flex cursor-pointer items-center gap-4 rounded-lg border-2 p-5 transition-all',
+            tareSource === 'new' && 'border-primary bg-primary/5',
+            tareSource !== 'new' && 'border-border hover:border-muted-foreground/30',
+          )}
+        >
+          <RadioGroupItem value="new" className="sr-only" />
+          <div>
+            <p className="font-semibold">Record New Weight</p>
+            <p className="mt-0.5 text-sm text-muted-foreground">Capture a fresh tare reading</p>
+          </div>
+        </Label>
+
+        {/* Use existing tare */}
+        <Label
+          className={cn(
+            'flex cursor-pointer items-center gap-4 rounded-lg border-2 p-5 transition-all',
+            tareSource === 'existing' && 'border-primary bg-primary/5',
+            tareSource !== 'existing' && 'border-border hover:border-muted-foreground/30',
+          )}
+        >
+          <RadioGroupItem value="existing" className="sr-only" />
+          <div>
+            <p className="font-semibold">Use Existing Tare</p>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              Select a vehicle with stored tare
+            </p>
+          </div>
+        </Label>
+      </RadioGroup>
+
+      {/* Vehicle combobox — only shown when "use existing" is selected */}
+      {tareSource === 'existing' && (
+        <div className="space-y-3">
+          <Label>Select Vehicle</Label>
+          <VehicleCombobox vehicles={vehicles} value={vehicleName} onChange={onVehicleChange} />
+          {selectedVehicle?.tareWeight != null && (
+            <p className="text-sm text-muted-foreground">
+              Stored tare: <strong>{selectedVehicle.tareWeight}</strong>{' '}
+              {selectedVehicle.tareUnit ?? 'kg'}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ======================================================
+// WEIGHT CAPTURE AREA
+// Returns different UI depending on state:
+//   - existingTare  → read-only display
+//   - capturedWeight → confirmation with value
+//   - otherwise      → live WeightDisplay + Capture button
+// ======================================================
+
+function WeightCaptureArea({
+  label,
+  capturedWeight,
+  onCapture,
+  canCapture,
+  weightUnit,
+  existingTare,
+}: {
+  label: string;
+  capturedWeight: number | null;
+  onCapture: () => void;
+  canCapture: boolean;
+  weightUnit: string;
+  existingTare?: { weight: number; unit: string } | null;
+}) {
+  return (
+    <div className="space-y-4">
+      {existingTare ? (
+        /* Read-only tare from vehicle record */
+        <div className="rounded-lg border p-5">
+          <p className="text-sm text-muted-foreground">{label}</p>
+          <p className="mt-1 text-2xl font-bold">
+            {existingTare.weight} {existingTare.unit}
+          </p>
+          <p className="text-xs text-muted-foreground">Using stored vehicle tare</p>
+        </div>
+      ) : capturedWeight != null ? (
+        /* Success state — weight has been captured */
+        <div className="rounded-lg border border-green-500/30 bg-green-500/5 p-5">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">{label}</p>
+            <Check className="size-5 text-green-500" />
+          </div>
+          <p className="mt-1 text-3xl font-bold">
+            {capturedWeight} {weightUnit}
+          </p>
+          <p className="text-xs text-green-500">Captured</p>
+        </div>
+      ) : (
+        /* Capture mode — show scale display + action button */
+        <div className="space-y-4">
+          <p className="text-sm font-medium text-muted-foreground">{label}</p>
+          <div className="max-w-md">
+            <WeightDisplay />
+          </div>
+          <Button
+            type="button"
+            size="lg"
+            onClick={onCapture}
+            disabled={!canCapture}
+            className="w-full sm:w-auto"
+          >
+            {canCapture ? `Capture ${label}` : 'Waiting for stable weight...'}
+          </Button>
+          {!canCapture && (
+            <p className="text-xs text-muted-foreground">
+              Ensure the scale is connected and the reading is stable
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ======================================================
+// STEP 2 — TARE WEIGHT CAPTURE
+// ======================================================
+
+function TareWeightStep({
+  ticketId,
+  control,
+  vehicles,
+  materials,
+  operationType,
+  tareSource,
+  capturedTareWeight,
+  onCaptureTare,
+  canCapture,
+  selectedVehicle,
+  weightUnit,
+  vehicleValue,
+  onVehicleChange,
+  materialValue,
+  onMaterialChange,
+}: {
+  ticketId: string;
+  control: Control<NewWeightForm>;
+  vehicles: Vehicle[];
+  materials: Material[];
+  operationType: string;
+  tareSource: string | undefined;
+  capturedTareWeight: number | null;
+  onCaptureTare: () => void;
+  canCapture: boolean;
+  selectedVehicle: Vehicle | null;
+  weightUnit: string;
+  vehicleValue: string;
+  onVehicleChange: (val: string) => void;
+  materialValue: string;
+  onMaterialChange: (val: string) => void;
+}) {
+  const needsCapture =
+    operationType === 'single' || (operationType === 'double' && tareSource === 'new');
+  const useExisting = operationType === 'double' && tareSource === 'existing';
+
+  return (
+    <div className="space-y-8 py-4">
+      <h3 className="text-lg font-semibold">Tare Weight Capture</h3>
+
+      <FormFields
+        ticketId={ticketId}
+        control={control}
+        vehicles={vehicles}
+        materials={materials}
+        vehicleValue={vehicleValue}
+        onVehicleChange={onVehicleChange}
+        materialValue={materialValue}
+        onMaterialChange={onMaterialChange}
+      />
+
+      <Separator />
+
+      {needsCapture && (
+        <WeightCaptureArea
+          label="Tare Weight"
+          capturedWeight={capturedTareWeight}
+          onCapture={onCaptureTare}
+          canCapture={canCapture}
+          weightUnit={weightUnit}
+        />
+      )}
+
+      {useExisting && selectedVehicle && (
+        <WeightCaptureArea
+          label="Tare Weight (Existing)"
+          capturedWeight={null}
+          onCapture={onCaptureTare}
+          canCapture={false}
+          weightUnit={weightUnit}
+          existingTare={
+            selectedVehicle.tareWeight != null
+              ? {
+                  weight: selectedVehicle.tareWeight,
+                  unit: selectedVehicle.tareUnit ?? weightUnit,
+                }
+              : null
+          }
+        />
+      )}
+    </div>
+  );
+}
+
+// ======================================================
+// WEIGHT SUMMARY CARDS — shown in step 3
+// ======================================================
+
+function WeightSummaryCards({
+  tareWeight,
+  grossWeight,
+  netWeight,
+  weightUnit,
+}: {
+  tareWeight: number | null;
+  grossWeight: number | null;
+  netWeight: number | null;
+  weightUnit: string;
+}) {
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm text-muted-foreground">Tare Weight</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-2xl font-bold">
+            {tareWeight != null ? tareWeight : '--'} {weightUnit}
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm text-muted-foreground">Gross Weight</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-2xl font-bold">
+            {grossWeight != null ? grossWeight : '--'} {weightUnit}
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm text-muted-foreground">Net Weight</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-2xl font-bold">
+            {netWeight != null ? netWeight : '--'} {weightUnit}
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ======================================================
+// STEP 3 — GROSS WEIGHT CAPTURE (double only)
+// ======================================================
+
+function GrossWeightStep({
+  ticketId,
+  control,
+  vehicles,
+  materials,
+  capturedTareWeight,
+  capturedGrossWeight,
+  onCaptureGross,
+  canCapture,
+  selectedVehicle,
+  weightUnit,
+  netWeight,
+  vehicleValue,
+  onVehicleChange,
+  materialValue,
+  onMaterialChange,
+}: {
+  ticketId: string;
+  control: Control<NewWeightForm>;
+  vehicles: Vehicle[];
+  materials: Material[];
+  capturedTareWeight: number | null;
+  capturedGrossWeight: number | null;
+  onCaptureGross: () => void;
+  canCapture: boolean;
+  selectedVehicle: Vehicle | null;
+  weightUnit: string;
+  netWeight: number | null;
+  vehicleValue: string;
+  onVehicleChange: (val: string) => void;
+  materialValue: string;
+  onMaterialChange: (val: string) => void;
+}) {
+  const tareValue = capturedTareWeight ?? selectedVehicle?.tareWeight ?? null;
+
+  return (
+    <div className="space-y-8 py-4">
+      <h3 className="text-lg font-semibold">Gross Weight Capture</h3>
+
+      <WeightSummaryCards
+        tareWeight={tareValue}
+        grossWeight={capturedGrossWeight}
+        netWeight={netWeight}
+        weightUnit={weightUnit}
+      />
+
+      <Separator />
+
+      <FormFields
+        ticketId={ticketId}
+        control={control}
+        vehicles={vehicles}
+        materials={materials}
+        vehicleValue={vehicleValue}
+        onVehicleChange={onVehicleChange}
+        materialValue={materialValue}
+        onMaterialChange={onMaterialChange}
+      />
+
+      <Separator />
+
+      <WeightCaptureArea
+        label="Gross Weight"
+        capturedWeight={capturedGrossWeight}
+        onCapture={onCaptureGross}
+        canCapture={canCapture}
+        weightUnit={weightUnit}
       />
     </div>
   );
 }
 
-// ------------------------------------------------
-// 5. Main Dialog Component
-// ------------------------------------------------
+// ======================================================
+// MAIN COMPONENT
+// ======================================================
+
 export function NewWeightDialog() {
   const { isNewWeightDialogOpen, setNewWeightDialogOpen } = useWeightDialogsStore();
-  const { settings, loadSettings } = useSettingsStore();
-  const latestReading = useWeightStore((s) => s.latestReading);
-  const serialStatus = useWeightStore((s) => s.serialStatus);
-  const setLatestReading = useWeightStore((s) => s.setLatestReading);
-  const setSerialStatus = useWeightStore((s) => s.setSerialStatus);
+  const { settings } = useSettingsStore();
+  const { latestReading } = useWeightStore();
 
   const [stepIndex, setStepIndex] = useState(0);
-  const [isSaving, setIsSaving] = useState(false);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
+  const [capturedTareWeight, setCapturedTareWeight] = useState<number | null>(null);
+  const [capturedGrossWeight, setCapturedGrossWeight] = useState<number | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(false);
 
-  // Captured tare weight
-  const [capturedTareWeight, setCapturedTareWeight] = useState<number | null>(null);
-  const [capturedTareUnit, setCapturedTareUnit] = useState<string | null>(null);
-  const [capturedTareStable, setCapturedTareStable] = useState(false);
-
-  // Gross weight capture (only for step 4)
-  const [capturedGross, setCapturedGross] = useState<number | null>(null);
-  const [capturedGrossUnit, setCapturedGrossUnit] = useState<string | null>(null);
-  const [capturedGrossStable, setCapturedGrossStable] = useState(false);
-
-  const form = useForm<FormValues>({
-    resolver: zodResolver(schema),
+  const form = useForm<NewWeightForm>({
+    resolver: zodResolver(newWeightSchema),
     defaultValues: {
-      weighingType: undefined,
-      vehicleMode: undefined,
-      selectedVehicleId: undefined,
+      operationType: 'double',
       vehicleName: '',
       materialName: '',
       operator: '',
       remark: '',
-      tareWeight: undefined,
-      tareUnit: undefined,
-      grossWeight: undefined,
-      netWeight: undefined,
-      ticketId: '',
     },
   });
 
-  const weighingType = form.watch('weighingType');
-  const vehicleMode = form.watch('vehicleMode');
-  const selectedVehicleId = form.watch('selectedVehicleId');
-  const isSingle = weighingType === 'single';
-  const isDouble = weighingType === 'double';
+  const operationType = form.watch('operationType');
+  const vehicleName = form.watch('vehicleName');
+  const materialName = form.watch('materialName');
 
-  const getRealStep = useCallback(
-    (stepperIdx: number) => (isSingle && stepperIdx === 1 ? 2 : stepperIdx),
-    [isSingle],
+  // Filter steps based on operation type
+  const visibleSteps = useMemo(
+    () => allSteps.filter((s) => operationType === 'double' || s.showFor === 'both'),
+    [operationType],
   );
-  const realStep = getRealStep(stepIndex);
 
-  const selectedVehicleForTare = useMemo(() => {
-    if (vehicleMode === 'existing' && selectedVehicleId) {
-      return vehicles.find((v) => v.id === selectedVehicleId) ?? null;
-    }
-    return null;
-  }, [vehicleMode, selectedVehicleId, vehicles]);
-
-  const stepperSteps = useMemo(() => {
-    if (isSingle) {
-      return [
-        { label: 'Step 1', subLabel: 'Weighing Type' },
-        { label: 'Step 3', subLabel: 'Record Tare Weight' },
-      ];
-    }
-    return [
-      { label: 'Step 1', subLabel: 'Weighing Type' },
-      { label: 'Step 2', subLabel: 'Vehicle Selection' },
-      { label: 'Step 3', subLabel: 'Record Tare Weight' },
-      { label: 'Step 4', subLabel: 'Gross Weight' },
-    ];
-  }, [isSingle]);
-
-  const ticketId = useMemo(() => {
-    const prefix = settings?.ticketPrefix ?? 'TKT';
-    const num = settings?.nextTicketNumber ?? 1;
-    return `${prefix}-${String(num).padStart(4, '0')}`;
-  }, [settings]);
-
-  const loadLookups = useCallback(async () => {
-    setIsLoadingData(true);
-    try {
-      const [veh, mat] = await Promise.all([
-        window.electronAPI.getAllVehicles(),
-        window.electronAPI.getAllMaterials(),
-      ]);
-      setVehicles(veh);
-      setMaterials(mat);
-    } catch (err) {
-      logger('error', (err as Error).message);
-      toast.error('Failed to load vehicles / materials.');
-    } finally {
-      setIsLoadingData(false);
-    }
-  }, []);
-
-  // Reset on open
+  // Clamp step index when the visible step list shrinks (e.g. switching to Single)
   useEffect(() => {
-    if (isNewWeightDialogOpen) {
-      setStepIndex(0);
-      setCapturedTareWeight(null);
-      setCapturedTareUnit(null);
-      setCapturedTareStable(false);
-      setCapturedGross(null);
-      setCapturedGrossUnit(null);
-      setCapturedGrossStable(false);
-      form.reset({
-        weighingType: undefined,
-        vehicleMode: undefined,
-        selectedVehicleId: undefined,
-        vehicleName: '',
-        materialName: '',
-        operator: '',
-        remark: '',
-        tareWeight: undefined,
-        tareUnit: settings?.weightUnit || 'kg',   // default unit from settings
-        grossWeight: undefined,
-        netWeight: undefined,
-        ticketId: '',
-      });
-      loadSettings();
-      loadLookups();
+    if (stepIndex >= visibleSteps.length) {
+      setStepIndex(Math.max(0, visibleSteps.length - 1));
     }
-  }, [isNewWeightDialogOpen, loadSettings, loadLookups, form, settings?.weightUnit]);
+  }, [visibleSteps.length, stepIndex]);
 
-  // Subscribe to weight updates (only on step 4 in double mode, or step 3 when capturing tare)
+  const currentStep = visibleSteps[stepIndex];
+  const weightUnit = settings?.weightUnit ?? 'kg';
+
+  const ticketId = settings
+    ? `${settings.ticketPrefix}-${String(settings.nextTicketNumber).padStart(4, '0')}`
+    : '---';
+
+  const selectedVehicle = useMemo(
+    () => vehicles.find((v) => v.name === vehicleName) ?? null,
+    [vehicles, vehicleName],
+  );
+
+  // Reset all state when the dialog opens
   useEffect(() => {
-    const needUpdates = (isDouble && realStep === 3) || (realStep === 2 && (isSingle || vehicleMode === 'new'));
-    if (!needUpdates) return;
-    const unsub = window.electronAPI.onWeightUpdate((reading: WeightReading) => {
-      setLatestReading(reading);
-    });
-    return () => { unsub(); };
-  }, [isDouble, realStep, isSingle, vehicleMode, setLatestReading]);
+    if (!isNewWeightDialogOpen) return;
 
-  useEffect(() => {
-    const needUpdates = (isDouble && realStep === 3) || (realStep === 2 && (isSingle || vehicleMode === 'new'));
-    if (!needUpdates) return;
-    const unsubStatus = window.electronAPI.onSerialStatus((status) => {
-      setSerialStatus(status);
-    });
-    return () => { unsubStatus(); };
-  }, [isDouble, realStep, isSingle, vehicleMode, setSerialStatus]);
-
-  // Navigation handlers
-  const handleNext = useCallback(async () => {
-    let fields: (keyof FormValues)[] = [];
-    if (realStep === 0) {
-      fields = ['weighingType'];
-    } else if (realStep === 1 && isDouble) {
-      fields = ['vehicleMode'];
-      if (vehicleMode === 'existing') fields.push('selectedVehicleId');
-    } else if (realStep === 2) {
-      fields = ['vehicleName', 'materialName', 'operator', 'remark'];
-      // No manual tare weight fields; we'll check capturedTareWeight below
-    } else if (realStep === 3) {
-      fields = ['grossWeight'];
-    }
-
-    const isValid = await form.trigger(fields);
-    if (!isValid) {
-      toast.info('Please complete all required fields.');
-      return;
-    }
-
-    // Extra validations
-    if (realStep === 1 && isDouble && vehicleMode === 'existing') {
-      if (!selectedVehicleId || selectedVehicleId <= 0) {
-        form.setError('selectedVehicleId', { message: 'Please select an existing vehicle.' });
-        return;
-      }
-    }
-    if (realStep === 2 && (isSingle || (isDouble && vehicleMode === 'new'))) {
-      // must have captured a tare weight
-      if (!capturedTareWeight) {
-        toast.info('Please capture a stable tare weight before continuing.');
-        return;
+    async function loadData() {
+      setIsLoadingData(true);
+      try {
+        const [vehiclesData, materialsData] = await Promise.all([
+          window.electronAPI.getAllVehicles(),
+          window.electronAPI.getAllMaterials(),
+        ]);
+        setVehicles(vehiclesData);
+        setMaterials(materialsData);
+      } catch {
+        toast.error('Failed to load vehicles and materials');
+      } finally {
+        setIsLoadingData(false);
       }
     }
 
-    if (isSingle) {
-      if (stepIndex === 0) setStepIndex(1);
-    } else {
-      if (realStep < 3) setStepIndex((prev) => prev + 1);
-    }
-  }, [realStep, stepIndex, isSingle, isDouble, vehicleMode, selectedVehicleId, capturedTareWeight, form]);
+    form.reset();
+    setStepIndex(0);
+    setCapturedTareWeight(null);
+    setCapturedGrossWeight(null);
+    loadData();
+  }, [isNewWeightDialogOpen]);
 
-  const handlePrev = useCallback(() => {
-    if (isSingle) {
-      if (stepIndex === 1) setStepIndex(0);
-    } else {
-      if (stepIndex > 0) setStepIndex((prev) => prev - 1);
-    }
-  }, [isSingle, stepIndex]);
+  const canCapture = latestReading?.isStable === true && latestReading?.weight != null;
 
   const handleCaptureTare = useCallback(() => {
-    if (!latestReading?.isStable) {
-      toast.info('Please wait for a stable weight reading.');
-      return;
+    if (canCapture && latestReading) {
+      setCapturedTareWeight(latestReading.weight);
     }
-    setCapturedTareWeight(latestReading.weight);
-    setCapturedTareUnit(latestReading.unit);
-    setCapturedTareStable(true);
-    // Update form fields so they are saved later
-    form.setValue('tareWeight', latestReading.weight);
-    form.setValue('tareUnit', latestReading.unit as typeof WEIGHT_UNITS[number]);
-    toast.success(`Tare weight captured: ${latestReading.weight} ${latestReading.unit}`);
-  }, [latestReading, form]);
+  }, [canCapture, latestReading]);
 
-  const handleSaveExit = useCallback(async () => {
-    try {
-      setIsSaving(true);
-      const data = form.getValues();
+  const handleCaptureGross = useCallback(() => {
+    if (canCapture && latestReading) {
+      setCapturedGrossWeight(latestReading.weight);
+    }
+  }, [canCapture, latestReading]);
 
-      const payload: CreateRecordInput = {
-        operationType: data.weighingType!,
-        vehicleName: data.vehicleName || undefined,
-        materialName: data.materialName || undefined,
-        operator: data.operator || undefined,
-        remark: data.remark || undefined,
-        status: 'pending',
+  // Compute net = gross - tare
+  const netWeight = useMemo(() => {
+    if (capturedGrossWeight == null) return null;
+    const tare = capturedTareWeight ?? selectedVehicle?.tareWeight ?? 0;
+    return capturedGrossWeight - tare;
+  }, [capturedGrossWeight, capturedTareWeight, selectedVehicle]);
+
+  // Validate the current step before allowing navigation
+  const validateCurrentStep = useCallback(async (): Promise<boolean> => {
+    switch (currentStep?.id) {
+      case 'type': {
+        if (!operationType) {
+          toast.error('Please select a weighing type');
+          return false;
+        }
+        return true;
+      }
+      case 'vehicle': {
+        const tareValue = form.getValues('tareSource');
+        if (tareValue === 'existing' && !form.getValues('vehicleName')) {
+          toast.error('Please select a vehicle with existing tare');
+          return false;
+        }
+        return true;
+      }
+      case 'tare': {
+        const valid = await form.trigger('vehicleName');
+        if (!valid) return false;
+        const needsCapture =
+          operationType === 'single' ||
+          (operationType === 'double' && form.getValues('tareSource') === 'new');
+        if (needsCapture && !capturedTareWeight) {
+          toast.error('Please capture the tare weight before continuing');
+          return false;
+        }
+        return true;
+      }
+      case 'gross': {
+        const valid = await form.trigger('vehicleName');
+        if (!valid) return false;
+        if (!capturedGrossWeight) {
+          toast.error('Please capture the gross weight');
+          return false;
+        }
+        return true;
+      }
+      default:
+        return true;
+    }
+  }, [currentStep, operationType, capturedTareWeight, capturedGrossWeight, form]);
+
+  // Navigation handlers
+  const handleNext = async () => {
+    if (!(await validateCurrentStep())) return;
+    if (stepIndex < visibleSteps.length - 1) {
+      setStepIndex((prev) => prev + 1);
+    }
+  };
+
+  const handlePrev = () => {
+    if (stepIndex > 0) {
+      setStepIndex((prev) => prev - 1);
+    }
+  };
+
+  // Build the payload for electronAPI.createRecord()
+  const buildSubmitPayload = useCallback(
+    (status: 'pending' | 'completed') => {
+      const values = form.getValues();
+      const payload: Record<string, unknown> = {
+        operationType: values.operationType,
+        vehicleName: values.vehicleName || undefined,
+        materialName: values.materialName || undefined,
+        operator: values.operator || undefined,
+        remark: values.remark || undefined,
+        status,
       };
 
-      if (data.weighingType === 'single') {
+      // Tare weight — from local capture or from the selected vehicle's record
+      if (values.operationType === 'single' || values.operationType === 'double') {
         if (capturedTareWeight != null) {
           payload.tareWeight = capturedTareWeight;
           payload.vehicleTareWeight = capturedTareWeight;
-          payload.vehicleTareUnit = capturedTareUnit ?? settings?.weightUnit;
-        }
-      } else if (data.weighingType === 'double') {
-        if (vehicleMode === 'existing' && selectedVehicleForTare) {
-          payload.tareWeight = selectedVehicleForTare.tareWeight;
-          payload.vehicleTareWeight = selectedVehicleForTare.tareWeight;
-          payload.vehicleTareUnit = selectedVehicleForTare.tareUnit;
-        } else if (vehicleMode === 'new') {
-          // captured tare weight (already set via handleCaptureTare)
-          if (capturedTareWeight != null) {
-            payload.tareWeight = capturedTareWeight;
-            payload.vehicleTareWeight = capturedTareWeight;
-            payload.vehicleTareUnit = capturedTareUnit ?? settings?.weightUnit;
-          }
-          // If also captured gross (maybe in step 4), we could include, but save & exit keeps pending
+          payload.vehicleTareUnit = weightUnit;
+        } else if (selectedVehicle?.tareWeight != null) {
+          payload.vehicleTareWeight = selectedVehicle.tareWeight;
+          payload.vehicleTareUnit = selectedVehicle.tareUnit ?? weightUnit;
         }
       }
 
-      await window.electronAPI.createRecord(payload);
-      toast.success('Record saved successfully');
-      setNewWeightDialogOpen(false);
-    } catch (err) {
-      logger('error', (err as Error).message);
-      toast.error('Failed to save record.');
-    } finally {
-      setIsSaving(false);
-    }
-  }, [form, vehicleMode, selectedVehicleForTare, capturedTareWeight, capturedTareUnit, capturedGross, capturedGrossStable, settings?.weightUnit, setNewWeightDialogOpen]);
-
-  const handleComplete = useCallback(async () => {
-    try {
-      const valid = await form.trigger(['grossWeight']);
-      if (!valid) {
-        toast.info('Please capture a gross weight before completing.');
-        return;
+      // Gross & net — only for completed double weighments
+      if (values.operationType === 'double') {
+        if (capturedGrossWeight != null) {
+          payload.grossWeight = capturedGrossWeight;
+        }
+        if (netWeight != null) {
+          payload.netWeight = netWeight;
+        }
       }
-      setIsSaving(true);
-      const data = form.getValues();
-      const tare = data.tareWeight ?? selectedVehicleForTare?.tareWeight ?? 0;
-      const net = (capturedGross ?? 0) - tare;
 
-      const payload: CreateRecordInput = {
-        operationType: 'double',
-        vehicleName: data.vehicleName || undefined,
-        materialName: data.materialName || undefined,
-        operator: data.operator || undefined,
-        remark: data.remark || undefined,
-        status: 'completed',
-        grossWeight: capturedGross ?? undefined,
-        tareWeight: tare || null,
-        netWeight: net,
-        vehicleTareWeight: selectedVehicleForTare?.tareWeight ?? data.tareWeight ?? null,
-        vehicleTareUnit: selectedVehicleForTare?.tareUnit ?? data.tareUnit ?? null,
-      };
-
-      await window.electronAPI.createRecord(payload);
-      toast.success('Record completed successfully');
-      setNewWeightDialogOpen(false);
-    } catch (err) {
-      logger('error', (err as Error).message);
-      toast.error('Failed to complete record.');
-    } finally {
-      setIsSaving(false);
-    }
-  }, [form, capturedGross, selectedVehicleForTare, setNewWeightDialogOpen]);
-
-  const handleCaptureGross = useCallback(() => {
-    if (!latestReading?.isStable) {
-      toast.info('Please wait for a stable weight reading.');
-      return;
-    }
-    setCapturedGross(latestReading.weight);
-    setCapturedGrossUnit(latestReading.unit);
-    setCapturedGrossStable(true);
-    form.setValue('grossWeight', latestReading.weight);
-    toast.success(`Gross weight captured: ${latestReading.weight} ${latestReading.unit}`);
-  }, [latestReading, form]);
-
-  const isSaveEnabled = (isSingle && realStep === 2) || (isDouble && realStep >= 2);
-
-  const handleStepClick = (idx: number) => {
-    if (idx <= stepIndex) setStepIndex(idx);
-  };
-
-  const isStepActive = (idx: number) => stepIndex === idx;
-  const isStepCompleted = (idx: number) => stepIndex > idx;
-
-  const renderStepper = () => (
-    <div className="flex items-start justify-between gap-2 overflow-x-auto">
-      {stepperSteps.map((step, idx) => {
-        const completed = isStepCompleted(idx);
-        const active = isStepActive(idx);
-        return (
-          <div key={step.label} className="flex items-center w-full">
-            <button
-              type="button"
-              onClick={() => handleStepClick(idx)}
-              className="group flex flex-col items-center text-center"
-            >
-              <div
-                className={cn(
-                  'flex size-10 items-center justify-center rounded-full border-2 font-semibold transition-all',
-                  completed && 'border-green-500 bg-green-500 text-white',
-                  active && 'border-primary bg-primary text-white',
-                  !completed && !active && 'bg-background text-muted-foreground',
-                )}
-              >
-                {completed ? <Check className="size-4" /> : idx + 1}
-              </div>
-              <div className="mt-2">
-                <p className={cn('text-xs font-semibold', active && 'text-primary', completed && 'text-green-600')}>
-                  {step.label}
-                </p>
-                <p className="text-muted-foreground text-xs">{step.subLabel}</p>
-              </div>
-            </button>
-            {idx < stepperSteps.length - 1 && <div className="mx-2 h-[1.5px] flex-1 bg-border w-full!" />}
-          </div>
-        );
-      })}
-    </div>
+      return payload;
+    },
+    [capturedTareWeight, capturedGrossWeight, selectedVehicle, weightUnit, netWeight, form],
   );
 
-  const renderStepContent = () => {
-    if (realStep === 0) {
-      // ... (same as original, no changes)
-      return (
-        <div className="space-y-4">
-          <Controller
-            name="weighingType"
-            control={form.control}
-            render={({ field }) => (
-              <Field>
-                <FieldLabel><RequiredLabel>Weighing Type</RequiredLabel></FieldLabel>
-                <RadioGroup value={field.value} onValueChange={field.onChange} className="grid grid-cols-2 gap-4">
-                  <div className={cn('flex items-center gap-3 rounded-lg border border-input p-4', {
-                    'bg-foreground text-background!': field.value === 'single',
-                  })}>
-                    <RadioGroupItem value="single" id="single" />
-                    <label htmlFor="single" className="text-sm font-medium cursor-pointer">
-                      Single Weighing
-                      <p className="text-xs text-muted-foreground mt-0.5">Record/update vehicle tare weight only.</p>
-                    </label>
-                  </div>
-                  <div className={cn('flex items-center gap-3 rounded-lg border border-input p-4', {
-                    'bg-foreground text-background!': field.value === 'double',
-                  })}>
-                    <RadioGroupItem value="double" id="double" />
-                    <label htmlFor="double" className="text-sm font-medium cursor-pointer">
-                      Double Weighing
-                      <p className="text-xs text-muted-foreground mt-0.5">Full gross/tare/net workflow.</p>
-                    </label>
-                  </div>
-                </RadioGroup>
-                <FieldDescription>
-                  Single weighing records only a vehicle&apos;s tare weight. Double weighing completes the full weight workflow.
-                </FieldDescription>
-              </Field>
-            )}
-          />
-        </div>
-      );
+  // Save & Exit — submit as pending, then close the dialog
+  const handleSaveExit = useCallback(async () => {
+    const vehicle = form.getValues('vehicleName');
+    if (!vehicle) {
+      toast.error('Vehicle number is required');
+      return;
     }
 
-    if (realStep === 1 && isDouble) {
-      return (
-        <div className="space-y-4">
-          <Controller
-            name="vehicleMode"
-            control={form.control}
-            render={({ field }) => (
-              <Field>
-                <FieldLabel><RequiredLabel>Tare Weight Source</RequiredLabel></FieldLabel>
-                <RadioGroup value={field.value} onValueChange={field.onChange} className="grid grid-cols-1 gap-3">
-                  <div className="flex items-center gap-3 rounded-lg border border-input p-4">
-                    <RadioGroupItem value="existing" id="existing" />
-                    <label htmlFor="existing" className="text-sm font-medium cursor-pointer">Use existing tare weight</label>
-                  </div>
-                  <div className="flex items-center gap-3 rounded-lg border border-input p-4">
-                    <RadioGroupItem value="new" id="new" />
-                    <label htmlFor="new" className="text-sm font-medium cursor-pointer">Record new weight</label>
-                  </div>
-                </RadioGroup>
-                <FieldDescription>
-                  Choose whether to use a stored tare weight from an existing vehicle or record a new one from the scale.
-                </FieldDescription>
-              </Field>
-            )}
-          />
-          {vehicleMode === 'existing' && (
-            <ExistingVehicleComboboxField
-              vehicles={vehicles}
-              control={form.control}
-              form={form}
-              error={form.formState.errors.selectedVehicleId}
-            />
-          )}
-        </div>
-      );
+    setIsSubmitting(true);
+    try {
+      const payload = buildSubmitPayload('pending');
+      await window.electronAPI.createRecord(payload);
+      toast.success('Record saved');
+      setNewWeightDialogOpen(false);
+    } catch {
+      toast.error('Failed to save record');
+    } finally {
+      setIsSubmitting(false);
     }
+  }, [buildSubmitPayload, setNewWeightDialogOpen]);
 
-    if (realStep === 2) {
-      // Determine if we need to show tare capture
-      const needTareCapture = isSingle || (isDouble && vehicleMode === 'new');
-      return (
-        <div className="space-y-4">
-          <WeightFormFields
-            form={form}
-            vehicles={vehicles}
-            materials={materials}
-            showTareCapture={needTareCapture}
-            ticketId={ticketId}
-          />
-          {needTareCapture && (
-            <div className="space-y-4">
-              {/* Live weight display */}
-              <WeightDisplay />
-              <div className="flex items-center gap-4">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={handleCaptureTare}
-                  disabled={capturedTareStable || !latestReading || latestReading.weight <= 0 || serialStatus !== 'connected'}
-                >
-                  {capturedTareStable ? 'Tare Captured' : 'Capture Tare'}
-                </Button>
-                {capturedTareWeight != null && (
-                  <p className="text-lg font-semibold">
-                    Captured: {capturedTareWeight} {capturedTareUnit}
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-          {!needTareCapture && (
-            <div className="rounded-md border border-input bg-accent/30 p-3 text-sm text-muted-foreground">
-              Tare weight from selected vehicle: {selectedVehicleForTare?.tareWeight} {selectedVehicleForTare?.tareUnit}
-            </div>
-          )}
-        </div>
-      );
+  // Complete — validate, submit as completed, then close
+  const handleComplete = useCallback(async () => {
+    if (!(await validateCurrentStep())) return;
+
+    setIsSubmitting(true);
+    try {
+      const payload = buildSubmitPayload('completed');
+      await window.electronAPI.createRecord(payload);
+      toast.success('Record saved');
+      setNewWeightDialogOpen(false);
+    } catch {
+      toast.error('Failed to save record');
+    } finally {
+      setIsSubmitting(false);
     }
+  }, [validateCurrentStep, buildSubmitPayload, setNewWeightDialogOpen]);
 
-    return null;
-  };
-
-  const renderStep4Content = () => {
-    const displayGross = capturedGross ?? latestReading?.weight ?? null;
-    const isStableNow = (capturedGrossStable || latestReading?.isStable) ?? false;
-
-    const tareValue = (() => {
-      if (vehicleMode === 'existing' && selectedVehicleForTare?.tareWeight) return selectedVehicleForTare.tareWeight;
-      const manual = form.getValues('tareWeight');
-      return manual ?? null;
-    })();
-    const tareUnit = (() => {
-      if (vehicleMode === 'existing' && selectedVehicleForTare?.tareUnit) return selectedVehicleForTare.tareUnit;
-      return form.getValues('tareUnit');
-    })();
-    const netValue = displayGross != null && tareValue != null ? displayGross - tareValue : null;
-
-    return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <div className="lg:col-span-2">
-            <WeightFormFields form={form} vehicles={vehicles} materials={materials} showTareCapture={false} ticketId={ticketId} />
-          </div>
-          <Card className="col-span-1 lg:col-span-2">
-            <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-3">
-              <div>
-                <span className="text-xs font-medium uppercase text-muted-foreground">Tare Weight</span>
-                <p className="mt-1 text-2xl font-semibold">
-                  {tareValue != null ? `${tareValue} ${tareUnit ?? ''}` : '—'}
-                </p>
-              </div>
-              <div>
-                <span className="text-xs font-medium uppercase text-muted-foreground">Gross Weight</span>
-                <div className="mt-1 flex items-center gap-3">
-                  <p className={cn('text-2xl font-semibold', isStableNow && displayGross != null ? 'text-green-600' : 'text-foreground')}>
-                    {displayGross != null ? `${displayGross} ${capturedGrossUnit ?? latestReading?.unit ?? ''}` : '—'}
-                  </p>
-                  {latestReading && (
-                    <span className={cn(
-                      'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
-                      latestReading.isStable
-                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                        : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-                    )}>
-                      <span className={cn('size-1.5 rounded-full', latestReading.isStable ? 'bg-green-600' : 'bg-amber-600')} />
-                      {latestReading.isStable ? 'Stable' : 'Unstable'}
-                    </span>
-                  )}
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={handleCaptureGross}
-                    disabled={capturedGrossStable || !latestReading || latestReading.weight <= 0 || serialStatus !== 'connected'}
-                  >
-                    {capturedGrossStable ? 'Captured' : 'Capture'}
-                  </Button>
-                </div>
-              </div>
-              <div>
-                <span className="text-xs font-medium uppercase text-muted-foreground">Net Weight</span>
-                <p className="mt-1 text-2xl font-semibold">
-                  {netValue != null ? `${netValue} ${tareUnit ?? ''}` : '—'}
-                </p>
-              </div>
-            </div>
-          </Card>
-        </div>
-      </div>
-    );
+  const handleClose = () => {
+    if (!isSubmitting) {
+      setNewWeightDialogOpen(false);
+    }
   };
 
   return (
-    <AlertDialog open={isNewWeightDialogOpen} onOpenChange={setNewWeightDialogOpen}>
-      <AlertDialogContent className="min-w-[90%] max-h-[90vh] overflow-y-auto">
-        <AlertDialogHeader>
-          <AlertDialogCancel className="absolute top-2 right-2"><X /></AlertDialogCancel>
-          <AlertDialogTitle>Record New Weight</AlertDialogTitle>
-          <AlertDialogDescription className="flex flex-col gap-1">
-            <span className="flex items-center">
-              Make sure to fill in all required fields marked by <AsteriskIcon className="text-red-500" />.
-            </span>
-            Make sure indicator is connected and displaying correct live weight. It is best to record weight when the traffic light is green (Stable).
-          </AlertDialogDescription>
-        </AlertDialogHeader>
+    <AlertDialog open={isNewWeightDialogOpen} onOpenChange={(open) => !open && handleClose()}>
+      <AlertDialogContent className="!max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto">
+        <AlertDialogTitle className="sr-only">New Weight Record</AlertDialogTitle>
 
-        <div className="mt-6 px-1">{renderStepper()}</div>
-
-        <form
-          onSubmit={form.handleSubmit(async () => {
-            if (isDouble && realStep === 3) await handleComplete();
-          })}
-          className="mt-6 bg-accent/20 px-6 py-5 rounded-lg"
+        {/* Manual close button */}
+        <button
+          type="button"
+          onClick={handleClose}
+          disabled={isSubmitting}
+          className="absolute right-4 top-4 text-muted-foreground hover:text-foreground disabled:opacity-50"
         >
-          <div className="flex items-center mb-6 gap-2 text-muted-foreground text-sm">
-            <span><span className="text-destructive">*</span> Indicates required field</span>
+          <X className="size-5" />
+        </button>
+
+        {/* Header */}
+        <div className="flex items-center gap-3 pr-8">
+          <div className="flex size-12 items-center justify-center rounded-lg bg-primary/10">
+            <Scale className="size-6 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold">New Weight Record</h2>
+            <p className="text-sm text-muted-foreground">Ticket: {ticketId}</p>
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Stepper — clickable for completed/current steps only */}
+        {visibleSteps.length > 1 && (
+          <div className="flex items-center gap-0 px-2">
+            {visibleSteps.map((step, index) => {
+              const isCompleted = index < stepIndex;
+              const isActive = index === stepIndex;
+
+              return (
+                <div key={step.id} className="flex flex-1 items-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (index <= stepIndex) setStepIndex(index);
+                    }}
+                    disabled={index > stepIndex}
+                    className="group flex flex-col items-center text-center"
+                  >
+                    <div
+                      className={cn(
+                        'flex size-10 items-center justify-center rounded-full border-2 text-sm font-semibold transition-colors',
+                        isCompleted && 'border-green-500 bg-green-500 text-white',
+                        isActive && 'border-primary bg-primary text-white',
+                        !isCompleted &&
+                          !isActive &&
+                          'border-muted-foreground/30 text-muted-foreground',
+                      )}
+                    >
+                      {isCompleted ? <Check className="size-4" /> : index + 1}
+                    </div>
+                    <span
+                      className={cn(
+                        'mt-1.5 text-xs font-medium',
+                        isActive && 'text-primary',
+                        !isActive && 'text-muted-foreground',
+                      )}
+                    >
+                      {step.label}
+                    </span>
+                  </button>
+                  {index < visibleSteps.length - 1 && (
+                    <div
+                      className={cn(
+                        'mx-2 h-px flex-1',
+                        index < stepIndex && 'bg-primary',
+                        index >= stepIndex && 'bg-border',
+                      )}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <Separator />
+
+        {/* Step Content */}
+        {isLoadingData ? (
+          <div className="flex items-center justify-center py-16">
+            <Spinner className="size-8" />
+          </div>
+        ) : (
+          <div
+            key={currentStep?.id ?? 'empty'}
+            className="animate-in fade-in slide-in-from-right-4 duration-200"
+          >
+            {currentStep?.id === 'type' && (
+              <WeighingTypeStep
+                value={operationType}
+                onChange={(val) => form.setValue('operationType', val)}
+              />
+            )}
+
+            {currentStep?.id === 'vehicle' && (
+              <VehicleSelectionStep
+                tareSource={form.watch('tareSource')}
+                onTareSourceChange={(val) => form.setValue('tareSource', val)}
+                vehicles={vehicles}
+                vehicleName={vehicleName}
+                onVehicleChange={(val) => form.setValue('vehicleName', val)}
+              />
+            )}
+
+            {currentStep?.id === 'tare' && (
+              <TareWeightStep
+                ticketId={ticketId}
+                control={form.control}
+                vehicles={vehicles}
+                materials={materials}
+                operationType={operationType}
+                tareSource={form.watch('tareSource')}
+                capturedTareWeight={capturedTareWeight}
+                onCaptureTare={handleCaptureTare}
+                canCapture={canCapture}
+                selectedVehicle={selectedVehicle}
+                weightUnit={weightUnit}
+                vehicleValue={vehicleName}
+                onVehicleChange={(val) => form.setValue('vehicleName', val)}
+                materialValue={materialName}
+                onMaterialChange={(val) => form.setValue('materialName', val)}
+              />
+            )}
+
+            {currentStep?.id === 'gross' && (
+              <GrossWeightStep
+                ticketId={ticketId}
+                control={form.control}
+                vehicles={vehicles}
+                materials={materials}
+                capturedTareWeight={capturedTareWeight}
+                capturedGrossWeight={capturedGrossWeight}
+                onCaptureGross={handleCaptureGross}
+                canCapture={canCapture}
+                selectedVehicle={selectedVehicle}
+                weightUnit={weightUnit}
+                netWeight={netWeight}
+                vehicleValue={vehicleName}
+                onVehicleChange={(val) => form.setValue('vehicleName', val)}
+                materialValue={materialName}
+                onMaterialChange={(val) => form.setValue('materialName', val)}
+              />
+            )}
+
+            {(!currentStep || currentStep.id === '') && (
+              <div className="py-8 text-center text-muted-foreground">
+                No step content available
+              </div>
+            )}
+          </div>
+        )}
+
+        <Separator />
+
+        {/* Footer navigation */}
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            Step {stepIndex + 1} of {visibleSteps.length}
           </div>
 
-          {isLoadingData && <p className="text-sm text-muted-foreground">Loading vehicles and materials...</p>}
+          <div className="flex items-center gap-2">
+            {stepIndex > 0 && (
+              <Button type="button" variant="outline" onClick={handlePrev} disabled={isSubmitting}>
+                <ChevronLeft className="size-4" />
+                Previous
+              </Button>
+            )}
 
-          {!isLoadingData && (
-            <>
-              {isDouble && realStep === 3 ? renderStep4Content() : renderStepContent()}
+            {/* Save & Exit — enabled from step 2 (tare) onward */}
+            {(currentStep?.id === 'tare' || currentStep?.id === 'gross') && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleSaveExit}
+                disabled={isSubmitting}
+              >
+                <Save className="size-4" />
+                Save & Exit
+              </Button>
+            )}
 
-              <div className="mt-8 flex items-center justify-between">
-                <div>
-                  {((isDouble && stepIndex > 0) || (isSingle && stepIndex === 1)) && (
-                    <Button type="button" variant="outline" onClick={handlePrev} className="min-h-10">
-                      Previous
-                    </Button>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  {(isSaveEnabled || (isDouble && realStep === 3)) && (
-                    <Button type="button" variant="secondary" onClick={handleSaveExit} disabled={isSaving} className="min-h-10">
-                      Save & Exit
-                    </Button>
-                  )}
-                  {isDouble && realStep === 3 ? (
-                    <Button type="submit" disabled={isSaving} className="min-h-10">
-                      Complete
-                    </Button>
-                  ) : (
-                    <Button type="button" onClick={handleNext} className="min-h-10">
-                      Continue
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </>
-          )}
-        </form>
+            {/* Continue or Complete */}
+            {stepIndex < visibleSteps.length - 1 ? (
+              <Button type="button" onClick={handleNext} disabled={isSubmitting}>
+                Continue
+                <ChevronRight className="size-4" />
+              </Button>
+            ) : (
+              <Button type="button" onClick={handleComplete} disabled={isSubmitting}>
+                {isSubmitting && <Spinner className="size-4" />}
+                Complete
+              </Button>
+            )}
+          </div>
+        </div>
       </AlertDialogContent>
     </AlertDialog>
   );
 }
-
-export default NewWeightDialog;
