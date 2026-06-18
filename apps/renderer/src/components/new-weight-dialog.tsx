@@ -9,18 +9,19 @@ import * as z from 'zod';
 import { AlertDialog, AlertDialogContent, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Combobox,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxList,
-} from '@/components/ui/combobox';
+
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
@@ -71,29 +72,45 @@ function VehicleCombobox({
   value,
   onChange,
   disabled = false,
+  allowNew = true,
 }: {
   vehicles: Vehicle[];
   value: string;
   onChange: (val: string) => void;
   disabled?: boolean;
+  allowNew?: boolean;
 }) {
-  // Local input text — syncs from / to the form value
   const [searchValue, setSearchValue] = useState(value || '');
-
-  // Keep local input in sync when form value changes externally (e.g. reset)
   useEffect(() => {
     (() => {
       setSearchValue(value || '');
+      // Your logic goes in here
       return null;
     })();
   }, [value]);
 
-  const filteredVehicles = useMemo(
-    () => vehicles.filter((v) => v.name.toLowerCase().includes(searchValue.toLowerCase())),
-    [vehicles, searchValue],
-  );
+  if (!allowNew) {
+    return (
+      <Select value={value} onValueChange={onChange} disabled={disabled}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="Select vehicle..." />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            {vehicles.map((v) => (
+              <SelectItem key={v.id} value={v.name}>
+                {v.name}
+              </SelectItem>
+            ))}
+            {vehicles.length === 0 && (
+              <div className="px-2 py-1.5 text-sm text-muted-foreground">No vehicles available</div>
+            )}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+    );
+  }
 
-  // On blur, persist whatever the user typed (supports creating new vehicles)
   const handleBlur = () => {
     if (searchValue && searchValue !== value) {
       onChange(searchValue);
@@ -101,43 +118,13 @@ function VehicleCombobox({
   };
 
   return (
-    <Combobox
-      value={value}
-      onValueChange={(value) => {
-        onChange(value as string);
-        console.log(value);
-      }}
-      inputValue={searchValue}
-      onInputValueChange={setSearchValue}
-    >
-      <ComboboxInput
-        placeholder="Search or type vehicle number..."
-        disabled={disabled}
-        onBlur={handleBlur}
-        showClear={!!value}
-        // value={value}
-      />
-      <ComboboxContent>
-        <ComboboxList>
-          {filteredVehicles.length > 0 ? (
-            filteredVehicles.map((v) => (
-              <ComboboxItem key={v.id} value={v.name}>
-                <span>{v.name}</span>
-                {v.tareWeight != null && (
-                  <span className="ml-auto text-xs text-muted-foreground">
-                    Tare: {v.tareWeight} {v.tareUnit ?? 'kg'}
-                  </span>
-                )}
-              </ComboboxItem>
-            ))
-          ) : (
-            <ComboboxEmpty>
-              {searchValue ? `Create "${searchValue}" as new vehicle` : 'No vehicles found'}
-            </ComboboxEmpty>
-          )}
-        </ComboboxList>
-      </ComboboxContent>
-    </Combobox>
+    <Input
+      value={searchValue}
+      onChange={(e) => setSearchValue(e.target.value)}
+      onBlur={handleBlur}
+      placeholder="Type vehicle number..."
+      disabled={disabled}
+    />
   );
 }
 
@@ -150,26 +137,44 @@ function MaterialCombobox({
   value,
   onChange,
   disabled = false,
+  allowNew = true,
 }: {
   materials: Material[];
   value: string;
   onChange: (val: string) => void;
   disabled?: boolean;
+  allowNew?: boolean;
 }) {
+  if (!allowNew) {
+    return (
+      <Select value={value} onValueChange={onChange} disabled={disabled}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="Select material..." />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            <SelectItem value="">None</SelectItem>
+            {materials.map((m) => (
+              <SelectItem key={m.id} value={m.name}>
+                {m.name}
+              </SelectItem>
+            ))}
+            {materials.length === 0 && (
+              <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                No materials available
+              </div>
+            )}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+    );
+  }
+
   const [searchValue, setSearchValue] = useState(value || '');
 
   useEffect(() => {
-    (() => {
-      setSearchValue(value || '');
-      // Your logic goes in here
-      return null;
-    })();
+    setSearchValue(value || '');
   }, [value]);
-
-  const filteredMaterials = useMemo(
-    () => materials.filter((m) => m.name.toLowerCase().includes(searchValue.toLowerCase())),
-    [materials, searchValue],
-  );
 
   const handleBlur = () => {
     if (searchValue && searchValue !== value) {
@@ -178,41 +183,13 @@ function MaterialCombobox({
   };
 
   return (
-    <Combobox
-      value={value}
-      onValueChange={(newVal) => {
-        // Convert sentinel "__none__" back to empty string for the form
-        onChange(String(newVal === '__none__' ? '' : newVal));
-      }}
-      inputValue={searchValue}
-      onInputValueChange={setSearchValue}
-    >
-      <ComboboxInput
-        placeholder="Search or type material..."
-        disabled={disabled}
-        onBlur={handleBlur}
-        showClear={!!value}
-      />
-      <ComboboxContent>
-        <ComboboxList>
-          {/* "None" sentinel at the top of the list */}
-          <ComboboxItem value="__none__">
-            <span className="text-muted-foreground">None</span>
-          </ComboboxItem>
-          {filteredMaterials.length > 0 ? (
-            filteredMaterials.map((m) => (
-              <ComboboxItem key={m.id} value={m.name}>
-                {m.name}
-              </ComboboxItem>
-            ))
-          ) : (
-            <ComboboxEmpty>
-              {searchValue ? `Create "${searchValue}" as new material` : 'No materials found'}
-            </ComboboxEmpty>
-          )}
-        </ComboboxList>
-      </ComboboxContent>
-    </Combobox>
+    <Input
+      value={searchValue}
+      onChange={(e) => setSearchValue(e.target.value)}
+      onBlur={handleBlur}
+      placeholder="Type material name..."
+      disabled={disabled}
+    />
   );
 }
 
@@ -230,6 +207,8 @@ function FormFields({
   materialValue,
   onMaterialChange,
   disabled = false,
+  vehicleAllowNew = true,
+  materialAllowNew = true,
 }: {
   ticketId: string;
   control: Control<NewWeightForm>;
@@ -240,6 +219,8 @@ function FormFields({
   materialValue: string;
   onMaterialChange: (val: string) => void;
   disabled?: boolean;
+  vehicleAllowNew?: boolean;
+  materialAllowNew?: boolean;
 }) {
   return (
     <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -281,6 +262,7 @@ function FormFields({
               value={vehicleValue}
               onChange={onVehicleChange}
               disabled={disabled}
+              allowNew={vehicleAllowNew}
             />
             {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
           </Field>
@@ -295,6 +277,7 @@ function FormFields({
           value={materialValue}
           onChange={onMaterialChange}
           disabled={disabled}
+          allowNew={materialAllowNew}
         />
       </Field>
 
@@ -445,7 +428,12 @@ function VehicleSelectionStep({
       {tareSource === 'existing' && (
         <div className="space-y-3">
           <Label>Select Vehicle</Label>
-          <VehicleCombobox vehicles={vehicles} value={vehicleName} onChange={onVehicleChange} />
+          <VehicleCombobox
+            vehicles={vehicles}
+            value={vehicleName}
+            onChange={onVehicleChange}
+            allowNew={false}
+          />
           {selectedVehicle?.tareWeight != null && (
             <p className="text-sm text-muted-foreground">
               Stored tare: <strong>{selectedVehicle.tareWeight}</strong>{' '}
@@ -551,6 +539,7 @@ function TareWeightStep({
   onVehicleChange,
   materialValue,
   onMaterialChange,
+  vehicleAllowNew = true,
 }: {
   ticketId: string;
   control: Control<NewWeightForm>;
@@ -567,6 +556,7 @@ function TareWeightStep({
   onVehicleChange: (val: string) => void;
   materialValue: string;
   onMaterialChange: (val: string) => void;
+  vehicleAllowNew?: boolean;
 }) {
   const needsCapture =
     operationType === 'single' || (operationType === 'double' && tareSource === 'new');
@@ -585,6 +575,7 @@ function TareWeightStep({
         onVehicleChange={onVehicleChange}
         materialValue={materialValue}
         onMaterialChange={onMaterialChange}
+        vehicleAllowNew={vehicleAllowNew}
       />
 
       <Separator />
@@ -693,6 +684,7 @@ function GrossWeightStep({
   onVehicleChange,
   materialValue,
   onMaterialChange,
+  vehicleAllowNew = true,
 }: {
   ticketId: string;
   control: Control<NewWeightForm>;
@@ -709,6 +701,7 @@ function GrossWeightStep({
   onVehicleChange: (val: string) => void;
   materialValue: string;
   onMaterialChange: (val: string) => void;
+  vehicleAllowNew?: boolean;
 }) {
   const tareValue = capturedTareWeight ?? selectedVehicle?.tareWeight ?? null;
 
@@ -734,6 +727,7 @@ function GrossWeightStep({
         onVehicleChange={onVehicleChange}
         materialValue={materialValue}
         onMaterialChange={onMaterialChange}
+        vehicleAllowNew={vehicleAllowNew}
       />
 
       <Separator />
@@ -780,6 +774,10 @@ export function NewWeightDialog() {
   const operationType = form.watch('operationType');
   const vehicleName = form.watch('vehicleName');
   const materialName = form.watch('materialName');
+  const tareSource = form.watch('tareSource');
+
+  // When using an existing tare, prevent free-text creation — user must pick from known vehicles
+  const vehicleAllowNew = !(operationType === 'double' && tareSource === 'existing');
 
   // Filter steps based on operation type
   const visibleSteps = useMemo(
@@ -1124,6 +1122,7 @@ export function NewWeightDialog() {
                 onVehicleChange={(val) => form.setValue('vehicleName', val)}
                 materialValue={String(materialName)}
                 onMaterialChange={(val) => form.setValue('materialName', val)}
+                vehicleAllowNew={vehicleAllowNew}
               />
             )}
 
@@ -1144,6 +1143,7 @@ export function NewWeightDialog() {
                 onVehicleChange={(val) => form.setValue('vehicleName', val)}
                 materialValue={String(materialName)}
                 onMaterialChange={(val) => form.setValue('materialName', val)}
+                vehicleAllowNew={vehicleAllowNew}
               />
             )}
 
