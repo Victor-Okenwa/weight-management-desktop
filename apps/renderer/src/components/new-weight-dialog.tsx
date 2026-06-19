@@ -9,7 +9,14 @@ import * as z from 'zod';
 import { AlertDialog, AlertDialogContent, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from '@/components/ui/combobox';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -80,15 +87,6 @@ function VehicleCombobox({
   disabled?: boolean;
   allowNew?: boolean;
 }) {
-  const [searchValue, setSearchValue] = useState(value || '');
-  useEffect(() => {
-    (() => {
-      setSearchValue(value || '');
-      // Your logic goes in here
-      return null;
-    })();
-  }, [value]);
-
   if (!allowNew) {
     return (
       <Select value={value} onValueChange={onChange} disabled={disabled}>
@@ -111,20 +109,21 @@ function VehicleCombobox({
     );
   }
 
-  const handleBlur = () => {
-    if (searchValue && searchValue !== value) {
-      onChange(searchValue);
-    }
-  };
-
   return (
-    <Input
-      value={searchValue}
-      onChange={(e) => setSearchValue(e.target.value)}
-      onBlur={handleBlur}
-      placeholder="Type vehicle number..."
-      disabled={disabled}
-    />
+    <Combobox value={value} onValueChange={(val) => onChange(val ?? '')} disabled={disabled}>
+      <ComboboxInput showTrigger placeholder="Type vehicle number..." disabled={disabled}>
+        <ComboboxContent>
+          <ComboboxList>
+            {vehicles.map((v) => (
+              <ComboboxItem key={v.id} value={v.name}>
+                {v.name}
+              </ComboboxItem>
+            ))}
+            <ComboboxEmpty>No vehicles available</ComboboxEmpty>
+          </ComboboxList>
+        </ComboboxContent>
+      </ComboboxInput>
+    </Combobox>
   );
 }
 
@@ -170,26 +169,22 @@ function MaterialCombobox({
     );
   }
 
-  const [searchValue, setSearchValue] = useState(value || '');
-
-  useEffect(() => {
-    setSearchValue(value || '');
-  }, [value]);
-
-  const handleBlur = () => {
-    if (searchValue && searchValue !== value) {
-      onChange(searchValue);
-    }
-  };
-
   return (
-    <Input
-      value={searchValue}
-      onChange={(e) => setSearchValue(e.target.value)}
-      onBlur={handleBlur}
-      placeholder="Type material name..."
-      disabled={disabled}
-    />
+    <Combobox value={value} onValueChange={(val) => onChange(val ?? '')} disabled={disabled}>
+      <ComboboxInput showTrigger placeholder="Type material name..." disabled={disabled}>
+        <ComboboxContent>
+          <ComboboxList>
+            <ComboboxItem value="">None</ComboboxItem>
+            {materials.map((m) => (
+              <ComboboxItem key={m.id} value={m.name}>
+                {m.name}
+              </ComboboxItem>
+            ))}
+            <ComboboxEmpty>No materials available</ComboboxEmpty>
+          </ComboboxList>
+        </ComboboxContent>
+      </ComboboxInput>
+    </Combobox>
   );
 }
 
@@ -458,6 +453,7 @@ function WeightCaptureArea({
   label,
   capturedWeight,
   onCapture,
+  onRecapture,
   canCapture,
   weightUnit,
   existingTare,
@@ -465,6 +461,7 @@ function WeightCaptureArea({
   label: string;
   capturedWeight: number | null;
   onCapture: () => void;
+  onRecapture?: () => void;
   canCapture: boolean;
   weightUnit: string;
   existingTare?: { weight: number; unit: string } | null;
@@ -485,7 +482,14 @@ function WeightCaptureArea({
         <div className="rounded-lg border border-green-500/30 bg-green-500/5 p-5">
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">{label}</p>
-            <Check className="size-5 text-green-500" />
+            <div className="flex items-center gap-2">
+              {onRecapture && (
+                <Button type="button" variant="outline" size="sm" onClick={onRecapture}>
+                  Recapture
+                </Button>
+              )}
+              <Check className="size-5 text-green-500" />
+            </div>
           </div>
           <p className="mt-1 text-3xl font-bold">
             {capturedWeight} {weightUnit}
@@ -532,6 +536,7 @@ function TareWeightStep({
   tareSource,
   capturedTareWeight,
   onCaptureTare,
+  onRecaptureTare,
   canCapture,
   selectedVehicle,
   weightUnit,
@@ -549,6 +554,7 @@ function TareWeightStep({
   tareSource: string | undefined;
   capturedTareWeight: number | null;
   onCaptureTare: () => void;
+  onRecaptureTare: () => void;
   canCapture: boolean;
   selectedVehicle: Vehicle | null;
   weightUnit: string;
@@ -585,6 +591,7 @@ function TareWeightStep({
           label="Tare Weight"
           capturedWeight={capturedTareWeight}
           onCapture={onCaptureTare}
+          onRecapture={onRecaptureTare}
           canCapture={canCapture}
           weightUnit={weightUnit}
         />
@@ -676,6 +683,7 @@ function GrossWeightStep({
   capturedTareWeight,
   capturedGrossWeight,
   onCaptureGross,
+  onRecaptureGross,
   canCapture,
   selectedVehicle,
   weightUnit,
@@ -693,6 +701,7 @@ function GrossWeightStep({
   capturedTareWeight: number | null;
   capturedGrossWeight: number | null;
   onCaptureGross: () => void;
+  onRecaptureGross: () => void;
   canCapture: boolean;
   selectedVehicle: Vehicle | null;
   weightUnit: string;
@@ -736,6 +745,7 @@ function GrossWeightStep({
         label="Gross Weight"
         capturedWeight={capturedGrossWeight}
         onCapture={onCaptureGross}
+        onRecapture={onRecaptureGross}
         canCapture={canCapture}
         weightUnit={weightUnit}
       />
@@ -844,6 +854,9 @@ export function NewWeightDialog() {
       setCapturedGrossWeight(latestReading.weight);
     }
   }, [canCapture, latestReading]);
+
+  const handleRecaptureTare = useCallback(() => setCapturedTareWeight(null), []);
+  const handleRecaptureGross = useCallback(() => setCapturedGrossWeight(null), []);
 
   // Compute net = gross - tare
   const netWeight = useMemo(() => {
@@ -1115,6 +1128,7 @@ export function NewWeightDialog() {
                 tareSource={form.watch('tareSource')}
                 capturedTareWeight={capturedTareWeight}
                 onCaptureTare={handleCaptureTare}
+                onRecaptureTare={handleRecaptureTare}
                 canCapture={canCapture}
                 selectedVehicle={selectedVehicle}
                 weightUnit={weightUnit}
@@ -1135,6 +1149,7 @@ export function NewWeightDialog() {
                 capturedTareWeight={capturedTareWeight}
                 capturedGrossWeight={capturedGrossWeight}
                 onCaptureGross={handleCaptureGross}
+                onRecaptureGross={handleRecaptureGross}
                 canCapture={canCapture}
                 selectedVehicle={selectedVehicle}
                 weightUnit={weightUnit}
