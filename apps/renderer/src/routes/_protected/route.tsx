@@ -2,11 +2,9 @@
 import { createFileRoute, Link, Outlet, redirect, useRouterState } from '@tanstack/react-router';
 import type { SettingsRow } from '@weight/shared/types/index';
 import {
-  Bug,
   HistoryIcon,
   LayoutDashboard,
   Loader2,
-  ScaleIcon,
   Settings2,
   SignalHighIcon,
   SignalLowIcon,
@@ -16,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
-import { NewWeightDialog } from '@/components/new-weight-dialog';
+
 import { NotFound } from '@/components/not-found';
 import { type Theme, useTheme } from '@/components/providers/theme-provider';
 import {
@@ -43,7 +41,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { useWeightUpdates } from '@/hooks/use-weight-updates';
 import { logger } from '@/lib/logger';
 import { useSettingsStore } from '@/store/settingsStore';
-import { useWeightDialogsStore } from '@/store/weightDialog';
 import { useWeightStore } from '@/store/weightStore';
 
 const sidebarRoutes = [
@@ -61,11 +58,6 @@ const sidebarRoutes = [
     icon: HistoryIcon,
     link: '/history',
     label: 'History',
-  },
-  {
-    icon: Bug,
-    link: '/popover-test',
-    label: 'Popover Test',
   },
   {
     icon: Settings2,
@@ -104,8 +96,6 @@ function RouteComponent() {
   const { loadSettings, settings } = useSettingsStore();
   const { setTheme } = useTheme();
 
-  const { setNewWeightDialogOpen } = useWeightDialogsStore();
-
   useEffect(() => {
     async function fetchSettings() {
       await loadSettings();
@@ -120,23 +110,9 @@ function RouteComponent() {
       <AppSidebar settings={settings} />
 
       <div className="w-full">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              className="fixed z-20 rounded-full bottom-7 right-5 group"
-              onClick={() => setNewWeightDialogOpen(true)}
-            >
-              <ScaleIcon />
-            </Button>
-          </TooltipTrigger>
-
-          <TooltipContent>Capture new weight. Save and Edit</TooltipContent>
-        </Tooltip>
         <main>
           <TopBar />
           <Outlet />
-
-          <NewWeightDialog />
         </main>
         <footer className="border-t px-4 py-3">
           <p className="text-center text-sm">

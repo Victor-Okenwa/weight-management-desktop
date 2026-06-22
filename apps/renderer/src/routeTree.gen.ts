@@ -14,7 +14,6 @@ import { Route as ProtectedRouteRouteImport } from './routes/_protected/route'
 import { Route as ProtectedIndexRouteImport } from './routes/_protected/index'
 import { Route as ProtectedSettingsRouteImport } from './routes/_protected/settings'
 import { Route as ProtectedRecordWeightRouteImport } from './routes/_protected/record-weight'
-import { Route as ProtectedPopoverTestRouteImport } from './routes/_protected/popover-test'
 import { Route as ProtectedHistoryRouteImport } from './routes/_protected/history'
 
 const SetupWizardRoute = SetupWizardRouteImport.update({
@@ -41,11 +40,6 @@ const ProtectedRecordWeightRoute = ProtectedRecordWeightRouteImport.update({
   path: '/record-weight',
   getParentRoute: () => ProtectedRouteRoute,
 } as any)
-const ProtectedPopoverTestRoute = ProtectedPopoverTestRouteImport.update({
-  id: '/popover-test',
-  path: '/popover-test',
-  getParentRoute: () => ProtectedRouteRoute,
-} as any)
 const ProtectedHistoryRoute = ProtectedHistoryRouteImport.update({
   id: '/history',
   path: '/history',
@@ -56,14 +50,12 @@ export interface FileRoutesByFullPath {
   '/': typeof ProtectedIndexRoute
   '/setup-wizard': typeof SetupWizardRoute
   '/history': typeof ProtectedHistoryRoute
-  '/popover-test': typeof ProtectedPopoverTestRoute
   '/record-weight': typeof ProtectedRecordWeightRoute
   '/settings': typeof ProtectedSettingsRoute
 }
 export interface FileRoutesByTo {
   '/setup-wizard': typeof SetupWizardRoute
   '/history': typeof ProtectedHistoryRoute
-  '/popover-test': typeof ProtectedPopoverTestRoute
   '/record-weight': typeof ProtectedRecordWeightRoute
   '/settings': typeof ProtectedSettingsRoute
   '/': typeof ProtectedIndexRoute
@@ -73,34 +65,20 @@ export interface FileRoutesById {
   '/_protected': typeof ProtectedRouteRouteWithChildren
   '/setup-wizard': typeof SetupWizardRoute
   '/_protected/history': typeof ProtectedHistoryRoute
-  '/_protected/popover-test': typeof ProtectedPopoverTestRoute
   '/_protected/record-weight': typeof ProtectedRecordWeightRoute
   '/_protected/settings': typeof ProtectedSettingsRoute
   '/_protected/': typeof ProtectedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/setup-wizard'
-    | '/history'
-    | '/popover-test'
-    | '/record-weight'
-    | '/settings'
+  fullPaths: '/' | '/setup-wizard' | '/history' | '/record-weight' | '/settings'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/setup-wizard'
-    | '/history'
-    | '/popover-test'
-    | '/record-weight'
-    | '/settings'
-    | '/'
+  to: '/setup-wizard' | '/history' | '/record-weight' | '/settings' | '/'
   id:
     | '__root__'
     | '/_protected'
     | '/setup-wizard'
     | '/_protected/history'
-    | '/_protected/popover-test'
     | '/_protected/record-weight'
     | '/_protected/settings'
     | '/_protected/'
@@ -148,13 +126,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedRecordWeightRouteImport
       parentRoute: typeof ProtectedRouteRoute
     }
-    '/_protected/popover-test': {
-      id: '/_protected/popover-test'
-      path: '/popover-test'
-      fullPath: '/popover-test'
-      preLoaderRoute: typeof ProtectedPopoverTestRouteImport
-      parentRoute: typeof ProtectedRouteRoute
-    }
     '/_protected/history': {
       id: '/_protected/history'
       path: '/history'
@@ -167,7 +138,6 @@ declare module '@tanstack/react-router' {
 
 interface ProtectedRouteRouteChildren {
   ProtectedHistoryRoute: typeof ProtectedHistoryRoute
-  ProtectedPopoverTestRoute: typeof ProtectedPopoverTestRoute
   ProtectedRecordWeightRoute: typeof ProtectedRecordWeightRoute
   ProtectedSettingsRoute: typeof ProtectedSettingsRoute
   ProtectedIndexRoute: typeof ProtectedIndexRoute
@@ -175,7 +145,6 @@ interface ProtectedRouteRouteChildren {
 
 const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
   ProtectedHistoryRoute: ProtectedHistoryRoute,
-  ProtectedPopoverTestRoute: ProtectedPopoverTestRoute,
   ProtectedRecordWeightRoute: ProtectedRecordWeightRoute,
   ProtectedSettingsRoute: ProtectedSettingsRoute,
   ProtectedIndexRoute: ProtectedIndexRoute,

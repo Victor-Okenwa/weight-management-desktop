@@ -186,42 +186,15 @@ function MaterialCombobox({
   value,
   onChange,
   disabled = false,
-  allowNew = true,
 }: {
   materials: Material[];
   value: string;
   onChange: (val: string) => void;
   disabled?: boolean;
-  allowNew?: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
-
-  if (!allowNew) {
-    return (
-      <Select value={value} onValueChange={onChange} disabled={disabled}>
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder="Select material..." />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            <SelectItem value="">None</SelectItem>
-            {materials.map((m) => (
-              <SelectItem key={m.id} value={m.name}>
-                {m.name}
-              </SelectItem>
-            ))}
-            {materials.length === 0 && (
-              <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                No materials available
-              </div>
-            )}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
-    );
-  }
 
   const materialNames = materials.map((m) => m.name);
 
@@ -305,7 +278,6 @@ function FormFields({
   onMaterialChange,
   disabled = false,
   vehicleAllowNew = true,
-  materialAllowNew = true,
 }: {
   ticketId: string;
   control: Control<NewWeightForm>;
@@ -317,7 +289,6 @@ function FormFields({
   onMaterialChange: (val: string) => void;
   disabled?: boolean;
   vehicleAllowNew?: boolean;
-  materialAllowNew?: boolean;
 }) {
   return (
     <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -367,7 +338,6 @@ function FormFields({
           value={materialValue}
           onChange={onMaterialChange}
           disabled={disabled}
-          allowNew={materialAllowNew}
         />
       </Field>
       <Controller
@@ -1069,7 +1039,7 @@ function RouteComponent() {
   }, [validateCurrentStep, buildSubmitPayload, navigate]);
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-6">
+    <div className="mx-auto max-w-4xl space-y-6 p-6 min-h-screen">
       <div className="flex items-center gap-3">
         <div className="flex size-12 items-center justify-center rounded-lg bg-primary/10">
           <Scale className="size-6 text-primary" />
