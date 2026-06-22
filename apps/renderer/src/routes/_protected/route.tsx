@@ -2,6 +2,7 @@
 import { createFileRoute, Link, Outlet, redirect, useRouterState } from '@tanstack/react-router';
 import type { SettingsRow } from '@weight/shared/types/index';
 import {
+  Bug,
   HistoryIcon,
   LayoutDashboard,
   Loader2,
@@ -10,6 +11,7 @@ import {
   SignalHighIcon,
   SignalLowIcon,
   SignalMediumIcon,
+  Weight,
   X,
 } from 'lucide-react';
 import { useEffect } from 'react';
@@ -51,9 +53,19 @@ const sidebarRoutes = [
     label: 'Dashboard',
   },
   {
+    icon: Weight,
+    link: '/record-weight',
+    label: 'Record Weight',
+  },
+  {
     icon: HistoryIcon,
     link: '/history',
     label: 'History',
+  },
+  {
+    icon: Bug,
+    link: '/popover-test',
+    label: 'Popover Test',
   },
   {
     icon: Settings2,

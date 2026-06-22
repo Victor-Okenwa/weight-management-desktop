@@ -1,18 +1,26 @@
+/* eslint-disable react-refresh/only-export-components */
 import { zodResolver } from '@hookform/resolvers/zod';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import type { Material, Vehicle } from '@weight/shared/types/index';
-import { Check, ChevronLeft, ChevronRight, Save, Scale, Weight, X } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Save, Scale, Weight } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Control } from 'react-hook-form';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import * as z from 'zod';
-import { AlertDialog, AlertDialogContent, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from '@/components/ui/combobox';
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Select,
@@ -28,16 +36,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { WeightDisplay } from '@/components/weight-display';
 import { cn } from '@/lib/utils';
 import { useSettingsStore } from '@/store/settingsStore';
-import { useWeightDialogsStore } from '@/store/weightDialog';
 import { useWeightStore } from '@/store/weightStore';
-import {
-  Combobox,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxList,
-} from './ui/combobox';
+
+export const Route = createFileRoute('/_protected/record-weight')({
+  component: RouteComponent,
+});
 
 // ======================================================
 // SCHEMA
@@ -90,8 +93,6 @@ function VehicleCombobox({
 }) {
   const [open, setOpen] = useState(false);
 
-  const inputRef = useRef<HTMLInputElement>(null);
-
   const vehicleNames = vehicles.map((v) => v.name);
 
   if (!allowNew) {
@@ -120,19 +121,17 @@ function VehicleCombobox({
     <div className="relative">
       <Combobox open={open} onOpenChange={setOpen} modal={false}>
         <ComboboxInput
-          // ref={inputRef}
           value={value}
           onChange={(e) => {
             onChange(e.target.value);
             setOpen(true);
           }}
-          // onFocus={() => setOpen(true)}
           placeholder="Type vehicle number..."
           disabled={disabled}
         />
         <ComboboxContent className="w-full p-1 z-50" align="start" sideOffset={4}>
           {vehicleNames.length > 0 || value === '' ? (
-            <ComboboxList className="bg-blue-400">
+            <ComboboxList>
               {value === '' && (
                 <Button
                   type="button"
@@ -141,10 +140,6 @@ function VehicleCombobox({
                   onClick={() => {
                     onChange('');
                     setOpen(false);
-                    alert();
-                    // setTimeout(() => {
-                    //   inputRef?.current?.focus();
-                    // }, 0);
                   }}
                   className="relative flex w-full cursor-default items-center gap-2 rounded-sm bg-transparent py-1.5 pr-8 pl-2 text-sm text-left hover:bg-accent hover:text-accent-foreground"
                 >
@@ -160,9 +155,6 @@ function VehicleCombobox({
                     onClick={() => {
                       onChange(name);
                       setOpen(false);
-                      // setTimeout(() => {
-                      //   inputRef?.current?.focus();
-                      // }, 0);
                     }}
                     className="relative flex w-full cursor-default items-center gap-2 rounded-sm bg-transparent py-1.5 pr-8 pl-2 text-sm text-left hover:bg-accent hover:text-accent-foreground"
                   >
@@ -232,8 +224,6 @@ function MaterialCombobox({
   }
 
   const materialNames = materials.map((m) => m.name);
-
-  const filtered = materials.filter((m) => m.name.toLowerCase().includes(value.toLowerCase()));
 
   return (
     <div className="relative">
@@ -331,7 +321,6 @@ function FormFields({
 }) {
   return (
     <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-2">
-      {/* Operator */}
       <Controller
         name="operator"
         control={control}
@@ -347,14 +336,10 @@ function FormFields({
           </Field>
         )}
       />
-
-      {/* Ticket ID — read-only display generated from settings */}
       <Field>
         <FieldLabel htmlFor="weight-ticket">Ticket ID</FieldLabel>
         <Input id="weight-ticket" value={ticketId} disabled />
       </Field>
-
-      {/* Vehicle Number — combobox with free-text & blur persistence */}
       <Controller
         name="vehicleName"
         control={control}
@@ -375,8 +360,6 @@ function FormFields({
           </Field>
         )}
       />
-
-      {/* Material — combobox with "None" option at the top */}
       <Field>
         <FieldLabel>Material</FieldLabel>
         <MaterialCombobox
@@ -387,8 +370,6 @@ function FormFields({
           allowNew={materialAllowNew}
         />
       </Field>
-
-      {/* Remark */}
       <Controller
         name="remark"
         control={control}
@@ -429,7 +410,6 @@ function WeighingTypeStep({
         onValueChange={onChange}
         className="grid grid-cols-1 gap-4 sm:grid-cols-2"
       >
-        {/* Single Weighing card */}
         <Label
           className={cn(
             'flex cursor-pointer flex-col items-center gap-4 rounded-lg border-2 p-8 transition-all',
@@ -447,7 +427,6 @@ function WeighingTypeStep({
           </div>
         </Label>
 
-        {/* Double Weighing card */}
         <Label
           className={cn(
             'flex cursor-pointer flex-col items-center gap-4 rounded-lg border-2 p-8 transition-all',
@@ -498,7 +477,6 @@ function VehicleSelectionStep({
         onValueChange={onTareSourceChange}
         className="grid grid-cols-1 gap-4 sm:grid-cols-2"
       >
-        {/* Record new weight */}
         <Label
           className={cn(
             'flex cursor-pointer items-center gap-4 rounded-lg border-2 p-5 transition-all',
@@ -513,7 +491,6 @@ function VehicleSelectionStep({
           </div>
         </Label>
 
-        {/* Use existing tare */}
         <Label
           className={cn(
             'flex cursor-pointer items-center gap-4 rounded-lg border-2 p-5 transition-all',
@@ -531,7 +508,6 @@ function VehicleSelectionStep({
         </Label>
       </RadioGroup>
 
-      {/* Vehicle combobox — only shown when "use existing" is selected */}
       {tareSource === 'existing' && (
         <div className="space-y-3">
           <Label>Select Vehicle</Label>
@@ -555,10 +531,6 @@ function VehicleSelectionStep({
 
 // ======================================================
 // WEIGHT CAPTURE AREA
-// Returns different UI depending on state:
-//   - existingTare  → read-only display
-//   - capturedWeight → confirmation with value
-//   - otherwise      → live WeightDisplay + Capture button
 // ======================================================
 
 function WeightCaptureArea({
@@ -581,7 +553,6 @@ function WeightCaptureArea({
   return (
     <div className="space-y-4">
       {existingTare ? (
-        /* Read-only tare from vehicle record */
         <div className="rounded-lg border p-5">
           <p className="text-sm text-muted-foreground">{label}</p>
           <p className="mt-1 text-2xl font-bold">
@@ -590,7 +561,6 @@ function WeightCaptureArea({
           <p className="text-xs text-muted-foreground">Using stored vehicle tare</p>
         </div>
       ) : capturedWeight != null ? (
-        /* Success state — weight has been captured */
         <div className="rounded-lg border border-green-500/30 bg-green-500/5 p-5">
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">{label}</p>
@@ -609,7 +579,6 @@ function WeightCaptureArea({
           <p className="text-xs text-green-500">Captured</p>
         </div>
       ) : (
-        /* Capture mode — show scale display + action button */
         <div className="space-y-4">
           <p className="text-sm font-medium text-muted-foreground">{label}</p>
           <div className="max-w-md">
@@ -869,8 +838,8 @@ function GrossWeightStep({
 // MAIN COMPONENT
 // ======================================================
 
-export function NewWeightDialog() {
-  const { isNewWeightDialogOpen, setNewWeightDialogOpen } = useWeightDialogsStore();
+function RouteComponent() {
+  const navigate = useNavigate();
   const { settings } = useSettingsStore();
   const { latestReading } = useWeightStore();
 
@@ -898,16 +867,13 @@ export function NewWeightDialog() {
   const materialName = form.watch('materialName');
   const tareSource = form.watch('tareSource');
 
-  // When using an existing tare, prevent free-text creation — user must pick from known vehicles
   const vehicleAllowNew = !(operationType === 'double' && tareSource === 'existing');
 
-  // Filter steps based on operation type
   const visibleSteps = useMemo(
     () => allSteps.filter((s) => operationType === 'double' || s.showFor === 'both'),
     [operationType],
   );
 
-  // Clamp step index when the visible step list shrinks (e.g. switching to Single)
   useEffect(() => {
     if (stepIndex >= visibleSteps.length) {
       setStepIndex(Math.max(0, visibleSteps.length - 1));
@@ -926,10 +892,7 @@ export function NewWeightDialog() {
     [vehicles, vehicleName],
   );
 
-  // Reset all state when the dialog opens
   useEffect(() => {
-    if (!isNewWeightDialogOpen) return;
-
     async function loadData() {
       setIsLoadingData(true);
       try {
@@ -951,7 +914,7 @@ export function NewWeightDialog() {
     setCapturedTareWeight(null);
     setCapturedGrossWeight(null);
     loadData();
-  }, [form, isNewWeightDialogOpen]);
+  }, [form]);
 
   const canCapture = latestReading?.isStable === true && latestReading?.weight != null;
 
@@ -970,14 +933,12 @@ export function NewWeightDialog() {
   const handleRecaptureTare = useCallback(() => setCapturedTareWeight(null), []);
   const handleRecaptureGross = useCallback(() => setCapturedGrossWeight(null), []);
 
-  // Compute net = gross - tare
   const netWeight = useMemo(() => {
     if (capturedGrossWeight == null) return null;
     const tare = capturedTareWeight ?? selectedVehicle?.tareWeight ?? 0;
     return capturedGrossWeight - tare;
   }, [capturedGrossWeight, capturedTareWeight, selectedVehicle]);
 
-  // Validate the current step before allowing navigation
   const validateCurrentStep = useCallback(async (): Promise<boolean> => {
     switch (currentStep?.id) {
       case 'type': {
@@ -1021,7 +982,6 @@ export function NewWeightDialog() {
     }
   }, [currentStep, operationType, capturedTareWeight, capturedGrossWeight, form]);
 
-  // Navigation handlers
   const handleNext = async () => {
     if (!(await validateCurrentStep())) return;
     if (stepIndex < visibleSteps.length - 1) {
@@ -1035,7 +995,6 @@ export function NewWeightDialog() {
     }
   };
 
-  // Build the payload for electronAPI.createRecord()
   const buildSubmitPayload = useCallback(
     (status: 'pending' | 'completed') => {
       const values = form.getValues();
@@ -1048,7 +1007,6 @@ export function NewWeightDialog() {
         status,
       };
 
-      // Tare weight — from local capture or from the selected vehicle's record
       if (values.operationType === 'single' || values.operationType === 'double') {
         if (capturedTareWeight != null) {
           payload.tareWeight = capturedTareWeight;
@@ -1060,7 +1018,6 @@ export function NewWeightDialog() {
         }
       }
 
-      // Gross & net — only for completed double weighments
       if (values.operationType === 'double') {
         if (capturedGrossWeight != null) {
           payload.grossWeight = capturedGrossWeight;
@@ -1075,7 +1032,6 @@ export function NewWeightDialog() {
     [capturedTareWeight, capturedGrossWeight, selectedVehicle, weightUnit, netWeight, form],
   );
 
-  // Save & Exit — submit as pending, then close the dialog
   const handleSaveExit = useCallback(async () => {
     const vehicle = form.getValues('vehicleName');
     if (!vehicle) {
@@ -1086,18 +1042,16 @@ export function NewWeightDialog() {
     setIsSubmitting(true);
     try {
       const payload = buildSubmitPayload('pending');
-      console.log(payload);
       await window.electronAPI.createRecord(payload);
       toast.success('Record saved');
-      setNewWeightDialogOpen(false);
+      navigate({ to: '/' });
     } catch {
       toast.error('Failed to save record');
     } finally {
       setIsSubmitting(false);
     }
-  }, [form, buildSubmitPayload, setNewWeightDialogOpen]);
+  }, [form, buildSubmitPayload, navigate]);
 
-  // Complete — validate, submit as completed, then close
   const handleComplete = useCallback(async () => {
     if (!(await validateCurrentStep())) return;
 
@@ -1105,229 +1059,200 @@ export function NewWeightDialog() {
     try {
       const payload = buildSubmitPayload('completed');
       await window.electronAPI.createRecord(payload);
-      console.log(payload);
       toast.success('Record saved');
-      setNewWeightDialogOpen(false);
+      navigate({ to: '/' });
     } catch {
       toast.error('Failed to save record');
     } finally {
       setIsSubmitting(false);
     }
-  }, [validateCurrentStep, buildSubmitPayload, setNewWeightDialogOpen]);
-
-  const handleClose = () => {
-    if (!isSubmitting) {
-      setNewWeightDialogOpen(false);
-    }
-  };
+  }, [validateCurrentStep, buildSubmitPayload, navigate]);
 
   return (
-    <AlertDialog open={isNewWeightDialogOpen} onOpenChange={(open) => !open && handleClose()}>
-      <AlertDialogContent className="!max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto">
-        <AlertDialogTitle className="sr-only">New Weight Record</AlertDialogTitle>
-
-        {/* Manual close button */}
-        <button
-          type="button"
-          onClick={handleClose}
-          disabled={isSubmitting}
-          className="absolute right-4 top-4 text-muted-foreground hover:text-foreground disabled:opacity-50"
-        >
-          <X className="size-5" />
-        </button>
-
-        {/* Header */}
-        <div className="flex items-center gap-3 pr-8">
-          <div className="flex size-12 items-center justify-center rounded-lg bg-primary/10">
-            <Scale className="size-6 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold">New Weight Record</h2>
-            <p className="text-sm text-muted-foreground">Ticket: {ticketId}</p>
-          </div>
+    <div className="mx-auto max-w-4xl space-y-6 p-6">
+      <div className="flex items-center gap-3">
+        <div className="flex size-12 items-center justify-center rounded-lg bg-primary/10">
+          <Scale className="size-6 text-primary" />
         </div>
+        <div>
+          <h2 className="text-xl font-bold">New Weight Record</h2>
+          <p className="text-sm text-muted-foreground">Ticket: {ticketId}</p>
+        </div>
+      </div>
 
-        <Separator />
+      <Separator />
 
-        {/* Stepper — clickable for completed/current steps only */}
-        {visibleSteps.length > 1 && (
-          <div className="flex items-center gap-0 px-2">
-            {visibleSteps.map((step, index) => {
-              const isCompleted = index < stepIndex;
-              const isActive = index === stepIndex;
+      {visibleSteps.length > 1 && (
+        <div className="flex items-center gap-0 px-2">
+          {visibleSteps.map((step, index) => {
+            const isCompleted = index < stepIndex;
+            const isActive = index === stepIndex;
 
-              return (
-                <div key={step.id} className="flex flex-1 items-center">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (index <= stepIndex) setStepIndex(index);
-                    }}
-                    disabled={index > stepIndex}
-                    className="group flex flex-col items-center text-center"
+            return (
+              <div key={step.id} className="flex flex-1 items-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (index <= stepIndex) setStepIndex(index);
+                  }}
+                  disabled={index > stepIndex}
+                  className="group flex flex-col items-center text-center"
+                >
+                  <div
+                    className={cn(
+                      'flex size-10 items-center justify-center rounded-full border-2 text-sm font-semibold transition-colors',
+                      isCompleted && 'border-green-500 bg-green-500 text-white',
+                      isActive && 'border-primary bg-primary text-white',
+                      !isCompleted &&
+                        !isActive &&
+                        'border-muted-foreground/30 text-muted-foreground',
+                    )}
                   >
-                    <div
-                      className={cn(
-                        'flex size-10 items-center justify-center rounded-full border-2 text-sm font-semibold transition-colors',
-                        isCompleted && 'border-green-500 bg-green-500 text-white',
-                        isActive && 'border-primary bg-primary text-white',
-                        !isCompleted &&
-                          !isActive &&
-                          'border-muted-foreground/30 text-muted-foreground',
-                      )}
-                    >
-                      {isCompleted ? <Check className="size-4" /> : index + 1}
-                    </div>
-                    <span
-                      className={cn(
-                        'mt-1.5 text-xs font-medium',
-                        isActive && 'text-primary',
-                        !isActive && 'text-muted-foreground',
-                      )}
-                    >
-                      {step.label}
-                    </span>
-                  </button>
-                  {index < visibleSteps.length - 1 && (
-                    <div
-                      className={cn(
-                        'mx-2 h-px flex-1',
-                        index < stepIndex && 'bg-primary',
-                        index >= stepIndex && 'bg-border',
-                      )}
-                    />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        <Separator />
-
-        {/* Step Content */}
-        {isLoadingData ? (
-          <div className="flex items-center justify-center py-16">
-            <Spinner className="size-8" />
-          </div>
-        ) : (
-          <div
-            key={currentStep?.id ?? 'empty'}
-            className="animate-in fade-in slide-in-from-right-4 duration-200"
-          >
-            {currentStep?.id === 'type' && (
-              <WeighingTypeStep
-                value={operationType}
-                onChange={(val) => form.setValue('operationType', val)}
-              />
-            )}
-
-            {currentStep?.id === 'vehicle' && (
-              <VehicleSelectionStep
-                tareSource={form.watch('tareSource')}
-                onTareSourceChange={(val) => form.setValue('tareSource', val)}
-                vehicles={vehicles}
-                vehicleName={vehicleName}
-                onVehicleChange={(val) => form.setValue('vehicleName', val)}
-              />
-            )}
-
-            {currentStep?.id === 'tare' && (
-              <TareWeightStep
-                ticketId={ticketId}
-                control={form.control}
-                vehicles={vehicles}
-                materials={materials}
-                operationType={operationType}
-                tareSource={form.watch('tareSource')}
-                capturedTareWeight={capturedTareWeight}
-                onCaptureTare={handleCaptureTare}
-                onRecaptureTare={handleRecaptureTare}
-                canCapture={canCapture}
-                selectedVehicle={selectedVehicle}
-                weightUnit={weightUnit}
-                vehicleValue={vehicleName}
-                onVehicleChange={(val) => form.setValue('vehicleName', val)}
-                materialValue={String(materialName)}
-                onMaterialChange={(val) => form.setValue('materialName', val)}
-                vehicleAllowNew={vehicleAllowNew}
-              />
-            )}
-
-            {currentStep?.id === 'gross' && (
-              <GrossWeightStep
-                ticketId={ticketId}
-                control={form.control}
-                vehicles={vehicles}
-                materials={materials}
-                capturedTareWeight={capturedTareWeight}
-                capturedGrossWeight={capturedGrossWeight}
-                onCaptureGross={handleCaptureGross}
-                onRecaptureGross={handleRecaptureGross}
-                canCapture={canCapture}
-                selectedVehicle={selectedVehicle}
-                weightUnit={weightUnit}
-                netWeight={netWeight}
-                vehicleValue={vehicleName}
-                onVehicleChange={(val) => form.setValue('vehicleName', val)}
-                materialValue={String(materialName)}
-                onMaterialChange={(val) => form.setValue('materialName', val)}
-                vehicleAllowNew={vehicleAllowNew}
-              />
-            )}
-
-            {(!currentStep || currentStep.id === '') && (
-              <div className="py-8 text-center text-muted-foreground">
-                No step content available
+                    {isCompleted ? <Check className="size-4" /> : index + 1}
+                  </div>
+                  <span
+                    className={cn(
+                      'mt-1.5 text-xs font-medium',
+                      isActive && 'text-primary',
+                      !isActive && 'text-muted-foreground',
+                    )}
+                  >
+                    {step.label}
+                  </span>
+                </button>
+                {index < visibleSteps.length - 1 && (
+                  <div
+                    className={cn(
+                      'mx-2 h-px flex-1',
+                      index < stepIndex && 'bg-primary',
+                      index >= stepIndex && 'bg-border',
+                    )}
+                  />
+                )}
               </div>
-            )}
-          </div>
-        )}
-
-        <Separator />
-
-        {/* Footer navigation */}
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            Step {stepIndex + 1} of {visibleSteps.length}
-          </div>
-
-          <div className="flex items-center gap-2">
-            {stepIndex > 0 && (
-              <Button type="button" variant="outline" onClick={handlePrev} disabled={isSubmitting}>
-                <ChevronLeft className="size-4" />
-                Previous
-              </Button>
-            )}
-
-            {/* Save & Exit — enabled from step 2 (tare) onward */}
-            {(currentStep?.id === 'tare' || currentStep?.id === 'gross') && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleSaveExit}
-                disabled={isSubmitting}
-              >
-                <Save className="size-4" />
-                Save & Exit
-              </Button>
-            )}
-
-            {/* Continue or Complete */}
-            {stepIndex < visibleSteps.length - 1 ? (
-              <Button type="button" onClick={handleNext} disabled={isSubmitting}>
-                Continue
-                <ChevronRight className="size-4" />
-              </Button>
-            ) : (
-              <Button type="button" onClick={handleComplete} disabled={isSubmitting}>
-                {isSubmitting && <Spinner className="size-4" />}
-                Complete
-              </Button>
-            )}
-          </div>
+            );
+          })}
         </div>
-      </AlertDialogContent>
-    </AlertDialog>
+      )}
+
+      <Separator />
+
+      {isLoadingData ? (
+        <div className="flex items-center justify-center py-16">
+          <Spinner className="size-8" />
+        </div>
+      ) : (
+        <div
+          key={currentStep?.id ?? 'empty'}
+          className="animate-in fade-in slide-in-from-right-4 duration-200"
+        >
+          {currentStep?.id === 'type' && (
+            <WeighingTypeStep
+              value={operationType}
+              onChange={(val) => form.setValue('operationType', val)}
+            />
+          )}
+
+          {currentStep?.id === 'vehicle' && (
+            <VehicleSelectionStep
+              tareSource={form.watch('tareSource')}
+              onTareSourceChange={(val) => form.setValue('tareSource', val)}
+              vehicles={vehicles}
+              vehicleName={vehicleName}
+              onVehicleChange={(val) => form.setValue('vehicleName', val)}
+            />
+          )}
+
+          {currentStep?.id === 'tare' && (
+            <TareWeightStep
+              ticketId={ticketId}
+              control={form.control}
+              vehicles={vehicles}
+              materials={materials}
+              operationType={operationType}
+              tareSource={form.watch('tareSource')}
+              capturedTareWeight={capturedTareWeight}
+              onCaptureTare={handleCaptureTare}
+              onRecaptureTare={handleRecaptureTare}
+              canCapture={canCapture}
+              selectedVehicle={selectedVehicle}
+              weightUnit={weightUnit}
+              vehicleValue={vehicleName}
+              onVehicleChange={(val) => form.setValue('vehicleName', val)}
+              materialValue={String(materialName)}
+              onMaterialChange={(val) => form.setValue('materialName', val)}
+              vehicleAllowNew={vehicleAllowNew}
+            />
+          )}
+
+          {currentStep?.id === 'gross' && (
+            <GrossWeightStep
+              ticketId={ticketId}
+              control={form.control}
+              vehicles={vehicles}
+              materials={materials}
+              capturedTareWeight={capturedTareWeight}
+              capturedGrossWeight={capturedGrossWeight}
+              onCaptureGross={handleCaptureGross}
+              onRecaptureGross={handleRecaptureGross}
+              canCapture={canCapture}
+              selectedVehicle={selectedVehicle}
+              weightUnit={weightUnit}
+              netWeight={netWeight}
+              vehicleValue={vehicleName}
+              onVehicleChange={(val) => form.setValue('vehicleName', val)}
+              materialValue={String(materialName)}
+              onMaterialChange={(val) => form.setValue('materialName', val)}
+              vehicleAllowNew={vehicleAllowNew}
+            />
+          )}
+
+          {(!currentStep || currentStep.id === '') && (
+            <div className="py-8 text-center text-muted-foreground">No step content available</div>
+          )}
+        </div>
+      )}
+
+      <Separator />
+
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-muted-foreground">
+          Step {stepIndex + 1} of {visibleSteps.length}
+        </div>
+
+        <div className="flex items-center gap-2">
+          {stepIndex > 0 && (
+            <Button type="button" variant="outline" onClick={handlePrev} disabled={isSubmitting}>
+              <ChevronLeft className="size-4" />
+              Previous
+            </Button>
+          )}
+
+          {(currentStep?.id === 'tare' || currentStep?.id === 'gross') && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleSaveExit}
+              disabled={isSubmitting}
+            >
+              <Save className="size-4" />
+              Save & Exit
+            </Button>
+          )}
+
+          {stepIndex < visibleSteps.length - 1 ? (
+            <Button type="button" onClick={handleNext} disabled={isSubmitting}>
+              Continue
+              <ChevronRight className="size-4" />
+            </Button>
+          ) : (
+            <Button type="button" onClick={handleComplete} disabled={isSubmitting}>
+              {isSubmitting && <Spinner className="size-4" />}
+              Complete
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

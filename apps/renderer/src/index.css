@@ -130,3 +130,8 @@
     @apply font-sans;
     }
 }
+
+#portal-root {
+  position: relative;
+  z-index: 9999;
+}
