@@ -93,8 +93,6 @@ function VehicleCombobox({
 }) {
   const [open, setOpen] = useState(false);
 
-  const vehicleNames = vehicles.map((v) => v.name);
-
   if (!allowNew) {
     return (
       <Select value={value} onValueChange={onChange} disabled={disabled}>
@@ -130,7 +128,7 @@ function VehicleCombobox({
           disabled={disabled}
         />
         <ComboboxContent className="w-full p-1 z-50" align="start" sideOffset={4}>
-          {vehicleNames.length > 0 || value === '' ? (
+          {vehicles.length > 0 || value === '' ? (
             <ComboboxList>
               {value === '' && (
                 <Button
@@ -146,21 +144,22 @@ function VehicleCombobox({
                   None
                 </Button>
               )}
-              {vehicleNames
-                .filter((name) => name.toLowerCase().includes(value.toLowerCase()))
-                .map((name) => (
-                  <ComboboxItem
-                    key={name}
-                    value={name}
-                    onClick={() => {
-                      onChange(name);
-                      setOpen(false);
-                    }}
-                    className="relative flex w-full cursor-default items-center gap-2 rounded-sm bg-transparent py-1.5 pr-8 pl-2 text-sm text-left hover:bg-accent hover:text-accent-foreground"
-                  >
-                    {name}
-                  </ComboboxItem>
-                ))}
+              {vehicles.map((vehicle) => (
+                <ComboboxItem
+                  key={vehicle.id}
+                  value={vehicle.name}
+                  onClick={() => {
+                    onChange(vehicle.name);
+                    setOpen(false);
+                  }}
+                  className="relative flex w-full cursor-default items-center justify-between gap-2 rounded-sm bg-transparent py-1.5 pr-8 pl-2 text-sm text-left hover:bg-accent hover:text-accent-foreground"
+                >
+                  <span>{vehicle.name}</span>
+                  <b>
+                    {vehicle.tareWeight}, <small>{vehicle.tareUnit}</small>
+                  </b>
+                </ComboboxItem>
+              ))}
             </ComboboxList>
           ) : (
             <ComboboxEmpty>
@@ -1003,11 +1002,8 @@ function RouteComponent() {
   );
 
   const handleSaveExit = useCallback(async () => {
-    const vehicle = form.getValues('vehicleName');
-    if (!vehicle) {
-      toast.error('Vehicle number is required');
-      return;
-    }
+    const valid = await form.trigger();
+    if (!valid) return;
 
     setIsSubmitting(true);
     try {
