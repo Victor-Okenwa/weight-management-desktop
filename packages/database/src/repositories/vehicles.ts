@@ -11,26 +11,52 @@ export function getOrCreateVehicle(
   db: DatabaseInstance,
   name: string,
   tareWeight?: number | null,
-  tareUnit?: string | null, // new parameter
+  tareUnit?: string | null,
 ): number {
   const trimmed = name.trim();
   const existing = db
-    .select({ id: vehicles.id })
+    .select({ id: vehicles.id, tareWeight: vehicles.tareWeight, tareUnit: vehicles.tareUnit })
     .from(vehicles)
     .where(eq(vehicles.name, trimmed))
     .get();
 
-  if (existing) return existing.id;
+  if (existing) {
+    console.log('[getOrCreateVehicle] Found existing vehicle:', existing);
+
+    // Update tareWeight and tareUnit if they're different from what's stored (null-safe).
+    const shouldUpdateTareWeight =
+      typeof tareWeight !== 'undefined' && (existing.tareWeight ?? null) !== (tareWeight ?? null);
+    const shouldUpdateTareUnit =
+      typeof tareUnit !== 'undefined' && (existing.tareUnit ?? null) !== (tareUnit ?? null);
+
+    console.log(
+      '[getOrCreateVehicle] shouldUpdateTareWeight:',
+      shouldUpdateTareWeight,
+      'shouldUpdateTareUnit:',
+      shouldUpdateTareUnit,
+    );
+
+    if (shouldUpdateTareWeight || shouldUpdateTareUnit) {
+      const updateData: Partial<typeof vehicles.$inferInsert> = {};
+      if (shouldUpdateTareWeight) updateData.tareWeight = tareWeight ?? null;
+      if (shouldUpdateTareUnit) updateData.tareUnit = tareUnit ?? null;
+      console.log('[getOrCreateVehicle] Updating vehicle ID', existing.id, 'with', updateData);
+      db.update(vehicles).set(updateData).where(eq(vehicles.id, existing.id)).run();
+    }
+    return existing.id;
+  }
 
   const result = db
     .insert(vehicles)
     .values({
       name: trimmed,
       tareWeight: tareWeight ?? null,
-      tareUnit: tareUnit ?? null, // store the unit
+      tareUnit: tareUnit ?? null,
     })
     .returning({ id: vehicles.id })
     .get();
+
+  console.log('[getOrCreateVehicle] Inserted new vehicle with ID:', result.id);
 
   return result.id;
 }

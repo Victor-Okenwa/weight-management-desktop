@@ -2,6 +2,9 @@
 
 import { getAllMaterials, getMaterialsPaginated } from '@weight/database/repositories/materials';
 import {
+  checkDatabaseHealth,
+} from '@weight/database/repositories/health';
+import {
   createRecord,
   getRecordById,
   getRecordsPaginated,
@@ -191,6 +194,11 @@ export function registerIpcHandlers(serialManager: SerialManager) {
   });
 
   // ---------- Renderer logging ----------
+  ipcMain.handle('db:health-check', () => {
+    const db = getDatabase();
+    return checkDatabaseHealth(db);
+  });
+
   ipcMain.on('log', (_event, { level, message }: { level: string; message: string }) => {
     switch (level) {
       case 'error':

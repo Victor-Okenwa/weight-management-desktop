@@ -70,6 +70,7 @@ export function VehicleCombobox({
             disabled={disabled}
           />
           {value &&
+            value !== '' &&
             (() => {
               const selectedVehicle = vehicles.find((v) => v.name === value);
               if (selectedVehicle) {

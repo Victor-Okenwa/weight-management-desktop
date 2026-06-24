@@ -35,6 +35,8 @@ export async function initDatabase(dbPath: string): Promise<DatabaseInstance> {
   const SQL = await initSqlJs();
   const sqldb = new SQL.Database(buffer);
 
+  console.log(`[Database] Initialized database at: ${dbPath}`);
+
   // Apply standard optimisations (sql.js supports PRAGMA)
   sqldb.run('PRAGMA journal_mode = WAL;'); // will be ignored (in‑memory), but harmless
   sqldb.run('PRAGMA busy_timeout = 5000;');
@@ -45,10 +47,12 @@ export async function initDatabase(dbPath: string): Promise<DatabaseInstance> {
   // Augment with save/close helpers
   const save = () => {
     const data = sqldb.export();
+    console.log(`[Database] Saving database to: ${dbPath}`);
     fs.writeFileSync(dbPath, Buffer.from(data));
   };
 
   const close = () => {
+    console.log(`[Database] Closing database: ${dbPath}`);
     sqldb.close();
   };
 

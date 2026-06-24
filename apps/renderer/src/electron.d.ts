@@ -1,5 +1,6 @@
 import type {
   CreateRecordInput,
+  HealthResult,
   RecordFilters,
   UpdateRecordInput,
 } from '@weight/database/repositories/record';
@@ -35,6 +36,9 @@ declare global {
       // Materials
       getAllMaterials: () => Promise<Material[]>;
       getMaterialsPaginated: (page: number, pageSize: number) => Promise<PaginatedResult<Material>>;
+
+      // Health
+      checkDatabaseHealth: () => Promise<HealthResult>;
 
       // Vehicles
       getAllVehicles: () => Promise<Vehicle[]>;

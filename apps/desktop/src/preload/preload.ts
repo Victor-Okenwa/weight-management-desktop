@@ -3,6 +3,7 @@ import type {
   RecordFilters,
   UpdateRecordInput,
 } from '@weight/database/repositories/record';
+import type { HealthResult } from '@weight/database/repositories/health';
 import type {
   Material,
   PaginatedResult,
@@ -47,6 +48,9 @@ onSerialStatus: (callback: (status: string) => void) => {
   getAllMaterials: (): Promise<Material[]> => ipcRenderer.invoke('materials:get-all'),
   getMaterialsPaginated: (page: number, pageSize: number): Promise<PaginatedResult<Material>> =>
     ipcRenderer.invoke('materials:get-paginated', page, pageSize),
+
+  // Health
+  checkDatabaseHealth: (): Promise<HealthResult> => ipcRenderer.invoke('db:health-check'),
 
   // Vehicles
   getAllVehicles: (): Promise<Vehicle[]> => ipcRenderer.invoke('vehicles:get-all'),

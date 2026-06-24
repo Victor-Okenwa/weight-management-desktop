@@ -50,6 +50,7 @@ export interface CreateRecordInput {
 export function createRecord(db: DatabaseInstance, data: CreateRecordInput): Record {
   // Upsert vehicle if name provided
   let vehicleId: number | null = null;
+  console.log('[createRecord] input data:', data);
   if (data.vehicleName) {
     vehicleId = getOrCreateVehicle(
       db,
