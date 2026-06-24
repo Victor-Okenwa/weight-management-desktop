@@ -10,8 +10,6 @@ export const Route = createRootRoute({
         <Outlet />
         <Toaster closeButton={true} duration={5000} position="top-center" richColors />
       </TooltipProvider>
-
-      <div id="portal-root">dtsygucgafdadauudyua</div>
     </ThemeProvider>
   ),
 });

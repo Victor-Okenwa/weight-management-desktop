@@ -1,6 +1,5 @@
-import { useState } from 'react';
 import type { Vehicle } from '@weight/shared/types/index';
-import { Button } from '@/components/ui/button';
+import { useState } from 'react';
 import {
   Combobox,
   ComboboxContent,
@@ -66,7 +65,7 @@ export function VehicleCombobox({
               onChange(e.target.value);
               setOpen(true);
             }}
-            className="capitalize"
+            className="uppercase"
             placeholder="Type vehicle number..."
             disabled={disabled}
           />
@@ -87,20 +86,6 @@ export function VehicleCombobox({
         <ComboboxContent className="w-full p-1 z-50" align="start" sideOffset={4}>
           {vehicles.length > 0 || value === '' ? (
             <ComboboxList>
-              {value === '' && (
-                <Button
-                  type="button"
-                  key="none"
-                  value="none"
-                  onClick={() => {
-                    onChange('');
-                    setOpen(false);
-                  }}
-                  className="relative flex w-full cursor-default items-center gap-2 rounded-sm bg-transparent py-1.5 pr-8 pl-2 text-sm text-left hover:bg-accent hover:text-accent-foreground"
-                >
-                  None
-                </Button>
-              )}
               {vehicles.map((vehicle) => (
                 <ComboboxItem
                   key={vehicle.id}
