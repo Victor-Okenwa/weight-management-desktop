@@ -103,7 +103,7 @@ function VehicleCombobox({
           <SelectGroup>
             {vehicles.map((v) => (
               <SelectItem key={v.id} value={v.name}>
-                {v.name}
+                {v.name} | {v.tareWeight}
               </SelectItem>
             ))}
             {vehicles.length === 0 && (
@@ -118,15 +118,31 @@ function VehicleCombobox({
   return (
     <div className="relative">
       <Combobox open={open} onOpenChange={setOpen} modal={false}>
-        <ComboboxInput
-          value={value}
-          onChange={(e) => {
-            onChange(e.target.value);
-            setOpen(true);
-          }}
-          placeholder="Type vehicle number..."
-          disabled={disabled}
-        />
+        <div className="flex">
+          <ComboboxInput
+            value={value}
+            onChange={(e) => {
+              onChange(e.target.value);
+              setOpen(true);
+            }}
+            className="capitalize"
+            placeholder="Type vehicle number..."
+            disabled={disabled}
+          />
+          {value &&
+            (() => {
+              const selectedVehicle = vehicles.find((v) => v.name === value);
+              if (selectedVehicle) {
+                return (
+                  <div className="ml-2 flex items-center text-xs text-muted-foreground">
+                    Tare: {selectedVehicle.tareWeight},{' '}
+                    <span className="ml-1">{selectedVehicle.tareUnit}</span>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+        </div>
         <ComboboxContent className="w-full p-1 z-50" align="start" sideOffset={4}>
           {vehicles.length > 0 || value === '' ? (
             <ComboboxList>
@@ -824,6 +840,7 @@ function RouteComponent() {
     resolver: zodResolver(newWeightSchema),
     defaultValues: {
       operationType: 'double',
+      tareSource: 'new',
       vehicleName: '',
       materialName: '',
       operator: '',
@@ -1005,6 +1022,20 @@ function RouteComponent() {
     const valid = await form.trigger();
     if (!valid) return;
 
+    const needsCapture =
+      operationType === 'single' || (operationType === 'double' && tareSource === 'new');
+    const useExisting = operationType === 'double' && tareSource === 'existing';
+
+    if (needsCapture && !capturedTareWeight) {
+      toast.error('Capture the tare weight before saving');
+      return;
+    }
+
+    if (useExisting && !selectedVehicle?.tareWeight) {
+      toast.error('Selected vehicle has no stored tare weight');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const payload = buildSubmitPayload('pending');
@@ -1016,7 +1047,15 @@ function RouteComponent() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [form, buildSubmitPayload, navigate]);
+  }, [
+    form,
+    buildSubmitPayload,
+    navigate,
+    operationType,
+    tareSource,
+    capturedTareWeight,
+    selectedVehicle,
+  ]);
 
   const handleComplete = useCallback(async () => {
     if (!(await validateCurrentStep())) return;
