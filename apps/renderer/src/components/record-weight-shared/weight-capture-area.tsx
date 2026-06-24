@@ -1,6 +1,7 @@
 import { Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { WeightDisplay } from '@/components/weight-display';
+import { useWeightStore } from '@/store/weightStore';
 
 export function WeightCaptureArea({
   label,
@@ -19,6 +20,9 @@ export function WeightCaptureArea({
   weightUnit: string;
   existingTare?: { weight: number; unit: string } | null;
 }) {
+  const { serialStatus } = useWeightStore();
+  const isConnected = serialStatus === 'connected';
+
   return (
     <div className="space-y-4">
       {existingTare ? (
@@ -57,14 +61,25 @@ export function WeightCaptureArea({
             type="button"
             size="lg"
             onClick={onCapture}
-            disabled={!canCapture}
+            disabled={!canCapture || !isConnected}
             className="w-full sm:w-auto"
           >
-            {canCapture ? `Capture ${label}` : 'Waiting for stable weight...'}
+            {!isConnected
+              ? 'Scale not connected'
+              : canCapture
+                ? `Capture ${label}`
+                : 'Waiting for stable weight...'}
           </Button>
           {!canCapture && (
             <p className="text-xs text-muted-foreground">
               Ensure the scale is connected and the reading is stable
+            </p>
+          )}
+
+          {/* Display a helpful description if the scale is not connected */}
+          {!isConnected && (
+            <p className="text-xs text-destructive">
+              Scale is not connected. Please check the connection in order to capture weight.
             </p>
           )}
         </div>
