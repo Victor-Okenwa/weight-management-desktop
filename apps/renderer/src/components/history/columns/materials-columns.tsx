@@ -1,35 +1,59 @@
 import type { ColumnDef } from '@tanstack/react-table';
 import type { Material } from '@weight/shared/types/index';
-import { Pencil, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatDate } from '@/lib/utils';
+import { useSelection } from './selection-context';
 
 export const materialsColumns: ColumnDef<Material>[] = [
   {
     id: 'select',
-    header: ({ table }) => (
-      <Checkbox
-        checked={table.getIsAllRowsSelected()}
-        onCheckedChange={(e) => table.getToggleAllRowsSelectedHandler()(e)}
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(e) => row.getToggleSelectedHandler()(e)}
-      />
-    ),
+    header: ({ table }) => {
+      const { selectedIds, onSelectionChangeAll } = useSelection();
+      const allIds = table.getRowModel().rows.map((r) => r.original.id);
+      const allSelected = allIds.length > 0 && allIds.every((id) => selectedIds.has(id));
+      return (
+        <Checkbox
+          checked={allSelected}
+          onCheckedChange={(checked) => {
+            onSelectionChangeAll(allIds, !!checked);
+          }}
+        />
+      );
+    },
+    cell: ({ row }) => {
+      const { selectedIds, onSelectionChange } = useSelection();
+      const id = row.original.id;
+      const isChecked = selectedIds.has(id);
+      return (
+        <Checkbox
+          checked={isChecked}
+          onCheckedChange={(checked) => {
+            onSelectionChange(id, !!checked);
+          }}
+        />
+      );
+    },
     enableSorting: false,
     enableHiding: false,
   },
   {
     accessorKey: 'name',
-    header: 'Name',
+    header: 'Material Name',
     cell: ({ getValue }) => {
-      const val = getValue() as string | null;
-      return val ? <span className="uppercase">{val}</span> : '--';
+      const val = getValue() as string;
+      return <span className="uppercase">{val}</span>;
+    },
+  },
+  {
+    accessorKey: 'unit',
+    header: 'Unit',
+  },
+  {
+    accessorKey: 'unitPrice',
+    header: 'Price',
+    cell: ({ getValue }) => {
+      const val = getValue() as number | null;
+      return val != null ? val : '--';
     },
   },
   {
@@ -37,44 +61,5 @@ export const materialsColumns: ColumnDef<Material>[] = [
     header: 'Created',
     meta: { variant: 'date' as const },
     cell: ({ getValue }) => formatDate(getValue() as string | null),
-  },
-  {
-    id: 'actions',
-    header: 'Actions',
-    enableSorting: false,
-    enableHiding: false,
-    cell: ({ row, table }) => {
-      const material = row.original;
-      return (
-        <div className="flex items-center gap-1">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-xs"
-                onClick={() => table.options.meta?.editMaterial?.(material)}
-              >
-                <Pencil className="size-3.5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Edit material</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-xs"
-                onClick={() => table.options.meta?.deleteMaterial?.(material)}
-              >
-                <Trash2 className="size-3.5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Delete material</TooltipContent>
-          </Tooltip>
-        </div>
-      );
-    },
   },
 ];

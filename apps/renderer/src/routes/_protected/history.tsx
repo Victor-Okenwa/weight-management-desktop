@@ -7,7 +7,6 @@ import {
   getFilteredRowModel,
   getSortedRowModel,
   type PaginationState,
-  type RowSelectionState,
   useReactTable,
 } from '@tanstack/react-table';
 import type { Material, Record, Vehicle } from '@weight/shared/types/index';
@@ -79,16 +78,41 @@ function RouteComponent() {
   });
 
   const [recordsPage, setRecordsPage] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
-  const [recordsRowSelection, setRecordsRowSelection] = useState<RowSelectionState>({});
   const [recordsColumnFilters, setRecordsColumnFilters] = useState<ColumnFiltersState>([]);
+  const [selectedRecordsSet, setSelectedRecordsSet] = useState<Set<number>>(new Set());
+
+  const recordsRowSelection = useMemo(() => {
+    const sel: Record<string, boolean> = {};
+    selectedRecordsSet.forEach((id) => {
+      sel[String(id)] = true;
+    });
+    return sel;
+  }, [selectedRecordsSet]);
 
   const recordsMeta = useMemo(
     () => ({
+      selectedRecordIds: selectedRecordsSet,
+      onRecordSelectionChange: (id: number, checked: boolean) => {
+        setSelectedRecordsSet((prev) => {
+          const next = new Set(prev);
+          if (checked) next.add(id);
+          else next.delete(id);
+          return next;
+        });
+      },
+      onRecordSelectionChangeAll: (ids: number[], checked: boolean) => {
+        setSelectedRecordsSet((prev) => {
+          const next = new Set(prev);
+          if (checked) ids.forEach((id) => next.add(id));
+          else ids.forEach((id) => next.delete(id));
+          return next;
+        });
+      },
       viewRecord: (record: Record) => setViewRecord(record),
       editRecord: () => toast.info('Edit record coming soon'),
       deleteRecord: (record: Record) => setDeleteRecordItem(record),
     }),
-    [],
+    [selectedRecordsSet],
   );
 
   const recordsTable = useReactTable({
@@ -106,7 +130,7 @@ function RouteComponent() {
       recordsPagination.setPage(next.pageIndex + 1);
       recordsPagination.setPageSize(next.pageSize);
     },
-    onRowSelectionChange: setRecordsRowSelection,
+    onRowSelectionChange: () => {},
     onColumnFiltersChange: setRecordsColumnFilters,
     getRowId: (row: Record) => String(row.id),
     manualPagination: true,
@@ -134,15 +158,40 @@ function RouteComponent() {
   });
 
   const [vehiclesPage, setVehiclesPage] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
-  const [vehiclesRowSelection, setVehiclesRowSelection] = useState<RowSelectionState>({});
   const [vehiclesColumnFilters, setVehiclesColumnFilters] = useState<ColumnFiltersState>([]);
+  const [selectedVehiclesSet, setSelectedVehiclesSet] = useState<Set<number>>(new Set());
+
+  const vehiclesRowSelection = useMemo(() => {
+    const sel: Record<string, boolean> = {};
+    selectedVehiclesSet.forEach((id) => {
+      sel[String(id)] = true;
+    });
+    return sel;
+  }, [selectedVehiclesSet]);
 
   const vehiclesMeta = useMemo(
     () => ({
+      selectedRecordIds: selectedVehiclesSet,
+      onRecordSelectionChange: (id: number, checked: boolean) => {
+        setSelectedVehiclesSet((prev) => {
+          const next = new Set(prev);
+          if (checked) next.add(id);
+          else next.delete(id);
+          return next;
+        });
+      },
+      onRecordSelectionChangeAll: (ids: number[], checked: boolean) => {
+        setSelectedVehiclesSet((prev) => {
+          const next = new Set(prev);
+          if (checked) ids.forEach((id) => next.add(id));
+          else ids.forEach((id) => next.delete(id));
+          return next;
+        });
+      },
       editVehicle: (vehicle: Vehicle) => setEditVehicle(vehicle),
       deleteVehicle: (vehicle: Vehicle) => setDeleteVehicleItem(vehicle),
     }),
-    [],
+    [selectedVehiclesSet],
   );
 
   const vehiclesTable = useReactTable({
@@ -160,7 +209,7 @@ function RouteComponent() {
       vehiclesPagination.setPage(next.pageIndex + 1);
       vehiclesPagination.setPageSize(next.pageSize);
     },
-    onRowSelectionChange: setVehiclesRowSelection,
+    onRowSelectionChange: () => {},
     onColumnFiltersChange: setVehiclesColumnFilters,
     getRowId: (row: Vehicle) => String(row.id),
     manualPagination: true,
@@ -186,15 +235,40 @@ function RouteComponent() {
     pageIndex: 0,
     pageSize: 10,
   });
-  const [materialsRowSelection, setMaterialsRowSelection] = useState<RowSelectionState>({});
   const [materialsColumnFilters, setMaterialsColumnFilters] = useState<ColumnFiltersState>([]);
+  const [selectedMaterialsSet, setSelectedMaterialsSet] = useState<Set<number>>(new Set());
+
+  const materialsRowSelection = useMemo(() => {
+    const sel: Record<string, boolean> = {};
+    selectedMaterialsSet.forEach((id) => {
+      sel[String(id)] = true;
+    });
+    return sel;
+  }, [selectedMaterialsSet]);
 
   const materialsMeta = useMemo(
     () => ({
+      selectedRecordIds: selectedMaterialsSet,
+      onRecordSelectionChange: (id: number, checked: boolean) => {
+        setSelectedMaterialsSet((prev) => {
+          const next = new Set(prev);
+          if (checked) next.add(id);
+          else next.delete(id);
+          return next;
+        });
+      },
+      onRecordSelectionChangeAll: (ids: number[], checked: boolean) => {
+        setSelectedMaterialsSet((prev) => {
+          const next = new Set(prev);
+          if (checked) ids.forEach((id) => next.add(id));
+          else ids.forEach((id) => next.delete(id));
+          return next;
+        });
+      },
       editMaterial: (material: Material) => setEditMaterial(material),
       deleteMaterial: (material: Material) => setDeleteMaterialItem(material),
     }),
-    [],
+    [selectedMaterialsSet],
   );
 
   const materialsTable = useReactTable({
@@ -212,7 +286,7 @@ function RouteComponent() {
       materialsPagination.setPage(next.pageIndex + 1);
       materialsPagination.setPageSize(next.pageSize);
     },
-    onRowSelectionChange: setMaterialsRowSelection,
+    onRowSelectionChange: () => {},
     onColumnFiltersChange: setMaterialsColumnFilters,
     getRowId: (row: Material) => String(row.id),
     manualPagination: true,
@@ -223,13 +297,11 @@ function RouteComponent() {
   });
 
   // ============ EVENTS ============
-  const selectedRecordIds = recordsTable
-    .getFilteredSelectedRowModel()
-    .rows.map((r) => r.original.id);
+  const selectedRecordCount = selectedRecordsSet.size;
 
   const handleBulkDelete = () => {
-    if (selectedRecordIds.length === 0) return;
-    setDeleteRecordIds(selectedRecordIds);
+    if (selectedRecordCount === 0) return;
+    setDeleteRecordIds(Array.from(selectedRecordsSet));
   };
 
   const confirmBulkDelete = async () => {
@@ -237,6 +309,7 @@ function RouteComponent() {
       const count = await window.electronAPI.deleteRecords(deleteRecordIds);
       toast.success(`${count} record(s) deleted`);
       setDeleteRecordIds([]);
+      setSelectedRecordsSet(new Set());
       recordsPagination.refetch();
     } catch {
       toast.error('Failed to delete records');
@@ -282,19 +355,19 @@ function RouteComponent() {
   const handleRecordsRefresh = () => {
     setRecordsSearchInput('');
     setRecordsSearch('');
-    recordsTable.resetRowSelection();
+    setSelectedRecordsSet(new Set());
   };
 
   const handleVehiclesRefresh = () => {
     setVehiclesSearchInput('');
     setVehiclesSearch('');
-    vehiclesTable.resetRowSelection();
+    setSelectedVehiclesSet(new Set());
   };
 
   const handleMaterialsRefresh = () => {
     setMaterialsSearchInput('');
     setMaterialsSearch('');
-    materialsTable.resetRowSelection();
+    setSelectedMaterialsSet(new Set());
   };
 
   return (
@@ -361,7 +434,7 @@ function RouteComponent() {
               <DataTable
                 table={recordsTable}
                 actionBar={
-                  selectedRecordIds.length > 0 && (
+                  selectedRecordCount > 0 && (
                     <Button
                       type="button"
                       variant="destructive"
@@ -369,7 +442,7 @@ function RouteComponent() {
                       onClick={handleBulkDelete}
                     >
                       <Trash2 className="size-4" />
-                      Delete ({selectedRecordIds.length}) record(s)
+                      Delete ({selectedRecordCount}) record(s)
                     </Button>
                   )
                 }

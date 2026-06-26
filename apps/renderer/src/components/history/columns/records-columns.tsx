@@ -6,26 +6,37 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn, formatDate } from '@/lib/utils';
+import { useSelection } from './selection-context';
 
 export const recordsColumns: ColumnDef<Record>[] = [
   {
     id: 'select',
-    header: ({ table }) => (
-      <Checkbox
-        checked={table.getIsAllRowsSelected()}
-        onCheckedChange={(e) => {
-          alert();
-          console.log(table.getToggleAllRowsSelectedHandler()(e));
-          table.getToggleAllRowsSelectedHandler()(e);
-        }}
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(e) => row.getToggleSelectedHandler()(e)}
-      />
-    ),
+    header: ({ table }) => {
+      const { selectedIds, onSelectionChangeAll } = useSelection();
+      const allIds = table.getRowModel().rows.map((r) => r.original.id);
+      const allSelected = allIds.length > 0 && allIds.every((id) => selectedIds.has(id));
+      return (
+        <Checkbox
+          checked={allSelected}
+          onCheckedChange={(checked) => {
+            onSelectionChangeAll(allIds, !!checked);
+          }}
+        />
+      );
+    },
+    cell: ({ row }) => {
+      const { selectedIds, onSelectionChange } = useSelection();
+      const id = row.original.id;
+      const isChecked = selectedIds.has(id);
+      return (
+        <Checkbox
+          checked={isChecked}
+          onCheckedChange={(checked) => {
+            onSelectionChange(id, !!checked);
+          }}
+        />
+      );
+    },
     enableSorting: false,
     enableHiding: false,
   },
