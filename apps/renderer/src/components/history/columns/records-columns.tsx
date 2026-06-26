@@ -1,14 +1,10 @@
 import type { ColumnDef } from '@tanstack/react-table';
-import { Eye, Pencil, Trash2 } from 'lucide-react';
 import type { Record } from '@weight/shared/types/index';
+import { Eye, Pencil, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn, formatDate } from '@/lib/utils';
 
 export const recordsColumns: ColumnDef<Record>[] = [
@@ -17,7 +13,11 @@ export const recordsColumns: ColumnDef<Record>[] = [
     header: ({ table }) => (
       <Checkbox
         checked={table.getIsAllRowsSelected()}
-        onCheckedChange={(e) => table.getToggleAllRowsSelectedHandler()(e)}
+        onCheckedChange={(e) => {
+          alert();
+          console.log(table.getToggleAllRowsSelectedHandler()(e));
+          table.getToggleAllRowsSelectedHandler()(e);
+        }}
       />
     ),
     cell: ({ row }) => (

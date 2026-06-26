@@ -49,7 +49,7 @@ export function DataTable<TData>({
                   {row.getVisibleCells().map((cell) => (
                     <td
                       key={cell.id}
-                      className="p-3 py-2.5 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0"
+                      className="p-3 py-2.5 align-middle whitespace-nowrap has-[[role=checkbox]]:pr-0"
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
