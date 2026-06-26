@@ -59,8 +59,8 @@ export const records = sqliteTable('records', {
   status: text('status', { enum: ['pending', 'completed'] })
     .notNull()
     .default('pending'),
-  vehicleId: integer('vehicle_id').references(() => vehicles.id),
-  materialId: integer('material_id').references(() => materials.id),
+  vehicleId: integer('vehicle_id').references(() => vehicles.id, { onDelete: 'set null' }),
+  materialId: integer('material_id').references(() => materials.id, { onDelete: 'set null' }),
   remark: text('remark'),
   createdAt: text('created_at').default('CURRENT_TIMESTAMP'),
   updatedAt: text('updated_at').default('CURRENT_TIMESTAMP'),

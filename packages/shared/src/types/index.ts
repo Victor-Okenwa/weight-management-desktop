@@ -106,6 +106,8 @@ export interface Record {
   status: 'pending' | 'completed';
   vehicleId: number | null;
   materialId: number | null;
+  vehicleName: string | null;
+  materialName: string | null;
   remark: string | null;
   createdAt: string;
   updatedAt: string;

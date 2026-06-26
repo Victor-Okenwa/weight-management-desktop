@@ -35,14 +35,29 @@ declare global {
 
       // Materials
       getAllMaterials: () => Promise<Material[]>;
-      getMaterialsPaginated: (page: number, pageSize: number) => Promise<PaginatedResult<Material>>;
+      getMaterialsPaginated: (
+        page: number,
+        pageSize: number,
+        filters?: { search?: string },
+      ) => Promise<PaginatedResult<Material>>;
+      updateMaterial: (id: number, data: { name?: string }) => Promise<Material | null>;
+      deleteMaterial: (id: number) => Promise<void>;
 
       // Health
       checkDatabaseHealth: () => Promise<HealthResult>;
 
       // Vehicles
       getAllVehicles: () => Promise<Vehicle[]>;
-      getVehiclesPaginated: (page: number, pageSize: number) => Promise<PaginatedResult<Vehicle>>;
+      getVehiclesPaginated: (
+        page: number,
+        pageSize: number,
+        filters?: { search?: string },
+      ) => Promise<PaginatedResult<Vehicle>>;
+      updateVehicle: (
+        id: number,
+        data: { name?: string; tareWeight?: number | null; tareUnit?: string | null },
+      ) => Promise<Vehicle | null>;
+      deleteVehicle: (id: number) => Promise<void>;
 
       // Records
       createRecord: (data: CreateRecordInput) => Promise<RecordType>;
@@ -53,6 +68,8 @@ declare global {
         pageSize: number,
         filters?: RecordFilters,
       ) => Promise<PaginatedResult<RecordType>>;
+      deleteRecord: (id: number) => Promise<RecordType | null>;
+      deleteRecords: (ids: number[]) => Promise<number>;
     };
   }
 }

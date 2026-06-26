@@ -1,19 +1,10 @@
-import { flexRender, type Table as TanstackTable } from "@tanstack/react-table";
-import type * as React from "react";
+import { flexRender, type Table as TanstackTable } from '@tanstack/react-table';
+import type * as React from 'react';
+import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 
-import { DataTablePagination } from "@/components/data-table/data-table-pagination";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { getColumnPinningStyle } from "@/components/data-table/data-table";
-import { cn } from "@/lib/utils";
-
-interface DataTableProps<TData> extends React.ComponentProps<"div"> {
+interface DataTableProps<TData> extends React.ComponentProps<'div'> {
   table: TanstackTable<TData>;
   actionBar?: React.ReactNode;
 }
@@ -26,75 +17,59 @@ export function DataTable<TData>({
   ...props
 }: DataTableProps<TData>) {
   return (
-    <div
-      className={cn("flex w-full flex-col gap-2.5 overflow-auto", className)}
-      {...props}
-    >
+    <div className={cn('flex w-full flex-col gap-2.5', className)} {...props}>
       {children}
-      <div className="overflow-hidden rounded-md border">
-        <Table>
-          <TableHeader>
+      <ScrollArea className="rounded-md border">
+        <table className="w-full caption-bottom text-sm">
+          <thead className="bg-muted/30">
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
+              <tr key={headerGroup.id} className="border-b-2 border-border/60">
                 {headerGroup.headers.map((header) => (
-                  <TableHead
+                  <th
                     key={header.id}
                     colSpan={header.colSpan}
-                    style={{
-                      ...getColumnPinningStyle({ column: header.column }),
-                    }}
+                    className="h-11 px-3 py-2.5 text-left align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0"
                   >
                     {header.isPlaceholder
                       ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
-                  </TableHead>
+                      : flexRender(header.column.columnDef.header, header.getContext())}
+                  </th>
                 ))}
-              </TableRow>
+              </tr>
             ))}
-          </TableHeader>
-          <TableBody>
+          </thead>
+          <tbody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow
+                <tr
                   key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
+                  data-state={row.getIsSelected() && 'selected'}
+                  className="border-b border-border/50 transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell
+                    <td
                       key={cell.id}
-                      style={{
-                        ...getColumnPinningStyle({ column: cell.column }),
-                      }}
+                      className="p-3 py-2.5 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0"
                     >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
-                    </TableCell>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
                   ))}
-                </TableRow>
+                </tr>
               ))
             ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={table.getAllColumns().length}
-                  className="h-24 text-center"
-                >
+              <tr>
+                <td colSpan={table.getAllColumns().length} className="h-24 text-center">
                   No results.
-                </TableCell>
-              </TableRow>
+                </td>
+              </tr>
             )}
-          </TableBody>
-        </Table>
-      </div>
+          </tbody>
+        </table>
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
       <div className="flex flex-col gap-2.5">
         <DataTablePagination table={table} />
-        {actionBar &&
-          table.getFilteredSelectedRowModel().rows.length > 0 &&
-          actionBar}
+        {actionBar && table.getFilteredSelectedRowModel().rows.length > 0 && actionBar}
       </div>
     </div>
   );

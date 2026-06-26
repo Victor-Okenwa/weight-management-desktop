@@ -21,3 +21,13 @@ export function getPortNumber(port: string): number {
   console.log(match?.[1]);
   return parseInt(String(match?.[1]), 10) ?? '';
 }
+
+export function formatDate(iso: string | null | undefined): string {
+  if (!iso) return '--';
+  const date = new Date(iso.replace(' ', 'T'));
+  if (isNaN(date.getTime())) return '--';
+  const day = date.getDate();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}

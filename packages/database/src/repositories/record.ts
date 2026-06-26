@@ -1,13 +1,11 @@
 import type { PaginatedResult, Record } from '@weight/shared/types/index';
-import { and, count, desc, eq, sql } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, sql } from 'drizzle-orm';
 import type { DatabaseInstance } from '../index.js';
-import { records, settings, vehicles } from '../schema/index.js';
+import { materials, records, settings, vehicles } from '../schema/index.js';
 import { getOrCreateMaterial } from './materials.js';
 import { getOrCreateVehicle } from './vehicles.js';
 
-// ---------- Ticket ID generation ----------
 function getNextTicketId(db: DatabaseInstance): string {
-  // Read current prefix and number from settings (single row)
   const row = db
     .select({
       ticketPrefix: settings.ticketPrefix,
@@ -20,10 +18,8 @@ function getNextTicketId(db: DatabaseInstance): string {
   const prefix = row?.ticketPrefix || 'SRW';
   const number = row?.nextTicketNumber || 1;
 
-  // Generate the ticket ID (e.g., SRW-0001)
   const ticketId = `${prefix}-${String(number).padStart(4, '0')}`;
 
-  // Increment the counter in the database
   db.update(settings)
     .set({ nextTicketNumber: number + 1 })
     .where(eq(settings.id, 1))
@@ -32,7 +28,6 @@ function getNextTicketId(db: DatabaseInstance): string {
   return ticketId;
 }
 
-// ---------- Create record ----------
 export interface CreateRecordInput {
   operator?: string | null;
   operationType: 'single' | 'double';
@@ -43,24 +38,16 @@ export interface CreateRecordInput {
   vehicleName?: string | null;
   materialName?: string | null;
   remark?: string | null;
-  vehicleTareWeight?: number | null; // if vehicle is new, set its tare weight
+  vehicleTareWeight?: number | null;
   vehicleTareUnit?: string | null;
 }
 
 export function createRecord(db: DatabaseInstance, data: CreateRecordInput): Record {
-  // Upsert vehicle if name provided
   let vehicleId: number | null = null;
-  console.log('[createRecord] input data:', data);
   if (data.vehicleName) {
-    vehicleId = getOrCreateVehicle(
-      db,
-      data.vehicleName,
-      data.vehicleTareWeight,
-      data.vehicleTareUnit,
-    );
+    vehicleId = getOrCreateVehicle(db, data.vehicleName, data.vehicleTareWeight, data.vehicleTareUnit);
   }
 
-  // Upsert material if name provided
   let materialId: number | null = null;
   if (data.materialName) {
     materialId = getOrCreateMaterial(db, data.materialName);
@@ -88,7 +75,6 @@ export function createRecord(db: DatabaseInstance, data: CreateRecordInput): Rec
   return result as Record;
 }
 
-// ---------- Update record ----------
 export interface UpdateRecordInput {
   operator?: string | null;
   operationType?: 'single' | 'double';
@@ -106,30 +92,18 @@ export interface UpdateRecordInput {
   updatedAt?: string;
 }
 
-export function updateRecord(
-  db: DatabaseInstance,
-  id: number,
-  data: UpdateRecordInput,
-): Record | null {
-  // Upsert vehicle if a new name is provided
+export function updateRecord(db: DatabaseInstance, id: number, data: UpdateRecordInput): Record | null {
   let vehicleId: number | undefined;
   if (data.vehicleName) {
-    vehicleId = getOrCreateVehicle(
-      db,
-      data.vehicleName,
-      data.vehicleTareWeight,
-      data.vehicleTareUnit,
-    );
+    vehicleId = getOrCreateVehicle(db, data.vehicleName, data.vehicleTareWeight, data.vehicleTareUnit);
   }
 
-  // Upsert material if a new name is provided
   let materialId: number | undefined;
   if (data.materialName) {
     materialId = getOrCreateMaterial(db, data.materialName);
   }
 
   const updateData: UpdateRecordInput = { ...data };
-  // Remove the names, keep only IDs
   delete updateData.vehicleName;
   delete updateData.materialName;
   delete updateData.vehicleTareWeight;
@@ -137,7 +111,6 @@ export function updateRecord(
   if (vehicleId !== undefined) updateData.vehicleId = vehicleId;
   if (materialId !== undefined) updateData.materialId = materialId;
 
-  // Set updated_at to now
   updateData.updatedAt = new Date().toISOString();
 
   const result = db.update(records).set(updateData).where(eq(records.id, id)).returning().get();
@@ -145,17 +118,40 @@ export function updateRecord(
   return result as Record;
 }
 
-// ---------- Get single record ----------
 export function getRecordById(db: DatabaseInstance, id: number): Record | null {
-  const result = db.select().from(records).where(eq(records.id, id)).get() ?? null;
+  const result = db
+    .select({
+      id: records.id,
+      ticketId: records.ticketId,
+      operator: records.operator,
+      operationType: records.operationType,
+      grossWeight: records.grossWeight,
+      tareWeight: records.tareWeight,
+      netWeight: records.netWeight,
+      status: records.status,
+      vehicleId: records.vehicleId,
+      materialId: records.materialId,
+      remark: records.remark,
+      createdAt: records.createdAt,
+      updatedAt: records.updatedAt,
+      vehicleName: vehicles.name,
+      materialName: materials.name,
+    })
+    .from(records)
+    .leftJoin(vehicles, eq(records.vehicleId, vehicles.id))
+    .leftJoin(materials, eq(records.materialId, materials.id))
+    .where(eq(records.id, id))
+    .get() ?? null;
+
   return result as Record;
 }
 
-// ---------- Paginated list with optional filters ----------
 export interface RecordFilters {
   status?: 'pending' | 'completed';
   vehicleName?: string;
-  startDate?: string; // ISO date strings
+  materialName?: string;
+  search?: string;
+  startDate?: string;
   endDate?: string;
 }
 
@@ -172,19 +168,15 @@ export function getRecordsPaginated(
     conditions.push(eq(records.status, filters.status));
   }
   if (filters?.vehicleName) {
-    // Join with vehicles table to filter by name
-    // For simplicity, we'll filter by exact name (could be like)
-    const vehicle = db
-      .select({ id: vehicles.id })
-      .from(vehicles)
-      .where(eq(vehicles.name, filters.vehicleName))
-      .get();
-    if (vehicle) {
-      conditions.push(eq(records.vehicleId, vehicle.id));
-    } else {
-      // No matching vehicle → return empty
-      return { data: [], total: 0, page, pageSize };
-    }
+    conditions.push(sql`${vehicles.name} LIKE ${'%' + filters.vehicleName + '%'}`);
+  }
+  if (filters?.materialName) {
+    conditions.push(sql`${materials.name} LIKE ${'%' + filters.materialName + '%'}`);
+  }
+  if (filters?.search) {
+    conditions.push(
+      sql`(${records.ticketId} LIKE ${'%' + filters.search + '%'} OR ${records.operator} LIKE ${'%' + filters.search + '%'} OR ${vehicles.name} LIKE ${'%' + filters.search + '%'} OR ${materials.name} LIKE ${'%' + filters.search + '%'})`,
+    );
   }
   if (filters?.startDate) {
     conditions.push(sql`${records.createdAt} >= ${filters.startDate}`);
@@ -196,15 +188,50 @@ export function getRecordsPaginated(
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
   const data = db
-    .select()
+    .select({
+      id: records.id,
+      ticketId: records.ticketId,
+      operator: records.operator,
+      operationType: records.operationType,
+      grossWeight: records.grossWeight,
+      tareWeight: records.tareWeight,
+      netWeight: records.netWeight,
+      status: records.status,
+      vehicleId: records.vehicleId,
+      materialId: records.materialId,
+      remark: records.remark,
+      createdAt: records.createdAt,
+      updatedAt: records.updatedAt,
+      vehicleName: vehicles.name,
+      materialName: materials.name,
+    })
     .from(records)
+    .leftJoin(vehicles, eq(records.vehicleId, vehicles.id))
+    .leftJoin(materials, eq(records.materialId, materials.id))
     .where(whereClause)
-    .orderBy(desc(records.createdAt)) // newest first
+    .orderBy(desc(records.createdAt))
     .limit(pageSize)
     .offset(offset)
     .all();
 
-  const total = db.select({ count: count() }).from(records).where(whereClause).get()?.count ?? 0;
+  const totalQuery = db
+    .select({ count: count() })
+    .from(records)
+    .leftJoin(vehicles, eq(records.vehicleId, vehicles.id))
+    .leftJoin(materials, eq(records.materialId, materials.id))
+    .where(whereClause)
+    .get();
+  const total = totalQuery?.count ?? 0;
 
   return { data: data as Record[], total, page, pageSize };
+}
+
+export function deleteRecord(db: DatabaseInstance, id: number): Record | null {
+  const result = db.delete(records).where(eq(records.id, id)).returning().get();
+  return result as Record;
+}
+
+export function deleteRecords(db: DatabaseInstance, ids: number[]): number {
+  const result = db.delete(records).where(inArray(records.id, ids)).returning().all();
+  return result.length;
 }

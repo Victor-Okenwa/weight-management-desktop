@@ -1,26 +1,16 @@
 /* eslint-disable react-refresh/only-export-components */
-
 import { createFileRoute } from '@tanstack/react-router';
-import {
-  type ColumnFiltersState,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getSortedRowModel,
-  type PaginationState,
-  type RowSelectionState,
-  useReactTable,
-} from '@tanstack/react-table';
 import type { Material, Record, Vehicle } from '@weight/shared/types/index';
 import { AlertTriangle, HistoryIcon, Search, Trash2 } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
-import { materialsColumns } from '@/components/history/columns/materials-columns';
-import { recordsColumns } from '@/components/history/columns/records-columns';
-import { vehiclesColumns } from '@/components/history/columns/vehicles-columns';
 import { MaterialEditDialog } from '@/components/record-weight-shared/history/material-edit-dialog';
+import { materialsColumns } from '@/components/record-weight-shared/history/materials-columns';
+import { recordsColumns } from '@/components/record-weight-shared/history/records-columns';
 import { VehicleEditDialog } from '@/components/record-weight-shared/history/vehicle-edit-dialog';
+import { vehiclesColumns } from '@/components/record-weight-shared/history/vehicles-columns';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,7 +29,7 @@ import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { useServerPagination } from '@/hooks/use-server-pagination';
+import { useServerSideTable } from '@/hooks/use-server-side-table';
 import { cn, formatDate } from '@/lib/utils';
 
 export const Route = createFileRoute('/_protected/history')({
@@ -49,16 +39,20 @@ export const Route = createFileRoute('/_protected/history')({
 function RouteComponent() {
   const [activeTab, setActiveTab] = useState('records');
 
-  // --- Dialogs state ---
+  // --- Records state ---
   const [viewRecord, setViewRecord] = useState<Record | null>(null);
   const [deleteRecordItem, setDeleteRecordItem] = useState<Record | null>(null);
   const [deleteRecordIds, setDeleteRecordIds] = useState<number[]>([]);
+
+  // --- Vehicles state ---
   const [editVehicle, setEditVehicle] = useState<Vehicle | null>(null);
   const [deleteVehicleItem, setDeleteVehicleItem] = useState<Vehicle | null>(null);
+
+  // --- Materials state ---
   const [editMaterial, setEditMaterial] = useState<Material | null>(null);
   const [deleteMaterialItem, setDeleteMaterialItem] = useState<Material | null>(null);
 
-  // --- Search state ---
+  // --- Search state (controlled input + committed query) ---
   const [recordsSearchInput, setRecordsSearchInput] = useState('');
   const [recordsSearch, setRecordsSearch] = useState('');
   const [vehiclesSearchInput, setVehiclesSearchInput] = useState('');
@@ -66,168 +60,79 @@ function RouteComponent() {
   const [materialsSearchInput, setMaterialsSearchInput] = useState('');
   const [materialsSearch, setMaterialsSearch] = useState('');
 
-  // ============ RECORDS ============
-  const recordsPagination = useServerPagination({
-    fetchFn: useCallback(
-      async (page, pageSize) =>
-        window.electronAPI.getRecordsPaginated(page, pageSize, {
-          search: recordsSearch || undefined,
-        }),
-      [recordsSearch],
-    ),
-    defaultPageSize: 10,
-  });
-
-  const [recordsPage, setRecordsPage] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
-  const [recordsRowSelection, setRecordsRowSelection] = useState<RowSelectionState>({});
-  const [recordsColumnFilters, setRecordsColumnFilters] = useState<ColumnFiltersState>([]);
-
-  const recordsMeta = useMemo(
-    () => ({
-      viewRecord: (record: Record) => setViewRecord(record),
-      editRecord: () => toast.info('Edit record coming soon'),
-      deleteRecord: (record: Record) => setDeleteRecordItem(record),
-    }),
-    [],
-  );
-
-  const recordsTable = useReactTable({
-    data: recordsPagination.data,
+  // --- Records table ---
+  const recordsTableData = useServerSideTable({
+    fetchFn: async ({ page, pageSize, filters }) => {
+      return window.electronAPI.getRecordsPaginated(page, pageSize, {
+        ...(filters as Record<string, unknown>),
+        search: recordsSearch || undefined,
+      });
+    },
     columns: recordsColumns,
-    pageCount: recordsPagination.pageCount,
-    state: {
-      pagination: recordsPage,
-      rowSelection: recordsRowSelection,
-      columnFilters: recordsColumnFilters,
+    meta: {
+      viewRecord: (record: Record) => setViewRecord(record),
+      editRecord: (record: Record) => {
+        toast.info('Edit record coming soon');
+      },
+      deleteRecord: (record: Record) => setDeleteRecordItem(record),
     },
-    onPaginationChange: (updater) => {
-      const next = typeof updater === 'function' ? updater(recordsPage) : updater;
-      setRecordsPage(next);
-      recordsPagination.setPage(next.pageIndex + 1);
-      recordsPagination.setPageSize(next.pageSize);
-    },
-    onRowSelectionChange: setRecordsRowSelection,
-    onColumnFiltersChange: setRecordsColumnFilters,
-    getRowId: (row: Record) => String(row.id),
-    manualPagination: true,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    meta: recordsMeta,
   });
 
-  // Sync initial page size from hook to table
-  if (recordsPage.pageSize !== recordsPagination.pageSize) {
-    setRecordsPage((prev) => ({ ...prev, pageSize: recordsPagination.pageSize }));
-  }
-
-  // ============ VEHICLES ============
-  const vehiclesPagination = useServerPagination({
-    fetchFn: useCallback(
-      async (page, pageSize) =>
-        window.electronAPI.getVehiclesPaginated(page, pageSize, {
-          search: vehiclesSearch || undefined,
-        }),
-      [vehiclesSearch],
-    ),
-    defaultPageSize: 10,
-  });
-
-  const [vehiclesPage, setVehiclesPage] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
-  const [vehiclesRowSelection, setVehiclesRowSelection] = useState<RowSelectionState>({});
-  const [vehiclesColumnFilters, setVehiclesColumnFilters] = useState<ColumnFiltersState>([]);
-
-  const vehiclesMeta = useMemo(
-    () => ({
+  // --- Vehicles table ---
+  const vehiclesTableData = useServerSideTable({
+    fetchFn: async ({ page, pageSize, filters }) => {
+      return window.electronAPI.getVehiclesPaginated(page, pageSize, {
+        ...(filters as Record<string, unknown>),
+        search: vehiclesSearch || undefined,
+      });
+    },
+    columns: vehiclesColumns,
+    meta: {
       editVehicle: (vehicle: Vehicle) => setEditVehicle(vehicle),
       deleteVehicle: (vehicle: Vehicle) => setDeleteVehicleItem(vehicle),
-    }),
-    [],
-  );
-
-  const vehiclesTable = useReactTable({
-    data: vehiclesPagination.data,
-    columns: vehiclesColumns,
-    pageCount: vehiclesPagination.pageCount,
-    state: {
-      pagination: vehiclesPage,
-      rowSelection: vehiclesRowSelection,
-      columnFilters: vehiclesColumnFilters,
     },
-    onPaginationChange: (updater) => {
-      const next = typeof updater === 'function' ? updater(vehiclesPage) : updater;
-      setVehiclesPage(next);
-      vehiclesPagination.setPage(next.pageIndex + 1);
-      vehiclesPagination.setPageSize(next.pageSize);
+  });
+
+  // --- Materials table ---
+  const materialsTableData = useServerSideTable({
+    fetchFn: async ({ page, pageSize, filters }) => {
+      return window.electronAPI.getMaterialsPaginated(page, pageSize, {
+        ...(filters as Record<string, unknown>),
+        search: materialsSearch || undefined,
+      });
     },
-    onRowSelectionChange: setVehiclesRowSelection,
-    onColumnFiltersChange: setVehiclesColumnFilters,
-    getRowId: (row: Vehicle) => String(row.id),
-    manualPagination: true,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    meta: vehiclesMeta,
-  });
-
-  // ============ MATERIALS ============
-  const materialsPagination = useServerPagination({
-    fetchFn: useCallback(
-      async (page, pageSize) =>
-        window.electronAPI.getMaterialsPaginated(page, pageSize, {
-          search: materialsSearch || undefined,
-        }),
-      [materialsSearch],
-    ),
-    defaultPageSize: 10,
-  });
-
-  const [materialsPage, setMaterialsPage] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 10,
-  });
-  const [materialsRowSelection, setMaterialsRowSelection] = useState<RowSelectionState>({});
-  const [materialsColumnFilters, setMaterialsColumnFilters] = useState<ColumnFiltersState>([]);
-
-  const materialsMeta = useMemo(
-    () => ({
+    columns: materialsColumns,
+    meta: {
       editMaterial: (material: Material) => setEditMaterial(material),
       deleteMaterial: (material: Material) => setDeleteMaterialItem(material),
-    }),
-    [],
-  );
-
-  const materialsTable = useReactTable({
-    data: materialsPagination.data,
-    columns: materialsColumns,
-    pageCount: materialsPagination.pageCount,
-    state: {
-      pagination: materialsPage,
-      rowSelection: materialsRowSelection,
-      columnFilters: materialsColumnFilters,
     },
-    onPaginationChange: (updater) => {
-      const next = typeof updater === 'function' ? updater(materialsPage) : updater;
-      setMaterialsPage(next);
-      materialsPagination.setPage(next.pageIndex + 1);
-      materialsPagination.setPageSize(next.pageSize);
-    },
-    onRowSelectionChange: setMaterialsRowSelection,
-    onColumnFiltersChange: setMaterialsColumnFilters,
-    getRowId: (row: Material) => String(row.id),
-    manualPagination: true,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    meta: materialsMeta,
   });
 
-  // ============ EVENTS ============
-  const selectedRecordIds = recordsTable
+  // --- Refresh handlers (reset search) ---
+  const handleRecordsRefresh = () => {
+    setRecordsSearchInput('');
+    setRecordsSearch('');
+    recordsTableData.refetch();
+  };
+
+  const handleVehiclesRefresh = () => {
+    setVehiclesSearchInput('');
+    setVehiclesSearch('');
+    vehiclesTableData.refetch();
+  };
+
+  const handleMaterialsRefresh = () => {
+    setMaterialsSearchInput('');
+    setMaterialsSearch('');
+    materialsTableData.refetch();
+  };
+
+  // --- Bulk delete ---
+  const selectedRecordIds = recordsTableData.table
     .getFilteredSelectedRowModel()
     .rows.map((r) => r.original.id);
 
-  const handleBulkDelete = () => {
+  const handleBulkDelete = async () => {
     if (selectedRecordIds.length === 0) return;
     setDeleteRecordIds(selectedRecordIds);
   };
@@ -237,19 +142,20 @@ function RouteComponent() {
       const count = await window.electronAPI.deleteRecords(deleteRecordIds);
       toast.success(`${count} record(s) deleted`);
       setDeleteRecordIds([]);
-      recordsPagination.refetch();
+      recordsTableData.refetch();
     } catch {
       toast.error('Failed to delete records');
     }
   };
 
+  // --- Single delete ---
   const confirmDeleteRecord = async () => {
     if (!deleteRecordItem) return;
     try {
       await window.electronAPI.deleteRecord(deleteRecordItem.id);
       toast.success('Record deleted');
       setDeleteRecordItem(null);
-      recordsPagination.refetch();
+      recordsTableData.refetch();
     } catch {
       toast.error('Failed to delete record');
     }
@@ -261,7 +167,7 @@ function RouteComponent() {
       await window.electronAPI.deleteVehicle(deleteVehicleItem.id);
       toast.success('Vehicle deleted');
       setDeleteVehicleItem(null);
-      vehiclesPagination.refetch();
+      vehiclesTableData.refetch();
     } catch {
       toast.error('Failed to delete vehicle');
     }
@@ -273,33 +179,15 @@ function RouteComponent() {
       await window.electronAPI.deleteMaterial(deleteMaterialItem.id);
       toast.success('Material deleted');
       setDeleteMaterialItem(null);
-      materialsPagination.refetch();
+      materialsTableData.refetch();
     } catch {
       toast.error('Failed to delete material');
     }
   };
 
-  const handleRecordsRefresh = () => {
-    setRecordsSearchInput('');
-    setRecordsSearch('');
-    recordsTable.resetRowSelection();
-  };
-
-  const handleVehiclesRefresh = () => {
-    setVehiclesSearchInput('');
-    setVehiclesSearch('');
-    vehiclesTable.resetRowSelection();
-  };
-
-  const handleMaterialsRefresh = () => {
-    setMaterialsSearchInput('');
-    setMaterialsSearch('');
-    materialsTable.resetRowSelection();
-  };
-
   return (
     <TooltipProvider>
-      <div className="mx-auto w-full max-w-6xl space-y-6 p-6 min-h-screen overflow-x-hidden">
+      <div className="mx-auto w-full max-w-6xl space-y-6 p-6 min-h-screen overflow-hidden">
         <div className="flex items-center gap-3">
           <div className="flex size-12 items-center justify-center rounded-lg bg-primary/10">
             <HistoryIcon className="size-6 text-primary" />
@@ -321,9 +209,8 @@ function RouteComponent() {
             <TabsTrigger value="materials">Materials</TabsTrigger>
           </TabsList>
 
-          {/* --- Records --- */}
-          <TabsContent value="records">
-            <DataTableToolbar table={recordsTable}>
+          <TabsContent value="records" className="pt-4">
+            <DataTableToolbar table={recordsTableData.table}>
               <div className="flex items-center gap-2">
                 <div className="relative">
                   <Search className="absolute left-2 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -349,17 +236,22 @@ function RouteComponent() {
                   <Search className="size-4" />
                 </Button>
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={handleRecordsRefresh}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleRecordsRefresh}
+              >
                 Refresh
               </Button>
             </DataTableToolbar>
-            {recordsPagination.isLoading ? (
+            {recordsTableData.isLoading ? (
               <div className="flex items-center justify-center py-16">
                 <Spinner className="size-8" />
               </div>
             ) : (
               <DataTable
-                table={recordsTable}
+                table={recordsTableData.table}
                 actionBar={
                   selectedRecordIds.length > 0 && (
                     <Button
@@ -377,9 +269,8 @@ function RouteComponent() {
             )}
           </TabsContent>
 
-          {/* --- Vehicles --- */}
-          <TabsContent value="vehicles">
-            <DataTableToolbar table={vehiclesTable}>
+          <TabsContent value="vehicles" className="pt-4">
+            <DataTableToolbar table={vehiclesTableData.table}>
               <div className="flex items-center gap-2">
                 <div className="relative">
                   <Search className="absolute left-2 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -405,22 +296,26 @@ function RouteComponent() {
                   <Search className="size-4" />
                 </Button>
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={handleVehiclesRefresh}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleVehiclesRefresh}
+              >
                 Refresh
               </Button>
             </DataTableToolbar>
-            {vehiclesPagination.isLoading ? (
+            {vehiclesTableData.isLoading ? (
               <div className="flex items-center justify-center py-16">
                 <Spinner className="size-8" />
               </div>
             ) : (
-              <DataTable table={vehiclesTable} />
+              <DataTable table={vehiclesTableData.table} />
             )}
           </TabsContent>
 
-          {/* --- Materials --- */}
-          <TabsContent value="materials">
-            <DataTableToolbar table={materialsTable}>
+          <TabsContent value="materials" className="pt-4">
+            <DataTableToolbar table={materialsTableData.table}>
               <div className="flex items-center gap-2">
                 <div className="relative">
                   <Search className="absolute left-2 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -446,16 +341,21 @@ function RouteComponent() {
                   <Search className="size-4" />
                 </Button>
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={handleMaterialsRefresh}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleMaterialsRefresh}
+              >
                 Refresh
               </Button>
             </DataTableToolbar>
-            {materialsPagination.isLoading ? (
+            {materialsTableData.isLoading ? (
               <div className="flex items-center justify-center py-16">
                 <Spinner className="size-8" />
               </div>
             ) : (
-              <DataTable table={materialsTable} />
+              <DataTable table={materialsTableData.table} />
             )}
           </TabsContent>
         </Tabs>
@@ -472,9 +372,9 @@ function RouteComponent() {
                 <span className="text-muted-foreground">Operator:</span>
                 <span>{viewRecord?.operator ?? '--'}</span>
                 <span className="text-muted-foreground">Vehicle:</span>
-                <span className="uppercase">{viewRecord?.vehicleName ?? '--'}</span>
+                <span>{viewRecord?.vehicleName ?? '--'}</span>
                 <span className="text-muted-foreground">Material:</span>
-                <span className="uppercase">{viewRecord?.materialName ?? '--'}</span>
+                <span>{viewRecord?.materialName ?? '--'}</span>
                 <span className="text-muted-foreground">Type:</span>
                 <span className="capitalize">{viewRecord?.operationType ?? '--'}</span>
                 <span className="text-muted-foreground">Status:</span>
@@ -500,6 +400,8 @@ function RouteComponent() {
                 <span>{viewRecord?.netWeight ?? '--'}</span>
                 <span className="text-muted-foreground">Created:</span>
                 <span>{viewRecord ? formatDate(viewRecord.createdAt) : '--'}</span>
+                <span className="text-muted-foreground">Updated:</span>
+                <span>{viewRecord ? formatDate(viewRecord.updatedAt) : '--'}</span>
               </div>
               {viewRecord?.remark && (
                 <div>
@@ -516,7 +418,7 @@ function RouteComponent() {
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* --- Delete Record --- */}
+        {/* --- Delete Record Confirmation --- */}
         <AlertDialog
           open={deleteRecordItem != null}
           onOpenChange={(o) => !o && setDeleteRecordItem(null)}
@@ -541,7 +443,7 @@ function RouteComponent() {
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* --- Bulk Delete --- */}
+        {/* --- Bulk Delete Records Confirmation --- */}
         <AlertDialog
           open={deleteRecordIds.length > 0}
           onOpenChange={(o) => !o && setDeleteRecordIds([])}
@@ -566,7 +468,7 @@ function RouteComponent() {
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* --- Delete Vehicle --- */}
+        {/* --- Delete Vehicle Confirmation --- */}
         <AlertDialog
           open={deleteVehicleItem != null}
           onOpenChange={(o) => !o && setDeleteVehicleItem(null)}
@@ -592,7 +494,7 @@ function RouteComponent() {
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* --- Delete Material --- */}
+        {/* --- Delete Material Confirmation --- */}
         <AlertDialog
           open={deleteMaterialItem != null}
           onOpenChange={(o) => !o && setDeleteMaterialItem(null)}
@@ -623,13 +525,13 @@ function RouteComponent() {
           vehicle={editVehicle}
           open={editVehicle != null}
           onOpenChange={(o) => !o && setEditVehicle(null)}
-          onSaved={() => vehiclesPagination.refetch()}
+          onSaved={() => vehiclesTableData.refetch()}
         />
         <MaterialEditDialog
           material={editMaterial}
           open={editMaterial != null}
           onOpenChange={(o) => !o && setEditMaterial(null)}
-          onSaved={() => materialsPagination.refetch()}
+          onSaved={() => materialsTableData.refetch()}
         />
       </div>
     </TooltipProvider>

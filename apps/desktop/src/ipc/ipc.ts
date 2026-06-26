@@ -1,17 +1,19 @@
 // apps/desktop/src/ipc/ipc.ts
 
-import { getAllMaterials, getMaterialsPaginated } from '@weight/database/repositories/materials';
+import { deleteMaterial, getAllMaterials, getMaterialsPaginated, updateMaterial } from '@weight/database/repositories/materials';
 import {
   checkDatabaseHealth,
 } from '@weight/database/repositories/health';
 import {
   createRecord,
+  deleteRecord,
+  deleteRecords,
   getRecordById,
   getRecordsPaginated,
   updateRecord,
 } from '@weight/database/repositories/record';
 import { getAllSettings, updateSettings } from '@weight/database/repositories/settings';
-import { getAllVehicles, getVehiclesPaginated } from '@weight/database/repositories/vehicles';
+import { deleteVehicle, getAllVehicles, getVehiclesPaginated, updateVehicle } from '@weight/database/repositories/vehicles';
 import type { SerialOptions } from '@weight/shared/types/index';
 import { ipcMain } from 'electron';
 import { SerialPort } from 'serialport';
@@ -152,9 +154,22 @@ export function registerIpcHandlers(serialManager: SerialManager) {
     return getAllMaterials(db);
   });
 
-  ipcMain.handle('materials:get-paginated', (_event, page: number, pageSize: number) => {
+  ipcMain.handle('materials:get-paginated', (_event, page: number, pageSize: number, filters?) => {
     const db = getDatabase();
-    return getMaterialsPaginated(db, page, pageSize);
+    return getMaterialsPaginated(db, page, pageSize, filters);
+  });
+
+  ipcMain.handle('materials:update', (_event, id: number, data) => {
+    const db = getDatabase();
+    const result = updateMaterial(db, id, data);
+    db.save();
+    return result;
+  });
+
+  ipcMain.handle('materials:delete', (_event, id: number) => {
+    const db = getDatabase();
+    deleteMaterial(db, id);
+    db.save();
   });
 
   // ---------- Vehicles ----------
@@ -163,9 +178,22 @@ export function registerIpcHandlers(serialManager: SerialManager) {
     return getAllVehicles(db);
   });
 
-  ipcMain.handle('vehicles:get-paginated', (_event, page: number, pageSize: number) => {
+  ipcMain.handle('vehicles:get-paginated', (_event, page: number, pageSize: number, filters?) => {
     const db = getDatabase();
-    return getVehiclesPaginated(db, page, pageSize);
+    return getVehiclesPaginated(db, page, pageSize, filters);
+  });
+
+  ipcMain.handle('vehicles:update', (_event, id: number, data) => {
+    const db = getDatabase();
+    const result = updateVehicle(db, id, data);
+    db.save();
+    return result;
+  });
+
+  ipcMain.handle('vehicles:delete', (_event, id: number) => {
+    const db = getDatabase();
+    deleteVehicle(db, id);
+    db.save();
   });
 
   // ---------- Records ----------
@@ -191,6 +219,20 @@ export function registerIpcHandlers(serialManager: SerialManager) {
   ipcMain.handle('records:get-paginated', (_event, page: number, pageSize: number, filters?) => {
     const db = getDatabase();
     return getRecordsPaginated(db, page, pageSize, filters);
+  });
+
+  ipcMain.handle('records:delete', (_event, id: number) => {
+    const db = getDatabase();
+    const result = deleteRecord(db, id);
+    db.save();
+    return result;
+  });
+
+  ipcMain.handle('records:delete-many', (_event, ids: number[]) => {
+    const db = getDatabase();
+    const count = deleteRecords(db, ids);
+    db.save();
+    return count;
   });
 
   // ---------- Renderer logging ----------

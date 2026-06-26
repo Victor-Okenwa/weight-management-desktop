@@ -17,11 +17,11 @@ function RouteComponent() {
         <WeightDisplay />
       </section>
 
-      <section className="grid grid-cols-2 gap-5">
+      <section className="">
         <Card>
           <CardHeader className="border-b">
             <CardTitle className="flex gap-2">
-              <CableIcon /> Connection Status
+              <CableIcon /> Connection Settings
             </CardTitle>
           </CardHeader>
           <CardContent className="px-0">

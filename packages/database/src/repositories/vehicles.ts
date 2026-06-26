@@ -1,12 +1,8 @@
 import type { PaginatedResult, Vehicle } from '@weight/shared/types/index';
-import { count, eq } from 'drizzle-orm';
+import { count, eq, sql } from 'drizzle-orm';
 import type { DatabaseInstance } from '../index.js';
 import { vehicles } from '../schema/index.js';
 
-/**
- * Return the ID of an existing vehicle (matched by name), or create a new one and return its ID.
- * If the vehicle already exists, the provided tareWeight is ignored (existing value is kept).
- */
 export function getOrCreateVehicle(
   db: DatabaseInstance,
   name: string,
@@ -21,26 +17,15 @@ export function getOrCreateVehicle(
     .get();
 
   if (existing) {
-    console.log('[getOrCreateVehicle] Found existing vehicle:', existing);
-
-    // Update tareWeight and tareUnit if they're different from what's stored (null-safe).
     const shouldUpdateTareWeight =
       typeof tareWeight !== 'undefined' && (existing.tareWeight ?? null) !== (tareWeight ?? null);
     const shouldUpdateTareUnit =
       typeof tareUnit !== 'undefined' && (existing.tareUnit ?? null) !== (tareUnit ?? null);
 
-    console.log(
-      '[getOrCreateVehicle] shouldUpdateTareWeight:',
-      shouldUpdateTareWeight,
-      'shouldUpdateTareUnit:',
-      shouldUpdateTareUnit,
-    );
-
     if (shouldUpdateTareWeight || shouldUpdateTareUnit) {
       const updateData: Partial<typeof vehicles.$inferInsert> = {};
       if (shouldUpdateTareWeight) updateData.tareWeight = tareWeight ?? null;
       if (shouldUpdateTareUnit) updateData.tareUnit = tareUnit ?? null;
-      console.log('[getOrCreateVehicle] Updating vehicle ID', existing.id, 'with', updateData);
       db.update(vehicles).set(updateData).where(eq(vehicles.id, existing.id)).run();
     }
     return existing.id;
@@ -56,38 +41,68 @@ export function getOrCreateVehicle(
     .returning({ id: vehicles.id })
     .get();
 
-  console.log('[getOrCreateVehicle] Inserted new vehicle with ID:', result.id);
-
   return result.id;
 }
-/**
- * Get all vehicles ordered by name.
- */
+
 export function getAllVehicles(db: DatabaseInstance): Vehicle[] {
   return db.select().from(vehicles).orderBy(vehicles.name).all() as Vehicle[];
 }
 
-/**
- * Get vehicles with pagination.
- */
 export function getVehiclesPaginated(
   db: DatabaseInstance,
   page: number,
   pageSize: number,
+  filters?: { search?: string },
 ): PaginatedResult<Vehicle> {
   const offset = (page - 1) * pageSize;
+  const conditions = [];
+
+  if (filters?.search) {
+    conditions.push(sql`${vehicles.name} LIKE ${`%${filters.search}%`}`);
+  }
+
+  const whereClause = conditions.length > 0 ? conditions[0] : undefined;
 
   const data = db
     .select()
     .from(vehicles)
+    .where(whereClause)
     .orderBy(vehicles.name)
     .limit(pageSize)
     .offset(offset)
     .all();
 
-  const total = db.select({ count: count() }).from(vehicles).get()?.count ?? 0;
+  const total = db.select({ count: count() }).from(vehicles).where(whereClause).get()?.count ?? 0;
 
   return { data: data as Vehicle[], total, page, pageSize };
+}
+
+export function updateVehicle(
+  db: DatabaseInstance,
+  id: number,
+  data: { name?: string; tareWeight?: number | null; tareUnit?: string | null },
+): Vehicle | null {
+  if (data.name) {
+    const trimmed = data.name.trim();
+    const existing = db
+      .select({ id: vehicles.id })
+      .from(vehicles)
+      .where(eq(vehicles.name, trimmed))
+      .get();
+    if (existing && existing.id !== id) {
+      return null;
+    }
+    data.name = trimmed;
+  }
+
+  const result = db
+    .update(vehicles)
+    .set({ ...data })
+    .where(eq(vehicles.id, id))
+    .returning()
+    .get();
+
+  return result as Vehicle;
 }
 
 export function updateVehicleTare(
@@ -101,4 +116,8 @@ export function updateVehicleTare(
     data.tareUnit = tareUnit;
   }
   db.update(vehicles).set(data).where(eq(vehicles.id, vehicleId)).run();
+}
+
+export function deleteVehicle(db: DatabaseInstance, id: number): void {
+  db.delete(vehicles).where(eq(vehicles.id, id)).run();
 }
