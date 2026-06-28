@@ -1,0 +1,260 @@
+# Weight Management System — Records / Vehicles / Materials Table Design Prompt
+
+## Stack
+
+- **React 19** with TypeScript
+- **Vite** bundler
+- **@tanstack/react-table v8.21.3** — table logic
+- **Radix UI Primitives** — Checkbox, Popover, Select, Tooltip, AlertDialog, ScrollArea
+- **cmdk** — command menu for faceted filter dropdowns
+- **shadcn/ui** styling (Tailwind CSS v4, `clsx` + `tailwind-merge` via `cn()` utility)
+- **@tanstack/react-router** v1 — file-based routing, `createFileRoute`
+- **lucide-react** icons
+- **sonner** toast notifications
+
+## Data Types
+
+```ts
+interface Record {
+  id: number;
+  ticketId: string;
+  operator: string | null;
+  operationType: 'single' | 'double';
+  grossWeight: number | null;
+  tareWeight: number | null;
+  netWeight: number | null;
+  status: 'pending' | 'completed';
+  vehicleId: number | null;
+  materialId: number | null;
+  vehicleName: string | null;
+  materialName: string | null;
+  remark: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Vehicle {
+  id: number;
+  name: string;
+  plateNumber: string | null;
+  tareWeight: number | null;
+  capacity: number | null;
+  axles: number | null;
+  createdAt: string;
+}
+
+interface Material {
+  id: number;
+  name: string;
+  unit: string | null;
+  unitPrice: number | null;
+  createdAt: string;
+}
+```
+
+## Architecture
+
+### Page Layout (`history.tsx`)
+
+Three tabs inside a `<Tabs>` component: **Records**, **Vehicles**, **Materials**. Each tab contains:
+1. A `<DataTableToolbar>` with search input/search button + refresh button
+2. A loading spinner or `<DataTable>` with optional `actionBar`
+3. Each table has its own independent state: pagination, column filters, search, row selection
+
+### Server-Side Pagination (`useServerPagination`)
+
+Custom hook that calls an async `fetchFn(page, pageSize)` and returns:
+- `data`, `total`, `isLoading`, `page`, `setPage`, `pageSize`, `setPageSize`, `pageCount`, `refetch`
+
+### Table State Per Tab
+
+Each of the three tables manages parallel state:
+- `PaginationState` — manual (synced with `useServerPagination` via `onPaginationChange`)
+- `ColumnFiltersState` — passed to table `state.columnFilters`
+- `Set<number>` for row selection — stored in React state, converted to `Record<string, boolean>` for `state.rowSelection`
+- `useReactTable` with `getCoreRowModel`, `getFilteredRowModel`, `getSortedRowModel`
+- `onRowSelectionChange: () => {}` — row selection managed externally
+- `getRowId: (row) => String(row.id)`
+
+### Row Selection Pattern (React Context, NOT `table.options.meta`)
+
+Cell and header checkbox components read/write via a React Context (`SelectionContext`) with:
+```ts
+interface SelectionState {
+  selectedIds: Set<number>;
+  onSelectionChange: (id: number, checked: boolean) => void;
+  onSelectionChangeAll: (ids: number[], checked: boolean) => void;
+}
+```
+
+Each tab wraps its `<DataTable>` in a dedicated `<SelectionContext.Provider>`. The select column cells call `useSelection()` instead of reading `table.options.meta`. The table's `meta` is still used for non-selection actions (view, edit, delete).
+
+### Fixed Issues — Do Not Re-introduce
+
+1. **Selection checkbox propagation**: `table.options.meta` did NOT propagate to cell renders in tanstack-table v8.21.3 despite `setOptions` being called each render. The fix was to use React Context (`SelectionContext`) instead of `meta`.
+2. **Filter checkmark display**: Custom `<div><Check /></div>` did not update visually. The fix was to use cmdk's built-in `CheckIcon` inside `CommandItem`, controlled by the `data-checked` attribute on `<CommandItem data-checked={isSelected || undefined}>`.
+
+## UI Components
+
+### `<DataTable>` (`data-table.tsx`)
+
+Props: `table`, `actionBar?`, `children?`
+
+- Wraps raw `<table>`/`<thead>`/`<tbody>` in a `<ScrollArea>` (horizontal scrollbar only)
+- Header rows: `border-b-2 border-border/60` with `bg-muted/30` background
+- Body rows: `border-b border-border/50`, `hover:bg-muted/50`, `data-[state=selected]:bg-muted`
+- Cell padding: `p-3 py-2.5`, checkbox cells: `has-[[role=checkbox]]:pr-0`
+- Shows "No results." when row model is empty
+- Below the `<ScrollArea>`: `<DataTablePagination>` + conditional `actionBar` (shown when `getFilteredSelectedRowModel().rows.length > 0`)
+
+### `<DataTableToolbar>` (`data-table-toolbar.tsx`)
+
+Props: `table`, `children`
+
+- Auto-generates filter components from `column.columnDef.meta.variant`:
+  - `"text"` → `<Input>`
+  - `"number"` → `<Input type="number">` with optional unit suffix
+  - `"range"` → `<DataTableSliderFilter>`
+  - `"date"` / `"dateRange"` → `<DataTableDateFilter>`
+  - `"select"` → `<DataTableFacetedFilter multiple={false}>`
+  - `"multiSelect"` → `<DataTableFacetedFilter multiple={true}>`
+- Shows a "Reset" button when `columnFilters.length > 0`
+- Renders `children` + `<DataTableViewOptions>` in the right section
+
+### `<DataTableFacetedFilter>` (`data-table-faceted-filter.tsx`)
+
+Props: `column`, `title`, `options: Option[]`, `multiple?: boolean`
+
+**IMPORTANT**: Checkmark rendering must use cmdk's built-in mechanism via `data-checked` on `<CommandItem>`:
+```tsx
+<CommandItem
+  key={option.value}
+  data-checked={isSelected || undefined}
+  onSelect={() => onItemSelect(option, isSelected)}
+>
+  {option.icon && <option.icon />}
+  <span className="truncate">{option.label}</span>
+</CommandItem>
+```
+
+- DO NOT use a custom `<div><Check /></div>` — it causes stale visual state
+- DO add `key={String(columnFilterValue)}` to `<CommandList>` to force remount on filter value change
+- Clears unused filter value on reset (`column.setFilterValue(undefined)`)
+- `isSelected = selectedValues.has(option.value)` where `selectedValues = new Set(Array.isArray(columnFilterValue) ? columnFilterValue : [])`
+
+### Column Meta Convention
+
+Column definitions use `meta` for filter auto-generation:
+```ts
+meta: {
+  variant: 'select' | 'multiSelect' | 'text' | 'number' | 'range' | 'date' | 'dateRange';
+  label?: string;               // display label for filter
+  placeholder?: string;         // for text/number inputs
+  unit?: string;                // for number inputs (e.g., "kg")
+  options?: Option[];           // for select/multiSelect
+}
+```
+
+### Records Columns
+
+| Column | Key | Type | Notes |
+|--------|-----|------|-------|
+| select | `id: 'select'` | Checkbox | Uses `useSelection()` |
+| Ticket | `accessorKey: 'ticketId'` | text | |
+| Operator | `accessorKey: 'operator'` | text | |
+| Vehicle | `accessorKey: 'vehicleName'` | text | Renders `<span className="uppercase">` |
+| Material | `accessorKey: 'materialName'` | text | Renders `<span className="uppercase">` |
+| Type | `accessorKey: 'operationType'` | `variant: 'select'` | Options: Single/Double, renders capitalised |
+| Tare | `accessorKey: 'tareWeight'` | number | |
+| Gross | `accessorKey: 'grossWeight'` | number | |
+| Net | `accessorKey: 'netWeight'` | number | |
+| Status | `accessorKey: 'status'` | `variant: 'select'` | Options: Processing(pending)/Completed(completed), renders `<Badge>` with color |
+| Remark | `accessorKey: 'remark'` | text | Truncates to 15 chars with ellipsis |
+| Created | `accessorKey: 'createdAt'` | `variant: 'date'` | Formatted with `formatDate(iso)` → `DD/MM/YYYY` |
+| Actions | `id: 'actions'` | 3 icon buttons | View(Eye), Edit(Pencil, `status === 'pending'` only), Delete(Trash2) |
+
+### Vehicles Columns
+
+| Column | Key | Type | Notes |
+|--------|-----|------|-------|
+| select | `id: 'select'` | Checkbox | |
+| Vehicle Name | `accessorKey: 'name'` | text | Uppercase |
+| Plate# | `accessorKey: 'plateNumber'` | text | `--` if null |
+| Tare(kg) | `accessorKey: 'tareWeight'` | number | `X kg` format |
+| Cap(kg) | `accessorKey: 'capacity'` | number | `X kg` format |
+| Axles | `accessorKey: 'axles'` | number | |
+| Created | `accessorKey: 'createdAt'` | `variant: 'date'` | DD/MM/YYYY |
+
+### Materials Columns
+
+| Column | Key | Type | Notes |
+|--------|-----|------|-------|
+| select | `id: 'select'` | Checkbox | |
+| Material Name | `accessorKey: 'name'` | text | Uppercase |
+| Unit | `accessorKey: 'unit'` | text | |
+| Price | `accessorKey: 'unitPrice'` | number | |
+| Created | `accessorKey: 'createdAt'` | `variant: 'date'` | DD/MM/YYYY |
+
+### Search
+
+- Search input + search button per tab (not global)
+- Trigger: button click (not on keystroke)
+- Minimum 2 characters required
+- `onKeyDown` for Enter key also triggers search
+- Refresh button clears: search input value, committed search, row selection
+
+### Actions (Records Only)
+
+- **View** — opens `<AlertDialog>` showing all record fields, always available
+- **Edit** — opens placeholder toast `"Edit record coming soon"`, only when `status === 'pending'`
+- **Delete** — opens confirm `<AlertDialog>`, deletes via `window.electronAPI.deleteRecord(id)`
+- **Bulk delete** — action bar with "Delete (N) record(s)" button when rows selected, opens confirm dialog, deletes via `window.electronAPI.deleteRecords(ids)`
+
+### Delete Behavior
+
+- Record deletion with confirm dialog (AlertTriangle icon + description)
+- Vehicle/Material deletion: same pattern, removes reference from weight records but preserves records
+- On successful delete: toast + `refetch()`
+
+### Pagination (`<DataTablePagination>`)
+
+- Shows "X of Y row(s) selected."
+- Rows per page selector: 10, 20, 30, 40, 50
+- Page navigation: first, prev, next, last buttons
+- Page indicator: "Page X of Y"
+
+### ScrollArea
+
+- `<ScrollArea>` wraps the `<table>` with `<ScrollBar orientation="horizontal" />`
+- Page has `overflow-x-hidden` to prevent page-level horizontal scroll
+
+## File Structure
+
+```
+routes/_protected/history.tsx              — tab layout, all table state, dialogs
+components/history/columns/
+  selection-context.ts                     — SelectionContext + useSelection hook
+  records-columns.tsx                       — Record table column definitions
+  vehicles-columns.tsx                      — Vehicle table column definitions
+  materials-columns.tsx                     — Material table column definitions
+components/data-table/
+  data-table.tsx                            — generic table wrapper (ScrollArea + table + pagination)
+  data-table-toolbar.tsx                    — auto-generates filter inputs from column meta
+  data-table-pagination.tsx                 — pagination controls
+  data-table-faceted-filter.tsx             — dropdown filter with cmdk
+  data-table-view-options.tsx               — column visibility toggles
+  data-table-date-filter.tsx                — date range filter
+  data-table-slider-filter.tsx              — range slider filter
+hooks/use-server-pagination.ts             — paginated server data fetching
+```
+
+## Key Rules
+
+1. All table operations must be purely client-side — no server round-trip for visual updates (selection, filter, column visibility)
+2. Row selection uses `Set<number>` managed through React Context (`SelectionContext`), never through `table.options.meta`
+3. Filter checkmarks use cmdk's built-in `CheckIcon` via `data-checked` attribute on `CommandItem`
+4. Vehicle and material names render with `<span className="uppercase">`
+5. `meta.variant` is retained only on: `status` (select), `operationType` (select), `createdAt` (date)
+6. Search triggered by button click (≥2 chars), not on keystroke
+7. Refresh clears search input + committed search + row selection
+8. Each table has its own independent pagination, search, column filters, and row selection state
