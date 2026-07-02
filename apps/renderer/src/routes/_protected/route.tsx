@@ -90,6 +90,15 @@ function useIsNavigating() {
   });
 }
 
+const glassSurfaceClassName = cn(
+  'relative isolate overflow-hidden rounded-xl border border-border/60 bg-card/40',
+  'shadow-[inset_0_1px_0_0_color-mix(in_oklch,var(--foreground)_6%,transparent)] backdrop-blur-md',
+  'before:pointer-events-none before:absolute before:inset-x-8 before:top-0 before:z-10 before:h-px',
+  'before:bg-gradient-to-r before:from-transparent before:via-primary/25 before:to-transparent',
+  'after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:opacity-50',
+  'after:bg-[radial-gradient(ellipse_at_50%_0%,color-mix(in_oklch,var(--primary)_8%,transparent),transparent_70%)]',
+);
+
 export const Route = createFileRoute('/_protected')({
   component: RouteComponent,
   beforeLoad: async () => {
@@ -147,16 +156,7 @@ function RouteComponent() {
 function AppFooter() {
   return (
     <footer className="border-t border-border/60 px-4 py-4">
-      <div
-        className={cn(
-          'relative isolate overflow-hidden rounded-xl border border-border/60 bg-card/40 p-4',
-          'shadow-[inset_0_1px_0_0_color-mix(in_oklch,var(--foreground)_6%,transparent)] backdrop-blur-md',
-          'before:pointer-events-none before:absolute before:inset-x-8 before:top-0 before:z-10 before:h-px',
-          'before:bg-gradient-to-r before:from-transparent before:via-primary/25 before:to-transparent',
-          'after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:opacity-50',
-          'after:bg-[radial-gradient(ellipse_at_50%_0%,color-mix(in_oklch,var(--primary)_8%,transparent),transparent_70%)]',
-        )}
-      >
+      <div className={cn(glassSurfaceClassName, 'p-4')}>
         <div className="relative z-10 space-y-4">
           <div className="space-y-2 text-center">
             <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground/80">
@@ -385,7 +385,6 @@ function TopBar() {
     !latestReading;
 
   const signalYellow = serialStatus === 'connecting' || serialStatus === 'reconnecting';
-
   const signalLoading = serialStatus === 'reconnecting' || serialStatus === 'connecting';
 
   async function handleReconnect() {
@@ -397,66 +396,91 @@ function TopBar() {
     }
   }
 
+  const SignalIcon = signalRed ? SignalLowIcon : signalYellow ? SignalMediumIcon : SignalHighIcon;
+
   return (
-    <nav className="bg-sidebar/70 px-2 py-3 sticky top-0 w-full flex items-center justify-between z-50 backdrop-blur-lg">
-      <section className="flex items-center gap-1">
-        <SidebarTrigger />
+    <header className="sticky top-0 z-50 border-b border-border/60 px-3 py-3">
+      <nav
+        className={cn(glassSurfaceClassName, 'flex items-center justify-between gap-3 px-3 py-2.5')}
+      >
+        <section className="relative z-10 flex items-center gap-3">
+          <SidebarTrigger />
+          <div className="min-w-0">
+            <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground/80">
+              System
+            </p>
+            <p className="truncate text-sm font-semibold tracking-wide">Weight Management</p>
+          </div>
+        </section>
 
-        <span className="text-sm">Weight Management</span>
-      </section>
+        <section className="relative z-10 flex flex-wrap items-center justify-end gap-2">
+          <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-background/30 px-2.5 py-1.5">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span
+                  className={cn(
+                    'flex size-7 items-center justify-center rounded-lg border transition-colors',
+                    signalRed &&
+                      'border-destructive/30 bg-destructive/10 shadow-[0_0_12px_-6px] shadow-destructive/50',
+                    signalYellow &&
+                      'border-yellow-500/30 bg-yellow-500/10 shadow-[0_0_12px_-6px] shadow-yellow-500/40',
+                    !signalRed &&
+                      !signalYellow &&
+                      'border-green-500/30 bg-green-500/10 shadow-[0_0_12px_-6px] shadow-green-500/40',
+                  )}
+                >
+                  <SignalIcon
+                    className={cn(
+                      'size-4',
+                      signalRed && 'text-red-700 dark:text-red-400',
+                      signalYellow && 'text-yellow-700 dark:text-yellow-400',
+                      !signalRed && !signalYellow && 'text-green-700 dark:text-green-400',
+                    )}
+                  />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <span>
+                  {signalRed
+                    ? 'Connection lost or unstable. Please check the device connection or go to settings and change the COM port.'
+                    : signalYellow
+                      ? 'Connecting to the device. Please wait...'
+                      : 'Connected and receiving stable readings.'}
+                </span>
+              </TooltipContent>
+            </Tooltip>
 
-      <section className="flex items-center gap-2">
-        <div className="flex items-center font-light text-sm border-r pr-2 gap-0">
-          <span className="flex justify-start h-full">
-            {signalRed ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <SignalLowIcon className="text-red-700 dark:text-red-400 -mr-2" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <span>
-                    Connection lost or unstable. Please check the device connection or go to
-                    settings and change he COM port.
-                  </span>
-                </TooltipContent>
-              </Tooltip>
-            ) : signalYellow ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <SignalMediumIcon className="text-yellow-700 dark:text-yellow-400" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <span>Connecting to the device. Please wait...</span>
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <SignalHighIcon className="text-green-700 dark:text-green-400" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <span>Connected and receiving stable readings.</span>
-                </TooltipContent>
-              </Tooltip>
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/70">
+                Port
+              </p>
+              <p className="truncate text-sm font-medium">{settings?.serialPort ?? '--'}</p>
+            </div>
+          </div>
+
+          <Badge
+            variant={signalRed ? 'destructive' : 'outline'}
+            className={cn(
+              'h-7 rounded-lg px-2.5 capitalize',
+              !signalRed &&
+                'border-primary/20 bg-primary/10 text-primary shadow-[0_0_16px_-8px] shadow-primary/40',
             )}
-          </span>
-
-          <span>{settings?.serialPort}</span>
-        </div>
-
-        <div className="pr-2 border-r">
-          <Badge variant={signalRed ? 'destructive' : 'outline'}>
-            {signalLoading && <Loader2 />}
+          >
+            {signalLoading && <Loader2 className="animate-spin" />}
             {serialStatus}
           </Badge>
-        </div>
 
-        {signalRed && (
-          <Button className="max-h-10" onClick={handleReconnect}>
-            Reconnect
-          </Button>
-        )}
-      </section>
-    </nav>
+          {signalRed && (
+            <Button
+              size="sm"
+              className="h-7 shadow-[0_0_16px_-8px] shadow-primary/40"
+              onClick={handleReconnect}
+            >
+              Reconnect
+            </Button>
+          )}
+        </section>
+      </nav>
+    </header>
   );
 }
