@@ -1,0 +1,33 @@
+---
+description: Renderer UI conventions - styling, state, forms, data fetching, feedback
+globs: apps/renderer/**/*.ts,apps/renderer/**/*.tsx
+alwaysApply: false
+---
+
+# Renderer UI & Components
+
+## Styling
+
+- Tailwind CSS with shadcn/ui components. Dark industrial theme: dark backgrounds, high contrast, DS-Digital font for weight displays.
+
+## Organization
+
+- Reusable components in `src/components/`; routes/pages in `src/routes/`. Dialogs (e.g. new weight) may live in `components/`.
+
+## State & forms
+
+- Zustand for global state: `useWeightStore`, `useSettingsStore`, `useWeightDialogsStore`.
+- Forms use React Hook Form + Zod. Multi-step forms follow the SetupWizard pattern: a single form instance, per-step validation, stepper with transitions.
+
+## Data fetching & feedback
+
+- Fetch through preload API methods (`window.electronAPI.getAllVehicles()`, etc.) inside effects; handle loading and error states with toasts (`toast.error()`).
+- React to serial status changes in the UI (traffic-light indicator, "NO SIGNAL" display) as the serial manager emits `disconnected`, `reconnecting`, etc.
+
+## Portals & popovers
+
+In Electron, shadcn popovers/dropdowns may misbehave inside dialogs. Use `portalled={false}` on `PopoverContent` within dialogs, or set a custom container to the dialog's content element.
+
+```tsx
+<PopoverContent portalled={false}>...</PopoverContent>
+```

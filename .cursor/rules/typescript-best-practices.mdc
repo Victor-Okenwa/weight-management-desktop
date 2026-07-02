@@ -1,0 +1,75 @@
+---
+description: TypeScript best practices - never use any, prefer inference, unknown, and never
+globs: **/*.ts,**/*.tsx
+alwaysApply: false
+---
+
+# TypeScript Best Practices
+
+## Never use `any`
+
+`any` disables type checking and is forbidden. Reach for a safer alternative in this order:
+
+1. Let TypeScript infer the type (don't annotate what it already knows).
+2. Use `unknown` for values whose shape is not yet known, then narrow before use.
+3. Use `never` for impossible states and exhaustiveness checks.
+4. Use generics to preserve caller types through a function.
+
+```ts
+// BAD - any everywhere
+function parse(data: any): any {
+  return data.value;
+}
+
+// GOOD - unknown + narrowing
+function parse(data: unknown): string {
+  if (typeof data === 'object' && data !== null && 'value' in data) {
+    return String((data as { value: unknown }).value);
+  }
+  throw new Error('Invalid payload');
+}
+
+// GOOD - generics preserve the caller's type
+function first<T>(items: T[]): T | undefined {
+  return items[0];
+}
+```
+
+## Prefer inference over annotation
+
+```ts
+// BAD - redundant annotation
+const count: number = 0;
+const names: string[] = ['a', 'b'];
+
+// GOOD - let TS infer
+const count = 0;
+const names = ['a', 'b'];
+```
+
+Still annotate function parameters, public return types, and empty containers (`const rows: Vehicle[] = []`).
+
+## Use `never` for exhaustiveness
+
+Guarantee every case is handled; the compiler errors when a new variant is added.
+
+```ts
+function label(status: SerialStatus): string {
+  switch (status) {
+    case 'connected': return 'Connected';
+    case 'disconnected': return 'Disconnected';
+    // ...handle all cases...
+    default: {
+      const _exhaustive: never = status;
+      return _exhaustive;
+    }
+  }
+}
+```
+
+## General rules
+
+- Prefer precise types: unions, literal types, and `as const` over broad primitives.
+- Avoid unsafe casts (`as SomeType`); narrow with type guards instead. Never use `as any`.
+- Use `unknown` (not `any`) in `catch` clauses and narrow the error before use.
+- Type function boundaries (params and return types) explicitly; let locals be inferred.

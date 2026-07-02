@@ -1,0 +1,28 @@
+---
+description: TypeScript naming conventions and shared type organization
+globs: **/*.ts,**/*.tsx
+alwaysApply: false
+---
+
+# TypeScript & Naming
+
+- Use camelCase for all identifiers: properties, variables, functions, and IPC channel names.
+- Drizzle schema objects use camelCase property names; the underlying SQL columns are snake_case (Drizzle maps them automatically).
+
+## Shared types
+
+- Shared types live in `packages/shared/src/types/` and MUST be re-exported from `packages/shared/src/index.ts`.
+- Database row types (`SettingsRow`, `Vehicle`, `Record`, etc.) are defined as interfaces in the shared package. Prefer these over Drizzle inferred types; use inferred types only when necessary and always export them for consumers.
+
+## No `any`
+
+Avoid `any` unless absolutely necessary. Use proper generics or `unknown`.
+
+```ts
+// BAD
+function handle(data: any) {}
+
+// GOOD
+function handle<T>(data: T) {}
+function parse(data: unknown) {}
+```

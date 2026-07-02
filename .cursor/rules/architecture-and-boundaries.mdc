@@ -1,0 +1,33 @@
+---
+description: Core monorepo architecture, workspace boundaries, and process separation
+alwaysApply: true
+---
+
+# Architecture & Boundaries
+
+pnpm + Turbo monorepo. Workspaces:
+
+- `apps/desktop` - Electron main process (hardware, DB, IPC).
+- `apps/renderer` - React frontend (UI only).
+- `packages/shared` - types, constants, utilities shared by both.
+- `packages/database` - Drizzle schema, migrations, repository functions.
+
+## Strict separation of concerns
+
+- Hardware logic (serial) and database access live ONLY in the Electron main process.
+- The renderer NEVER imports `serialport`, `better-sqlite3`, `sql.js`, or any native module.
+- All renderer to main communication goes through IPC via the `contextBridge` preload.
+
+```ts
+// BAD - in apps/renderer
+import { SerialPort } from 'serialport';
+
+// GOOD - in apps/renderer
+const ports = await window.electronAPI.listSerialPorts();
+```
+
+## Environment & configuration
+
+- Dev: `DB_PATH` env var points to `packages/database/data/dev.db`.
+- Prod: the database file lives under `app.getPath('userData')`.
+- Migrations run automatically on app startup in production.

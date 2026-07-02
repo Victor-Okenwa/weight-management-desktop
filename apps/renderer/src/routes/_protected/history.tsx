@@ -2,6 +2,9 @@
 
 import { createFileRoute } from '@tanstack/react-router';
 import { HistoryIcon } from 'lucide-react';
+import { MaterialsTable } from '@/components/history/materials/materials-table';
+import { RecordsTable } from '@/components/history/records/records-table';
+import { VehiclesTable } from '@/components/history/vehicles/vehicles-table';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -34,9 +37,15 @@ function RouteComponent() {
             <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
             <TabsTrigger value="materials">Materials</TabsTrigger>
           </TabsList>
-          <TabsContent value="records" />
-          <TabsContent value="vehicles" />
-          <TabsContent value="materials" />
+          <TabsContent value="records">
+            <RecordsTable />
+          </TabsContent>
+          <TabsContent value="vehicles">
+            <VehiclesTable />
+          </TabsContent>
+          <TabsContent value="materials">
+            <MaterialsTable />
+          </TabsContent>
         </Tabs>
       </div>
     </TooltipProvider>

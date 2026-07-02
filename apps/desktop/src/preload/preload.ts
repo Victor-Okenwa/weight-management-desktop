@@ -23,17 +23,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
   completeSetup: (settings: Record<string, string>): Promise<boolean> =>
     ipcRenderer.invoke('app:complete-setup', settings),
 
- onWeightUpdate: (callback: (reading: WeightReading) => void) => {
-  const handler = (_event: any, reading: WeightReading) => callback(reading);
-  ipcRenderer.on('weight:update', handler);
-  return () => ipcRenderer.removeListener('weight:update', handler);
-},
+  onWeightUpdate: (callback: (reading: WeightReading) => void) => {
+    const handler = (_event: any, reading: WeightReading) => callback(reading);
+    ipcRenderer.on('weight:update', handler);
+    return () => ipcRenderer.removeListener('weight:update', handler);
+  },
 
-onSerialStatus: (callback: (status: string) => void) => {
-  const handler = (_event: any, status: string) => callback(status);
-  ipcRenderer.on('serial:status', handler);
-  return () => ipcRenderer.removeListener('serial:status', handler);
-},
+  onSerialStatus: (callback: (status: string) => void) => {
+    const handler = (_event: any, status: string) => callback(status);
+    ipcRenderer.on('serial:status', handler);
+    return () => ipcRenderer.removeListener('serial:status', handler);
+  },
   getSerialStatus: (): Promise<string> => ipcRenderer.invoke('serial:get-status'),
   log: (level: string, message: string) => {
     ipcRenderer.send('log', { level, message });
@@ -46,22 +46,36 @@ onSerialStatus: (callback: (status: string) => void) => {
 
   // Materials
   getAllMaterials: (): Promise<Material[]> => ipcRenderer.invoke('materials:get-all'),
-  getMaterialsPaginated: (page: number, pageSize: number, filters?: { search?: string }): Promise<PaginatedResult<Material>> =>
+  getMaterialsPaginated: (
+    page: number,
+    pageSize: number,
+    filters?: { search?: string },
+  ): Promise<PaginatedResult<Material>> =>
     ipcRenderer.invoke('materials:get-paginated', page, pageSize, filters),
   updateMaterial: (id: number, data: { name?: string }): Promise<Material | null> =>
     ipcRenderer.invoke('materials:update', id, data),
   deleteMaterial: (id: number): Promise<void> => ipcRenderer.invoke('materials:delete', id),
+  deleteMaterials: (ids: number[]): Promise<number> =>
+    ipcRenderer.invoke('materials:delete-many', ids),
 
   // Health
   checkDatabaseHealth: (): Promise<HealthResult> => ipcRenderer.invoke('db:health-check'),
 
   // Vehicles
   getAllVehicles: (): Promise<Vehicle[]> => ipcRenderer.invoke('vehicles:get-all'),
-  getVehiclesPaginated: (page: number, pageSize: number, filters?: { search?: string }): Promise<PaginatedResult<Vehicle>> =>
+  getVehiclesPaginated: (
+    page: number,
+    pageSize: number,
+    filters?: { search?: string },
+  ): Promise<PaginatedResult<Vehicle>> =>
     ipcRenderer.invoke('vehicles:get-paginated', page, pageSize, filters),
-  updateVehicle: (id: number, data: { name?: string; tareWeight?: number | null; tareUnit?: string | null }): Promise<Vehicle | null> =>
-    ipcRenderer.invoke('vehicles:update', id, data),
+  updateVehicle: (
+    id: number,
+    data: { name?: string; tareWeight?: number | null; tareUnit?: string | null },
+  ): Promise<Vehicle | null> => ipcRenderer.invoke('vehicles:update', id, data),
   deleteVehicle: (id: number): Promise<void> => ipcRenderer.invoke('vehicles:delete', id),
+  deleteVehicles: (ids: number[]): Promise<number> =>
+    ipcRenderer.invoke('vehicles:delete-many', ids),
 
   // Records
   createRecord: (data: CreateRecordInput): Promise<RecordType> =>
@@ -76,6 +90,7 @@ onSerialStatus: (callback: (status: string) => void) => {
     filters?: RecordFilters,
   ): Promise<PaginatedResult<RecordType>> =>
     ipcRenderer.invoke('records:get-paginated', page, pageSize, filters),
-  deleteRecord: (id: number): Promise<RecordType | null> => ipcRenderer.invoke('records:delete', id),
+  deleteRecord: (id: number): Promise<RecordType | null> =>
+    ipcRenderer.invoke('records:delete', id),
   deleteRecords: (ids: number[]): Promise<number> => ipcRenderer.invoke('records:delete-many', ids),
 });

@@ -1,0 +1,29 @@
+---
+description: Serial communication and weight indicator parsing conventions
+globs: apps/desktop/src/serial/**/*.ts,apps/desktop/src/parser/**/*.ts
+alwaysApply: false
+---
+
+# Serial Communication & Weight Parsing
+
+- The serial manager lives in `apps/desktop/src/serial/serial-manager.ts`. It is constructed with an indicator type plus callbacks for weight and status.
+- Indicator types are defined in `apps/desktop/src/parser/index.ts` and map (via factory functions) to BOTH a stream parser and a weight parser.
+
+## Two-stage pipeline
+
+- Stream parsers (`Transform`, e.g. `D300StreamParser`, `LineSplitter`) split raw serial data into lines/frames. They push STRINGS, not objects. They are NOT in object mode.
+- Weight parsers (stateful, e.g. `D300WeightParser`, `AveryWeightParser`) receive a string plus a unit and return `WeightReading | null`. They track the last weight to set the `isStable` flag by comparison.
+
+```ts
+// stream parser - push a string
+this.push(match[1] + 'Wt');
+
+// weight parser - return WeightReading | null
+const isStable = this.lastWeight !== null && weight === this.lastWeight;
+return { weight, unit, raw: trimmed, isStable };
+```
+
+## No hardcoded ports
+
+- Read serial settings from the database row on startup (`settingsRow.serialPort`, `baudRate`, etc.).
+- Use the serial manager's `reconnect()` method for live reconfiguration when settings change.

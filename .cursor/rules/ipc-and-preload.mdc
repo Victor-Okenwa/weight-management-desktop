@@ -1,0 +1,34 @@
+---
+description: IPC handlers and preload contextBridge conventions
+globs: apps/desktop/src/ipc/**/*.ts,apps/desktop/src/preload/**/*.ts
+alwaysApply: false
+---
+
+# IPC & Preload
+
+- Register ALL IPC handlers inside the single `registerIpcHandlers` function in `apps/desktop/src/ipc/ipc.ts`.
+- The preload (`apps/desktop/src/preload/preload.ts`) exposes a typed `window.electronAPI` via `contextBridge`. Only whitelisted methods are exposed. Never expose `ipcRenderer` or Node globals directly.
+- Channel names follow the `domain:action` pattern: `weight:update`, `serial:status`, `settings:get-all`, `records:create`.
+
+## Request-response
+
+Use `ipcMain.handle` / `ipcRenderer.invoke`.
+
+```ts
+// ipc.ts
+ipcMain.handle('records:create', (_e, data) => { /* ... */ });
+// preload.ts
+createRecord: (data) => ipcRenderer.invoke('records:create', data),
+```
+
+## Streaming (e.g. weight updates)
+
+Main sends via `mainWindow.webContents.send()`; the preload wraps the listener and returns an unsubscribe function.
+
+```ts
+onWeightUpdate: (cb) => {
+  const handler = (_e, reading) => cb(reading);
+  ipcRenderer.on('weight:update', handler);
+  return () => ipcRenderer.removeListener('weight:update', handler);
+},
+```

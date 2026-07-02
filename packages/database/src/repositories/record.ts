@@ -45,7 +45,12 @@ export interface CreateRecordInput {
 export function createRecord(db: DatabaseInstance, data: CreateRecordInput): Record {
   let vehicleId: number | null = null;
   if (data.vehicleName) {
-    vehicleId = getOrCreateVehicle(db, data.vehicleName, data.vehicleTareWeight, data.vehicleTareUnit);
+    vehicleId = getOrCreateVehicle(
+      db,
+      data.vehicleName,
+      data.vehicleTareWeight,
+      data.vehicleTareUnit,
+    );
   }
 
   let materialId: number | null = null;
@@ -92,10 +97,19 @@ export interface UpdateRecordInput {
   updatedAt?: string;
 }
 
-export function updateRecord(db: DatabaseInstance, id: number, data: UpdateRecordInput): Record | null {
+export function updateRecord(
+  db: DatabaseInstance,
+  id: number,
+  data: UpdateRecordInput,
+): Record | null {
   let vehicleId: number | undefined;
   if (data.vehicleName) {
-    vehicleId = getOrCreateVehicle(db, data.vehicleName, data.vehicleTareWeight, data.vehicleTareUnit);
+    vehicleId = getOrCreateVehicle(
+      db,
+      data.vehicleName,
+      data.vehicleTareWeight,
+      data.vehicleTareUnit,
+    );
   }
 
   let materialId: number | undefined;
@@ -119,29 +133,30 @@ export function updateRecord(db: DatabaseInstance, id: number, data: UpdateRecor
 }
 
 export function getRecordById(db: DatabaseInstance, id: number): Record | null {
-  const result = db
-    .select({
-      id: records.id,
-      ticketId: records.ticketId,
-      operator: records.operator,
-      operationType: records.operationType,
-      grossWeight: records.grossWeight,
-      tareWeight: records.tareWeight,
-      netWeight: records.netWeight,
-      status: records.status,
-      vehicleId: records.vehicleId,
-      materialId: records.materialId,
-      remark: records.remark,
-      createdAt: records.createdAt,
-      updatedAt: records.updatedAt,
-      vehicleName: vehicles.name,
-      materialName: materials.name,
-    })
-    .from(records)
-    .leftJoin(vehicles, eq(records.vehicleId, vehicles.id))
-    .leftJoin(materials, eq(records.materialId, materials.id))
-    .where(eq(records.id, id))
-    .get() ?? null;
+  const result =
+    db
+      .select({
+        id: records.id,
+        ticketId: records.ticketId,
+        operator: records.operator,
+        operationType: records.operationType,
+        grossWeight: records.grossWeight,
+        tareWeight: records.tareWeight,
+        netWeight: records.netWeight,
+        status: records.status,
+        vehicleId: records.vehicleId,
+        materialId: records.materialId,
+        remark: records.remark,
+        createdAt: records.createdAt,
+        updatedAt: records.updatedAt,
+        vehicleName: vehicles.name,
+        materialName: materials.name,
+      })
+      .from(records)
+      .leftJoin(vehicles, eq(records.vehicleId, vehicles.id))
+      .leftJoin(materials, eq(records.materialId, materials.id))
+      .where(eq(records.id, id))
+      .get() ?? null;
 
   return result as Record;
 }

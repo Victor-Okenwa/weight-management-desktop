@@ -124,9 +124,7 @@ export function VehicleEditDialog({
             </div>
           </Field>
           <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">
-              Or capture from scale
-            </p>
+            <p className="text-sm font-medium text-muted-foreground">Or capture from scale</p>
             <div className="flex items-center gap-4">
               <div className="max-w-xs flex-1">
                 <WeightDisplay />

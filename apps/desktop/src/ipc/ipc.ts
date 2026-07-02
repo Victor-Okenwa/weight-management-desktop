@@ -1,9 +1,13 @@
 // apps/desktop/src/ipc/ipc.ts
 
-import { deleteMaterial, getAllMaterials, getMaterialsPaginated, updateMaterial } from '@weight/database/repositories/materials';
 import {
-  checkDatabaseHealth,
-} from '@weight/database/repositories/health';
+  deleteMaterial,
+  deleteMaterials,
+  getAllMaterials,
+  getMaterialsPaginated,
+  updateMaterial,
+} from '@weight/database/repositories/materials';
+import { checkDatabaseHealth } from '@weight/database/repositories/health';
 import {
   createRecord,
   deleteRecord,
@@ -13,7 +17,13 @@ import {
   updateRecord,
 } from '@weight/database/repositories/record';
 import { getAllSettings, updateSettings } from '@weight/database/repositories/settings';
-import { deleteVehicle, getAllVehicles, getVehiclesPaginated, updateVehicle } from '@weight/database/repositories/vehicles';
+import {
+  deleteVehicle,
+  deleteVehicles,
+  getAllVehicles,
+  getVehiclesPaginated,
+  updateVehicle,
+} from '@weight/database/repositories/vehicles';
 import type { SerialOptions } from '@weight/shared/types/index';
 import { ipcMain } from 'electron';
 import { SerialPort } from 'serialport';
@@ -172,6 +182,13 @@ export function registerIpcHandlers(serialManager: SerialManager) {
     db.save();
   });
 
+  ipcMain.handle('materials:delete-many', (_event, ids: number[]) => {
+    const db = getDatabase();
+    const count = deleteMaterials(db, ids);
+    db.save();
+    return count;
+  });
+
   // ---------- Vehicles ----------
   ipcMain.handle('vehicles:get-all', () => {
     const db = getDatabase();
@@ -194,6 +211,13 @@ export function registerIpcHandlers(serialManager: SerialManager) {
     const db = getDatabase();
     deleteVehicle(db, id);
     db.save();
+  });
+
+  ipcMain.handle('vehicles:delete-many', (_event, ids: number[]) => {
+    const db = getDatabase();
+    const count = deleteVehicles(db, ids);
+    db.save();
+    return count;
   });
 
   // ---------- Records ----------
