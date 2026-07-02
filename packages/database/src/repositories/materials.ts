@@ -1,7 +1,7 @@
 import type { Material, PaginatedResult } from '@weight/shared/types/index';
 import { count, eq, inArray, sql } from 'drizzle-orm';
 import type { DatabaseInstance } from '../index.js';
-import { materials } from '../schema/index.js';
+import { materials, records } from '../schema/index.js';
 import { nowIso } from '../timestamps.js';
 
 export function getOrCreateMaterial(db: DatabaseInstance, name: string): number {
@@ -80,11 +80,13 @@ export function updateMaterial(
 }
 
 export function deleteMaterial(db: DatabaseInstance, id: number): void {
+  db.delete(records).where(eq(records.materialId, id)).run();
   db.delete(materials).where(eq(materials.id, id)).run();
 }
 
 export function deleteMaterials(db: DatabaseInstance, ids: number[]): number {
   if (ids.length === 0) return 0;
+  db.delete(records).where(inArray(records.materialId, ids)).run();
   const result = db.delete(materials).where(inArray(materials.id, ids)).returning().all();
   return result.length;
 }

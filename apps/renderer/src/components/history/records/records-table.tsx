@@ -1,8 +1,12 @@
+import { useNavigate } from '@tanstack/react-router';
 import type { PaginatedResult, Record as WeightRecord } from '@weight/shared/types/index';
+import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { DataTableDateFilter } from '@/components/data-table/data-table-date-filter';
 import { DataTableFacetedFilter } from '@/components/data-table/data-table-faceted-filter';
-import { recordsColumns } from '@/components/history/records/records-table-columns';
+import { DeleteConfirmDialog } from '@/components/history/shared/delete-confirm-dialog';
+import { createRecordsColumns } from '@/components/history/records/records-table-columns';
+import { RecordViewDialog } from '@/components/history/records/record-view-dialog';
 import { HistoryDataTable } from '@/components/history/shared/history-data-table';
 import { logger } from '@/lib/logger';
 import { useServerDataTable } from '@/hooks/use-server-data-table';
@@ -21,8 +25,25 @@ function deleteRecords(ids: number[]): Promise<number> {
 
 export function RecordsTable() {
   'use no memo';
+  const navigate = useNavigate();
+  const [viewItem, setViewItem] = useState<WeightRecord | null>(null);
+  const [deleteItem, setDeleteItem] = useState<WeightRecord | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const columns = useMemo(
+    () =>
+      createRecordsColumns({
+        onView: setViewItem,
+        onEdit: (record) => {
+          void navigate({ to: '/edit-weight', search: { ticketId: record.ticketId } });
+        },
+        onDelete: setDeleteItem,
+      }),
+    [navigate],
+  );
+
   const { table, isLoading, setSearch, refetch } = useServerDataTable<WeightRecord>({
-    columns: recordsColumns,
+    columns,
     fetchPage: fetchRecords,
     onError: (error) => {
       logger('error', `Failed to load records: ${String(error)}`);
@@ -30,45 +51,77 @@ export function RecordsTable() {
     },
   });
 
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!deleteItem) return;
+    setIsDeleting(true);
+    try {
+      await window.electronAPI.deleteRecord(deleteItem.id);
+      toast.success('Record deleted');
+      setDeleteItem(null);
+      void refetch();
+    } catch {
+      toast.error('Failed to delete record');
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [deleteItem, refetch]);
+
   const typeColumn = table.getColumn('operationType');
   const statusColumn = table.getColumn('status');
   const createdColumn = table.getColumn('createdAt');
 
   return (
-    <HistoryDataTable
-      table={table}
-      isLoading={isLoading}
-      columnCount={recordsColumns.length}
-      entityName="record"
-      searchPlaceholder="Search ticket, operator, vehicle..."
-      onSearch={setSearch}
-      onDelete={deleteRecords}
-      onDeleted={refetch}
-      onRefresh={refetch}
-    >
-      {typeColumn && (
-        <DataTableFacetedFilter
-          column={typeColumn}
-          title="Type"
-          multiple
-          options={[
-            { label: 'Single', value: 'single' },
-            { label: 'Double', value: 'double' },
-          ]}
-        />
-      )}
-      {statusColumn && (
-        <DataTableFacetedFilter
-          column={statusColumn}
-          title="Status"
-          multiple
-          options={[
-            { label: 'Pending', value: 'pending' },
-            { label: 'Completed', value: 'completed' },
-          ]}
-        />
-      )}
-      {createdColumn && <DataTableDateFilter column={createdColumn} title="Created" multiple />}
-    </HistoryDataTable>
+    <>
+      <HistoryDataTable
+        table={table}
+        isLoading={isLoading}
+        columnCount={columns.length}
+        entityName="record"
+        searchPlaceholder="Search ticket, operator, vehicle..."
+        onSearch={setSearch}
+        onDelete={deleteRecords}
+        onDeleted={refetch}
+        onRefresh={refetch}
+      >
+        {typeColumn && (
+          <DataTableFacetedFilter
+            column={typeColumn}
+            title="Type"
+            multiple
+            options={[
+              { label: 'Single', value: 'single' },
+              { label: 'Double', value: 'double' },
+            ]}
+          />
+        )}
+        {statusColumn && (
+          <DataTableFacetedFilter
+            column={statusColumn}
+            title="Status"
+            multiple
+            options={[
+              { label: 'Pending', value: 'pending' },
+              { label: 'Completed', value: 'completed' },
+            ]}
+          />
+        )}
+        {createdColumn && <DataTableDateFilter column={createdColumn} title="Created" multiple />}
+      </HistoryDataTable>
+
+      <RecordViewDialog
+        record={viewItem}
+        open={viewItem != null}
+        onOpenChange={(open) => !open && setViewItem(null)}
+      />
+
+      <DeleteConfirmDialog
+        open={deleteItem != null}
+        onOpenChange={(open) => !open && setDeleteItem(null)}
+        title="Delete record?"
+        description="This record will be permanently deleted."
+        onConfirm={handleDeleteConfirm}
+        isDeleting={isDeleting}
+      />
+    </>
   );
 }

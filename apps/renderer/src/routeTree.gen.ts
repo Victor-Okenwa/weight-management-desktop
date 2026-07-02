@@ -15,6 +15,7 @@ import { Route as ProtectedIndexRouteImport } from './routes/_protected/index'
 import { Route as ProtectedSettingsRouteImport } from './routes/_protected/settings'
 import { Route as ProtectedRecordWeightRouteImport } from './routes/_protected/record-weight'
 import { Route as ProtectedHistoryRouteImport } from './routes/_protected/history'
+import { Route as ProtectedEditWeightRouteImport } from './routes/_protected/edit-weight'
 
 const SetupWizardRoute = SetupWizardRouteImport.update({
   id: '/setup-wizard',
@@ -45,16 +46,23 @@ const ProtectedHistoryRoute = ProtectedHistoryRouteImport.update({
   path: '/history',
   getParentRoute: () => ProtectedRouteRoute,
 } as any)
+const ProtectedEditWeightRoute = ProtectedEditWeightRouteImport.update({
+  id: '/edit-weight',
+  path: '/edit-weight',
+  getParentRoute: () => ProtectedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof ProtectedIndexRoute
   '/setup-wizard': typeof SetupWizardRoute
+  '/edit-weight': typeof ProtectedEditWeightRoute
   '/history': typeof ProtectedHistoryRoute
   '/record-weight': typeof ProtectedRecordWeightRoute
   '/settings': typeof ProtectedSettingsRoute
 }
 export interface FileRoutesByTo {
   '/setup-wizard': typeof SetupWizardRoute
+  '/edit-weight': typeof ProtectedEditWeightRoute
   '/history': typeof ProtectedHistoryRoute
   '/record-weight': typeof ProtectedRecordWeightRoute
   '/settings': typeof ProtectedSettingsRoute
@@ -64,6 +72,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_protected': typeof ProtectedRouteRouteWithChildren
   '/setup-wizard': typeof SetupWizardRoute
+  '/_protected/edit-weight': typeof ProtectedEditWeightRoute
   '/_protected/history': typeof ProtectedHistoryRoute
   '/_protected/record-weight': typeof ProtectedRecordWeightRoute
   '/_protected/settings': typeof ProtectedSettingsRoute
@@ -71,13 +80,26 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/setup-wizard' | '/history' | '/record-weight' | '/settings'
+  fullPaths:
+    | '/'
+    | '/setup-wizard'
+    | '/edit-weight'
+    | '/history'
+    | '/record-weight'
+    | '/settings'
   fileRoutesByTo: FileRoutesByTo
-  to: '/setup-wizard' | '/history' | '/record-weight' | '/settings' | '/'
+  to:
+    | '/setup-wizard'
+    | '/edit-weight'
+    | '/history'
+    | '/record-weight'
+    | '/settings'
+    | '/'
   id:
     | '__root__'
     | '/_protected'
     | '/setup-wizard'
+    | '/_protected/edit-weight'
     | '/_protected/history'
     | '/_protected/record-weight'
     | '/_protected/settings'
@@ -133,10 +155,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedHistoryRouteImport
       parentRoute: typeof ProtectedRouteRoute
     }
+    '/_protected/edit-weight': {
+      id: '/_protected/edit-weight'
+      path: '/edit-weight'
+      fullPath: '/edit-weight'
+      preLoaderRoute: typeof ProtectedEditWeightRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
   }
 }
 
 interface ProtectedRouteRouteChildren {
+  ProtectedEditWeightRoute: typeof ProtectedEditWeightRoute
   ProtectedHistoryRoute: typeof ProtectedHistoryRoute
   ProtectedRecordWeightRoute: typeof ProtectedRecordWeightRoute
   ProtectedSettingsRoute: typeof ProtectedSettingsRoute
@@ -144,6 +174,7 @@ interface ProtectedRouteRouteChildren {
 }
 
 const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
+  ProtectedEditWeightRoute: ProtectedEditWeightRoute,
   ProtectedHistoryRoute: ProtectedHistoryRoute,
   ProtectedRecordWeightRoute: ProtectedRecordWeightRoute,
   ProtectedSettingsRoute: ProtectedSettingsRoute,

@@ -18,6 +18,7 @@ interface HistoryDataTableProps<TData extends { id: number }> {
   onDelete: (ids: number[]) => Promise<number>;
   onDeleted?: () => void;
   onRefresh?: () => void;
+  deleteDescription?: React.ReactNode;
   /** Filter controls (faceted / date) rendered in the toolbar. */
   children?: React.ReactNode;
 }
@@ -32,6 +33,7 @@ export function HistoryDataTable<TData extends { id: number }>({
   onDelete,
   onDeleted,
   onRefresh,
+  deleteDescription,
   children,
 }: HistoryDataTableProps<TData>) {
   'use no memo';
@@ -50,6 +52,7 @@ export function HistoryDataTable<TData extends { id: number }>({
           entityName={entityName}
           onDelete={onDelete}
           onDeleted={onDeleted}
+          deleteDescription={deleteDescription}
         />
       }
     >

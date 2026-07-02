@@ -22,6 +22,7 @@ interface DataTableSelectionBarProps<TData extends { id: number }> {
   entityName: string;
   onDelete: (ids: number[]) => Promise<number>;
   onDeleted?: () => void;
+  deleteDescription?: React.ReactNode;
 }
 
 export function DataTableSelectionBar<TData extends { id: number }>({
@@ -29,6 +30,7 @@ export function DataTableSelectionBar<TData extends { id: number }>({
   entityName,
   onDelete,
   onDeleted,
+  deleteDescription,
 }: DataTableSelectionBarProps<TData>) {
   'use no memo';
   const [isDeleting, setIsDeleting] = React.useState(false);
@@ -68,8 +70,12 @@ export function DataTableSelectionBar<TData extends { id: number }>({
               {count === 1 ? '' : 's'}?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. The selected {entityName}
-              {count === 1 ? '' : 's'} will be permanently removed.
+              {deleteDescription ?? (
+                <>
+                  This action cannot be undone. The selected {entityName}
+                  {count === 1 ? '' : 's'} will be permanently removed.
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

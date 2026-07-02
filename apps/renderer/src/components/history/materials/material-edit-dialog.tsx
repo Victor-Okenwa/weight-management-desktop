@@ -1,15 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Material } from '@weight/shared/types/index';
+import { Button } from '@/components/ui/button';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -27,9 +26,16 @@ export function MaterialEditDialog({
   onOpenChange,
   onSaved,
 }: MaterialEditDialogProps) {
-  const [name, setName] = useState(material?.name ?? '');
+  const [name, setName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open && material) {
+      setName(material.name);
+      setError(null);
+    }
+  }, [open, material]);
 
   const handleSave = async () => {
     if (!material) return;
@@ -58,12 +64,12 @@ export function MaterialEditDialog({
   };
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent size="default">
-        <AlertDialogHeader>
-          <AlertDialogTitle>Edit Material</AlertDialogTitle>
-          <AlertDialogDescription>Update the material name below.</AlertDialogDescription>
-        </AlertDialogHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit Material</DialogTitle>
+          <DialogDescription>Update the material name below.</DialogDescription>
+        </DialogHeader>
         <FieldGroup className="space-y-4">
           <Field>
             <FieldLabel htmlFor="edit-material-name">Material Name</FieldLabel>
@@ -76,13 +82,15 @@ export function MaterialEditDialog({
           </Field>
           {error && <p className="text-sm text-destructive">{error}</p>}
         </FieldGroup>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleSave} disabled={isSaving}>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button type="button" onClick={handleSave} disabled={isSaving}>
             {isSaving ? 'Saving...' : 'Save'}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
