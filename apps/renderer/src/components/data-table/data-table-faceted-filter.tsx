@@ -32,6 +32,7 @@ export function DataTableFacetedFilter<TData, TValue>({
   options,
   multiple,
 }: DataTableFacetedFilterProps<TData, TValue>) {
+  'use no memo';
   const [open, setOpen] = React.useState(false);
 
   const columnFilterValue = column?.getFilterValue();
@@ -42,7 +43,8 @@ export function DataTableFacetedFilter<TData, TValue>({
       if (!column) return;
 
       if (multiple) {
-        const newSelectedValues = new Set(selectedValues);
+        const current = column.getFilterValue();
+        const newSelectedValues = new Set(Array.isArray(current) ? current : []);
         if (isSelected) {
           newSelectedValues.delete(option.value);
         } else {
@@ -55,7 +57,7 @@ export function DataTableFacetedFilter<TData, TValue>({
         setOpen(false);
       }
     },
-    [column, multiple, selectedValues],
+    [column, multiple],
   );
 
   const onReset = React.useCallback(
