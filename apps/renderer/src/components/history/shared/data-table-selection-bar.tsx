@@ -14,6 +14,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { DialogScrollBody } from '@/components/history/shared/dialog-scroll-body';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
 
@@ -63,21 +64,23 @@ export function DataTableSelectionBar<TData extends { id: number }>({
             Delete
           </Button>
         </AlertDialogTrigger>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              Delete {count} {entityName}
-              {count === 1 ? '' : 's'}?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {deleteDescription ?? (
-                <>
-                  This action cannot be undone. The selected {entityName}
-                  {count === 1 ? '' : 's'} will be permanently removed.
-                </>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
+        <AlertDialogContent className="flex max-h-[90vh] flex-col gap-4">
+          <DialogScrollBody maxHeightClassName="max-h-[min(50vh,24rem)]">
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Delete {count} {entityName}
+                {count === 1 ? '' : 's'}?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {deleteDescription ?? (
+                  <>
+                    This action cannot be undone. The selected {entityName}
+                    {count === 1 ? '' : 's'} will be permanently removed.
+                  </>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+          </DialogScrollBody>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>

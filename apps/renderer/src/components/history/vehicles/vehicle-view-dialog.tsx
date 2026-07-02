@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { formatDate } from '@/lib/format';
+import { DialogScrollBody } from '@/components/history/shared/dialog-scroll-body';
 
 function DetailRow({ label, value }: { label: string; value: ReactNode }) {
   return (
@@ -34,16 +35,18 @@ export function VehicleViewDialog({ vehicle, open, onOpenChange }: VehicleViewDi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="flex max-h-[90vh] max-w-md flex-col gap-4">
         <DialogHeader>
           <DialogTitle>Vehicle Details</DialogTitle>
           <DialogDescription>Full details for {vehicle.name}</DialogDescription>
         </DialogHeader>
-        <div className="divide-y">
-          <DetailRow label="Name" value={vehicle.name} />
-          <DetailRow label="Tare Weight" value={tareDisplay} />
-          <DetailRow label="Created" value={formatDate(vehicle.createdAt)} />
-        </div>
+        <DialogScrollBody>
+          <div className="divide-y">
+            <DetailRow label="Name" value={vehicle.name} />
+            <DetailRow label="Tare Weight" value={tareDisplay} />
+            <DetailRow label="Created" value={formatDate(vehicle.createdAt)} />
+          </div>
+        </DialogScrollBody>
       </DialogContent>
     </Dialog>
   );

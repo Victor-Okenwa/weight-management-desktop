@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { DialogScrollBody } from '@/components/history/shared/dialog-scroll-body';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useWeightStore } from '@/store/weightStore';
 import { toast } from 'sonner';
@@ -88,31 +89,33 @@ export function VehicleEditDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="flex max-h-[90vh] max-w-lg flex-col gap-4">
         <DialogHeader>
           <DialogTitle>Edit Vehicle</DialogTitle>
           <DialogDescription>Update the vehicle name and re-record tare weight.</DialogDescription>
         </DialogHeader>
-        <FieldGroup className="space-y-4">
-          <Field>
-            <FieldLabel htmlFor="edit-vehicle-name">Vehicle Name</FieldLabel>
-            <Input
-              id="edit-vehicle-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Enter vehicle name"
+        <DialogScrollBody>
+          <FieldGroup className="space-y-4">
+            <Field>
+              <FieldLabel htmlFor="edit-vehicle-name">Vehicle Name</FieldLabel>
+              <Input
+                id="edit-vehicle-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Enter vehicle name"
+              />
+            </Field>
+            <WeightCaptureArea
+              label="Tare Weight"
+              capturedWeight={capturedTareWeight}
+              onCapture={handleCaptureTare}
+              onRecapture={handleRecaptureTare}
+              canCapture={canCapture}
+              weightUnit={weightUnit}
             />
-          </Field>
-          <WeightCaptureArea
-            label="Tare Weight"
-            capturedWeight={capturedTareWeight}
-            onCapture={handleCaptureTare}
-            onRecapture={handleRecaptureTare}
-            canCapture={canCapture}
-            weightUnit={weightUnit}
-          />
-          {error && <p className="text-sm text-destructive">{error}</p>}
-        </FieldGroup>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+          </FieldGroup>
+        </DialogScrollBody>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancel

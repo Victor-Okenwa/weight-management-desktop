@@ -8,6 +8,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { DialogScrollBody } from '@/components/history/shared/dialog-scroll-body';
 import { Spinner } from '@/components/ui/spinner';
 
 interface DeleteConfirmDialogProps {
@@ -31,12 +32,14 @@ export function DeleteConfirmDialog({
 }: DeleteConfirmDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
-          {warning && <p className="text-sm font-medium text-destructive">{warning}</p>}
-        </AlertDialogHeader>
+      <AlertDialogContent className="flex max-h-[90vh] flex-col gap-4">
+        <DialogScrollBody maxHeightClassName="max-h-[min(50vh,24rem)]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{title}</AlertDialogTitle>
+            <AlertDialogDescription>{description}</AlertDialogDescription>
+            {warning && <p className="text-sm font-medium text-destructive">{warning}</p>}
+          </AlertDialogHeader>
+        </DialogScrollBody>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
           <AlertDialogAction

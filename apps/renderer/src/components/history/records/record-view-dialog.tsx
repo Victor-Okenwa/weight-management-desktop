@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { formatDate } from '@/lib/format';
+import { DialogScrollBody } from '@/components/history/shared/dialog-scroll-body';
 
 function formatWeight(value: number | null): string {
   return value == null ? '--' : value.toLocaleString();
@@ -34,42 +35,44 @@ export function RecordViewDialog({ record, open, onOpenChange }: RecordViewDialo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="flex max-h-[90vh] max-w-lg flex-col gap-4">
         <DialogHeader>
           <DialogTitle>Record Details</DialogTitle>
           <DialogDescription>Full details for ticket {record.ticketId}</DialogDescription>
         </DialogHeader>
-        <div className="divide-y">
-          <DetailRow label="Ticket" value={record.ticketId} />
-          <DetailRow
-            label="Type"
-            value={
-              <Badge variant="secondary" className="capitalize">
-                {record.operationType}
-              </Badge>
-            }
-          />
-          <DetailRow
-            label="Status"
-            value={
-              <Badge
-                variant={record.status === 'completed' ? 'default' : 'outline'}
-                className="capitalize"
-              >
-                {record.status}
-              </Badge>
-            }
-          />
-          <DetailRow label="Vehicle" value={record.vehicleName ?? '--'} />
-          <DetailRow label="Material" value={record.materialName ?? '--'} />
-          <DetailRow label="Gross" value={formatWeight(record.grossWeight)} />
-          <DetailRow label="Tare" value={formatWeight(record.tareWeight)} />
-          <DetailRow label="Net" value={formatWeight(record.netWeight)} />
-          <DetailRow label="Operator" value={record.operator ?? '--'} />
-          <DetailRow label="Remark" value={record.remark ?? '--'} />
-          <DetailRow label="Created" value={formatDate(record.createdAt)} />
-          <DetailRow label="Updated" value={formatDate(record.updatedAt)} />
-        </div>
+        <DialogScrollBody>
+          <div className="divide-y">
+            <DetailRow label="Ticket" value={record.ticketId} />
+            <DetailRow
+              label="Type"
+              value={
+                <Badge variant="secondary" className="capitalize">
+                  {record.operationType}
+                </Badge>
+              }
+            />
+            <DetailRow
+              label="Status"
+              value={
+                <Badge
+                  variant={record.status === 'completed' ? 'default' : 'outline'}
+                  className="capitalize"
+                >
+                  {record.status}
+                </Badge>
+              }
+            />
+            <DetailRow label="Vehicle" value={record.vehicleName ?? '--'} />
+            <DetailRow label="Material" value={record.materialName ?? '--'} />
+            <DetailRow label="Gross" value={formatWeight(record.grossWeight)} />
+            <DetailRow label="Tare" value={formatWeight(record.tareWeight)} />
+            <DetailRow label="Net" value={formatWeight(record.netWeight)} />
+            <DetailRow label="Operator" value={record.operator ?? '--'} />
+            <DetailRow label="Remark" value={record.remark ?? '--'} />
+            <DetailRow label="Created" value={formatDate(record.createdAt)} />
+            <DetailRow label="Updated" value={formatDate(record.updatedAt)} />
+          </div>
+        </DialogScrollBody>
       </DialogContent>
     </Dialog>
   );

@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { formatDate } from '@/lib/format';
+import { DialogScrollBody } from '@/components/history/shared/dialog-scroll-body';
 
 function DetailRow({ label, value }: { label: string; value: ReactNode }) {
   return (
@@ -29,15 +30,17 @@ export function MaterialViewDialog({ material, open, onOpenChange }: MaterialVie
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="flex max-h-[90vh] max-w-md flex-col gap-4">
         <DialogHeader>
           <DialogTitle>Material Details</DialogTitle>
           <DialogDescription>Full details for {material.name}</DialogDescription>
         </DialogHeader>
-        <div className="divide-y">
-          <DetailRow label="Name" value={material.name} />
-          <DetailRow label="Created" value={formatDate(material.createdAt)} />
-        </div>
+        <DialogScrollBody>
+          <div className="divide-y">
+            <DetailRow label="Name" value={material.name} />
+            <DetailRow label="Created" value={formatDate(material.createdAt)} />
+          </div>
+        </DialogScrollBody>
       </DialogContent>
     </Dialog>
   );
