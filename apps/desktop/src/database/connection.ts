@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { type DatabaseInstance, initDatabase } from '@weight/database';
-import { settings, materials } from '@weight/database/schema';
+import { settings } from '@weight/database/schema';
 import { eq } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/sql-js/migrator';
 import { app } from 'electron';
@@ -35,29 +35,6 @@ export async function setupDatabase(): Promise<DatabaseInstance> {
   } catch (err) {
     console.error('Migration failed:', err);
   }
-
-  // #region agent log
-  const sampleTimestamps = db
-    .select({
-      material: materials.createdAt,
-    })
-    .from(materials)
-    .limit(3)
-    .all();
-  fetch('http://127.0.0.1:7728/ingest/ce56d33a-b6cc-4b12-ba3c-9f19b258f062', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '75a13e' },
-    body: JSON.stringify({
-      sessionId: '75a13e',
-      runId: 'post-fix',
-      hypothesisId: 'verify',
-      location: 'connection.ts:setupDatabase',
-      message: 'timestamps after migration (no repair)',
-      data: { sampleTimestamps },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
 
   db.save();
 

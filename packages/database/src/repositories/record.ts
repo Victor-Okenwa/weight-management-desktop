@@ -81,26 +81,6 @@ export function createRecord(db: DatabaseInstance, data: CreateRecordInput): Rec
     .returning()
     .get();
 
-  // #region agent log
-  fetch('http://127.0.0.1:7728/ingest/ce56d33a-b6cc-4b12-ba3c-9f19b258f062', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '75a13e' },
-    body: JSON.stringify({
-      sessionId: '75a13e',
-      runId: 'post-fix',
-      hypothesisId: 'verify-insert',
-      location: 'record.ts:createRecord',
-      message: 'record inserted with explicit timestamp',
-      data: {
-        ticketId: result.ticketId,
-        createdAt: result.createdAt,
-        updatedAt: result.updatedAt,
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
-
   return result as Record;
 }
 

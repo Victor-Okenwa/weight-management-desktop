@@ -34,12 +34,19 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useWeightUpdates } from '@/hooks/use-weight-updates';
 import { logger } from '@/lib/logger';
+import { cn } from '@/lib/utils';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useWeightStore } from '@/store/weightStore';
 
@@ -65,6 +72,23 @@ const sidebarRoutes = [
     label: 'Settings',
   },
 ];
+
+function isRouteActive(link: string, currentPath: string) {
+  if (link === '/') {
+    return currentPath === '/' || currentPath === '/_protected/';
+  }
+
+  return currentPath === link || currentPath.startsWith(`${link}/`);
+}
+
+function useIsNavigating() {
+  return useRouterState({
+    select: (state) =>
+      state.isLoading ||
+      state.isTransitioning ||
+      state.matches.some((match) => match.status === 'pending'),
+  });
+}
 
 export const Route = createFileRoute('/_protected')({
   component: RouteComponent,
@@ -112,7 +136,7 @@ function RouteComponent() {
       <div className="min-w-0 w-full flex-1">
         <main className="min-w-0">
           <TopBar />
-          <Outlet />
+          <RouteContent />
         </main>
         <footer className="border-t px-4 py-3">
           <p className="text-center text-sm">
@@ -130,46 +154,120 @@ function RouteComponent() {
   );
 }
 
-function AppSidebar({ settings }: { settings: SettingsRow | null }) {
-  // Get the current location from TanStack Router
-  const router = useRouterState();
-  const currentPath = router.location.pathname;
+function RouteContent() {
+  const isNavigating = useIsNavigating();
 
   return (
-    <Sidebar>
-      {/* <SidebarHeader /> */}
-      <SidebarContent>
+    <div className="relative min-w-0">
+      {isNavigating && (
+        <>
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 z-40 h-0.5 overflow-hidden bg-muted"
+          >
+            <div className="h-full w-1/3 animate-pulse bg-primary shadow-[0_0_12px_2px] shadow-primary/50" />
+          </div>
+          <div
+            aria-live="polite"
+            className="absolute inset-0 z-30 flex items-start justify-center bg-background/35 pt-24 backdrop-blur-[1px]"
+          >
+            <div className="flex items-center gap-2 rounded-xl border border-border/60 bg-card/85 px-4 py-3 shadow-lg backdrop-blur-md">
+              <Loader2 className="size-4 animate-spin text-primary" />
+              <span className="text-sm text-muted-foreground">Loading page...</span>
+            </div>
+          </div>
+        </>
+      )}
+      <div
+        className={cn(
+          'min-w-0 transition-opacity duration-200',
+          isNavigating && 'pointer-events-none opacity-60',
+        )}
+      >
+        <Outlet />
+      </div>
+    </div>
+  );
+}
+
+function AppSidebar({ settings }: { settings: SettingsRow | null }) {
+  const currentPath = useRouterState({ select: (state) => state.location.pathname });
+  const isNavigating = useIsNavigating();
+  const companyInitial = settings?.companyName?.trim()?.[0]?.toUpperCase() ?? '?';
+
+  return (
+    <Sidebar className="border-r border-sidebar-border/60">
+      <SidebarHeader className="border-b border-sidebar-border/60 px-3 py-4">
+        <div className="flex items-center gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-sidebar-primary/30 bg-sidebar-primary/10 shadow-[0_0_20px_-8px] shadow-sidebar-primary/30">
+            <Weight className="size-5 text-sidebar-primary" />
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold tracking-wide">WMS</p>
+            <p className="truncate text-xs text-muted-foreground">Weight Management</p>
+          </div>
+        </div>
+      </SidebarHeader>
+
+      <SidebarContent className="px-2 py-3">
         <SidebarGroup>
-          {sidebarRoutes.map(({ icon: Icon, link, label }) => {
-            const isActive =
-              currentPath === link || (link === '/' && currentPath === '/_protected/');
-            return (
-              <Link
-                key={link}
-                to={link}
-                className={`flex items-center px-4 py-2 rounded-lg transition-colors gap-2 ${
-                  isActive
-                    ? 'bg-primary text-primary-foreground font-semibold'
-                    : 'hover:bg-muted hover:text-foreground'
-                }`}
-              >
-                <Icon className="w-5 h-5" />
-                <span>{label}</span>
-              </Link>
-            );
-          })}
+          <SidebarGroupLabel className="px-2 text-[11px] uppercase tracking-[0.14em] text-muted-foreground/80">
+            Navigation
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu className="gap-1.5">
+              {sidebarRoutes.map(({ icon: Icon, link, label }) => {
+                const isActive = isRouteActive(link, currentPath);
+                const isLoading = isNavigating && isActive;
+
+                return (
+                  <SidebarMenuItem key={link}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
+                      size="lg"
+                      className={cn(
+                        'rounded-lg border border-transparent transition-all duration-200',
+                        isActive &&
+                          'border-sidebar-primary/25 bg-sidebar-primary/12 text-sidebar-primary shadow-[0_0_20px_-10px] shadow-sidebar-primary/40',
+                      )}
+                    >
+                      <Link to={link}>
+                        <Icon className="size-4" />
+                        <span>{label}</span>
+                        {isLoading && (
+                          <Loader2 className="ml-auto size-4 shrink-0 animate-spin opacity-80" />
+                        )}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
+
+      <SidebarFooter className="border-t border-sidebar-border/60 p-2">
         <AlertDialog>
-          <AlertDialogTrigger className="flex gap-2 items-center max-w-full bg-secondary py-2 px-1 border-t">
-            <span className="size-10 rounded-full bg-secondary capitalize font-bold text-base text-center place-content-center shadow">
-              {settings?.companyName?.[0]}
+          <AlertDialogTrigger
+            className={cn(
+              'flex w-full max-w-full items-center gap-3 rounded-xl border border-sidebar-border/60',
+              'bg-sidebar-accent/40 p-2.5 text-left transition-colors',
+              'hover:border-sidebar-primary/25 hover:bg-sidebar-accent/70',
+            )}
+          >
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-full border border-sidebar-primary/20 bg-sidebar-primary/10 text-sm font-bold capitalize text-sidebar-primary shadow-[0_0_16px_-8px] shadow-sidebar-primary/50">
+              {companyInitial}
             </span>
 
-            <div className="overflow-clip max-w-[80%]">
-              <span className="capitalize truncate text-sm">{settings?.companyName}</span>
-              <p className="text-xs truncate text-accent">{settings?.companyEmail}</p>
+            <div className="min-w-0 flex-1 overflow-hidden">
+              <span className="block truncate text-sm font-medium capitalize">
+                {settings?.companyName?.trim() || 'Company'}
+              </span>
+              <p className="truncate text-xs text-muted-foreground">
+                {settings?.companyEmail?.trim() || 'View company details'}
+              </p>
             </div>
           </AlertDialogTrigger>
 
@@ -181,51 +279,49 @@ function AppSidebar({ settings }: { settings: SettingsRow | null }) {
               <AlertDialogTitle>Company Details</AlertDialogTitle>
             </AlertDialogHeader>
 
-            <div>
-              <div className="space-y-4">
-                <div>
-                  <span className="block font-semibold text-sm mb-1">Name</span>
-                  <span className="capitalize">
-                    {settings?.companyName?.trim() ? (
-                      settings.companyName
-                    ) : (
-                      <span className="text-muted-foreground">--</span>
-                    )}
-                  </span>
-                </div>
-                <hr />
-                <div>
-                  <span className="block font-semibold text-sm mb-1">Email</span>
-                  <span>
-                    {settings?.companyEmail?.trim() ? (
-                      settings.companyEmail
-                    ) : (
-                      <span className="text-muted-foreground">--</span>
-                    )}
-                  </span>
-                </div>
-                <hr />
-                <div>
-                  <span className="block font-semibold text-sm mb-1">Phone</span>
-                  <span>
-                    {settings?.companyPhone?.trim() ? (
-                      settings.companyPhone
-                    ) : (
-                      <span className="text-muted-foreground">--</span>
-                    )}
-                  </span>
-                </div>
-                <hr />
-                <div>
-                  <span className="block font-semibold text-sm mb-1">Address</span>
-                  <span>
-                    {settings?.companyAddress?.trim() ? (
-                      settings.companyAddress
-                    ) : (
-                      <span className="text-muted-foreground">--</span>
-                    )}
-                  </span>
-                </div>
+            <div className="space-y-4">
+              <div>
+                <span className="mb-1 block text-sm font-semibold">Name</span>
+                <span className="capitalize">
+                  {settings?.companyName?.trim() ? (
+                    settings.companyName
+                  ) : (
+                    <span className="text-muted-foreground">--</span>
+                  )}
+                </span>
+              </div>
+              <hr />
+              <div>
+                <span className="mb-1 block text-sm font-semibold">Email</span>
+                <span>
+                  {settings?.companyEmail?.trim() ? (
+                    settings.companyEmail
+                  ) : (
+                    <span className="text-muted-foreground">--</span>
+                  )}
+                </span>
+              </div>
+              <hr />
+              <div>
+                <span className="mb-1 block text-sm font-semibold">Phone</span>
+                <span>
+                  {settings?.companyPhone?.trim() ? (
+                    settings.companyPhone
+                  ) : (
+                    <span className="text-muted-foreground">--</span>
+                  )}
+                </span>
+              </div>
+              <hr />
+              <div>
+                <span className="mb-1 block text-sm font-semibold">Address</span>
+                <span>
+                  {settings?.companyAddress?.trim() ? (
+                    settings.companyAddress
+                  ) : (
+                    <span className="text-muted-foreground">--</span>
+                  )}
+                </span>
               </div>
             </div>
 
