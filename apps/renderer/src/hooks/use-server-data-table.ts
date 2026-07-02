@@ -63,27 +63,6 @@ export function useServerDataTable<TData extends { id: number }>({
     setIsLoading(true);
     try {
       const result = await fetchPage(pageIndex + 1, pageSize, search);
-      // #region agent log
-      const sample = result.data[0] as { id?: number; createdAt?: unknown } | undefined;
-      fetch('http://127.0.0.1:7728/ingest/ce56d33a-b6cc-4b12-ba3c-9f19b258f062', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'add81d' },
-        body: JSON.stringify({
-          sessionId: 'add81d',
-          runId: 'post-fix',
-          hypothesisId: 'D,E',
-          location: 'use-server-data-table.ts:load',
-          message: 'paginated data loaded',
-          data: {
-            count: result.data.length,
-            sampleId: sample?.id,
-            sampleCreatedAt: sample?.createdAt,
-            sampleCreatedAtType: typeof sample?.createdAt,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
       setData(result.data);
       setTotal(result.total);
     } catch (error) {
