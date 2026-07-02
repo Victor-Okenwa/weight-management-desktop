@@ -138,19 +138,56 @@ function RouteComponent() {
           <TopBar />
           <RouteContent />
         </main>
-        <footer className="border-t px-4 py-3">
-          <p className="text-center text-sm">
-            In case of any bugs,issues or tech support please contact{' '}
-            <b>Solution Road Equipment and Spars limited</b>
-          </p>
-          <hr className="my-3" />
-          <p className="text-center text-sm">
-            This sharing and remaking of this software is strictly prohibited except licensed by{' '}
-            <b>Solution Road Equipment and Spars limited</b> Tech Support
-          </p>
-        </footer>
+        <AppFooter />
       </div>
     </SidebarProvider>
+  );
+}
+
+function AppFooter() {
+  return (
+    <footer className="border-t border-border/60 px-4 py-4">
+      <div
+        className={cn(
+          'relative isolate overflow-hidden rounded-xl border border-border/60 bg-card/40 p-4',
+          'shadow-[inset_0_1px_0_0_color-mix(in_oklch,var(--foreground)_6%,transparent)] backdrop-blur-md',
+          'before:pointer-events-none before:absolute before:inset-x-8 before:top-0 before:z-10 before:h-px',
+          'before:bg-gradient-to-r before:from-transparent before:via-primary/25 before:to-transparent',
+          'after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:opacity-50',
+          'after:bg-[radial-gradient(ellipse_at_50%_0%,color-mix(in_oklch,var(--primary)_8%,transparent),transparent_70%)]',
+        )}
+      >
+        <div className="relative z-10 space-y-4">
+          <div className="space-y-2 text-center">
+            <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground/80">
+              Support
+            </p>
+            <p className="text-sm text-muted-foreground">
+              In case of any bugs, issues or tech support please contact{' '}
+              <span className="font-semibold text-primary">
+                Solution Road Equipment and Spars limited
+              </span>
+            </p>
+          </div>
+
+          <div className="h-px bg-border/60" />
+
+          <div className="space-y-2 text-center">
+            <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground/80">
+              License
+            </p>
+            <p className="text-xs leading-relaxed text-muted-foreground/90">
+              This sharing and remaking of this software is strictly prohibited except when licensed
+              by{' '}
+              <span className="font-medium text-foreground">
+                Solution Road Equipment and Spars limited
+              </span>{' '}
+              Tech Support
+            </p>
+          </div>
+        </div>
+      </div>
+    </footer>
   );
 }
 
