@@ -56,7 +56,7 @@ export function HistoryDataTable<TData extends { id: number }>({
       <div
         role="toolbar"
         aria-orientation="horizontal"
-        className="flex w-full items-start justify-between gap-2 p-1"
+        className="flex w-full min-w-0 items-start justify-between gap-2 p-1"
       >
         <div className="flex flex-1 flex-wrap items-center gap-2">
           <DataTableSearch onSearch={onSearch} placeholder={searchPlaceholder} />

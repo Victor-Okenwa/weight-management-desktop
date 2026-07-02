@@ -1,4 +1,5 @@
 import { Skeleton } from '@/components/ui/skeleton';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
   Table,
   TableBody,
@@ -36,8 +37,8 @@ export function DataTableSkeleton({
   );
 
   return (
-    <div className={cn('flex w-full flex-col gap-2.5 overflow-auto', className)} {...props}>
-      <div className="flex w-full items-center justify-between gap-2 overflow-auto p-1">
+    <div className={cn('flex w-full min-w-0 flex-col gap-2.5', className)} {...props}>
+      <div className="flex w-full min-w-0 items-center justify-between gap-2 p-1">
         <div className="flex flex-1 items-center gap-2">
           {filterCount > 0
             ? Array.from({ length: filterCount }).map((_, i) => (
@@ -47,8 +48,8 @@ export function DataTableSkeleton({
         </div>
         {withViewOptions ? <Skeleton className="ml-auto hidden h-7 w-18 lg:flex" /> : null}
       </div>
-      <div className="rounded-md border">
-        <Table>
+      <ScrollArea className="w-full rounded-md border">
+        <Table className="w-max min-w-full">
           <TableHeader>
             {Array.from({ length: 1 }).map((_, i) => (
               <TableRow key={i} className="hover:bg-transparent">
@@ -84,9 +85,10 @@ export function DataTableSkeleton({
             ))}
           </TableBody>
         </Table>
-      </div>
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
       {withPagination ? (
-        <div className="flex w-full items-center justify-between gap-4 overflow-auto p-1 sm:gap-8">
+        <div className="flex w-full min-w-0 items-center justify-between gap-4 p-1 sm:gap-8">
           <Skeleton className="h-7 w-40 shrink-0" />
           <div className="flex items-center gap-4 sm:gap-6 lg:gap-8">
             <div className="flex items-center gap-2">

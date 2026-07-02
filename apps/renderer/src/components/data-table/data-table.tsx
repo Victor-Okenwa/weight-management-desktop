@@ -2,6 +2,7 @@ import { flexRender, type Table as TanstackTable } from '@tanstack/react-table';
 import type * as React from 'react';
 
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
   Table,
   TableBody,
@@ -27,10 +28,10 @@ export function DataTable<TData>({
 }: DataTableProps<TData>) {
   'use no memo';
   return (
-    <div className={cn('flex w-full flex-col gap-2.5 overflow-auto', className)} {...props}>
+    <div className={cn('flex w-full min-w-0 flex-col gap-2.5', className)} {...props}>
       {children}
-      <div className="overflow-hidden rounded-md border">
-        <Table>
+      <ScrollArea className="w-full rounded-md border">
+        <Table className="w-max min-w-full">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -75,8 +76,9 @@ export function DataTable<TData>({
             )}
           </TableBody>
         </Table>
-      </div>
-      <div className="flex flex-col gap-2.5">
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
+      <div className="flex min-w-0 flex-col gap-2.5">
         <DataTablePagination table={table} />
         {actionBar && table.getFilteredSelectedRowModel().rows.length > 0 && actionBar}
       </div>

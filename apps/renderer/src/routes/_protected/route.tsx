@@ -109,8 +109,8 @@ function RouteComponent() {
     <SidebarProvider>
       <AppSidebar settings={settings} />
 
-      <div className="w-full">
-        <main>
+      <div className="min-w-0 w-full flex-1">
+        <main className="min-w-0">
           <TopBar />
           <Outlet />
         </main>

@@ -16,7 +16,7 @@ export const Route = createFileRoute('/_protected/history')({
 function RouteComponent() {
   return (
     <TooltipProvider>
-      <div className="mx-auto w-full max-w-6xl space-y-6 p-6 min-h-screen overflow-x-hidden">
+      <div className="mx-auto w-full min-w-0 max-w-6xl space-y-6 overflow-x-hidden p-6">
         <div className="flex items-center gap-3">
           <div className="flex size-12 items-center justify-center rounded-lg bg-primary/10">
             <HistoryIcon className="size-6 text-primary" />
@@ -31,19 +31,19 @@ function RouteComponent() {
 
         <Separator />
 
-        <Tabs defaultValue="records" className="flex flex-col">
+        <Tabs defaultValue="records" className="flex min-w-0 w-full flex-col">
           <TabsList>
             <TabsTrigger value="records">Records</TabsTrigger>
             <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
             <TabsTrigger value="materials">Materials</TabsTrigger>
           </TabsList>
-          <TabsContent value="records">
+          <TabsContent value="records" className="min-w-0">
             <RecordsTable />
           </TabsContent>
-          <TabsContent value="vehicles">
+          <TabsContent value="vehicles" className="min-w-0">
             <VehiclesTable />
           </TabsContent>
-          <TabsContent value="materials">
+          <TabsContent value="materials" className="min-w-0">
             <MaterialsTable />
           </TabsContent>
         </Tabs>

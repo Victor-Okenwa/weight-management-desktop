@@ -2,6 +2,7 @@ import type { PaginatedResult, Vehicle } from '@weight/shared/types/index';
 import { count, eq, inArray, sql } from 'drizzle-orm';
 import type { DatabaseInstance } from '../index.js';
 import { vehicles } from '../schema/index.js';
+import { nowIso } from '../timestamps.js';
 
 export function getOrCreateVehicle(
   db: DatabaseInstance,
@@ -37,6 +38,7 @@ export function getOrCreateVehicle(
       name: trimmed,
       tareWeight: tareWeight ?? null,
       tareUnit: tareUnit ?? null,
+      createdAt: nowIso(),
     })
     .returning({ id: vehicles.id })
     .get();

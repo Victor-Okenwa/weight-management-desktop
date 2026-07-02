@@ -2,6 +2,7 @@ import type { Material, PaginatedResult } from '@weight/shared/types/index';
 import { count, eq, inArray, sql } from 'drizzle-orm';
 import type { DatabaseInstance } from '../index.js';
 import { materials } from '../schema/index.js';
+import { nowIso } from '../timestamps.js';
 
 export function getOrCreateMaterial(db: DatabaseInstance, name: string): number {
   const trimmed = name.trim();
@@ -15,7 +16,7 @@ export function getOrCreateMaterial(db: DatabaseInstance, name: string): number 
 
   const result = db
     .insert(materials)
-    .values({ name: trimmed })
+    .values({ name: trimmed, createdAt: nowIso() })
     .returning({ id: materials.id })
     .get();
 

@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { type DatabaseInstance, initDatabase } from '@weight/database';
+import { type DatabaseInstance, initDatabase, repairInvalidTimestamps } from '@weight/database';
 import { settings } from '@weight/database/schema';
 import { eq } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/sql-js/migrator';
@@ -35,6 +35,9 @@ export async function setupDatabase(): Promise<DatabaseInstance> {
   } catch (err) {
     console.error('Migration failed:', err);
   }
+
+  repairInvalidTimestamps(db);
+  db.save();
 
   // Seed default settings if first run
   const existingSettings = db

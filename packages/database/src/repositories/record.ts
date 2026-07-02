@@ -4,6 +4,7 @@ import type { DatabaseInstance } from '../index.js';
 import { materials, records, settings, vehicles } from '../schema/index.js';
 import { getOrCreateMaterial } from './materials.js';
 import { getOrCreateVehicle } from './vehicles.js';
+import { nowIso } from '../timestamps.js';
 
 function getNextTicketId(db: DatabaseInstance): string {
   const row = db
@@ -60,6 +61,7 @@ export function createRecord(db: DatabaseInstance, data: CreateRecordInput): Rec
 
   const ticketId = getNextTicketId(db);
 
+  const timestamp = nowIso();
   const result = db
     .insert(records)
     .values({
@@ -73,6 +75,8 @@ export function createRecord(db: DatabaseInstance, data: CreateRecordInput): Rec
       vehicleId,
       materialId,
       remark: data.remark ?? null,
+      createdAt: timestamp,
+      updatedAt: timestamp,
     })
     .returning()
     .get();
@@ -125,7 +129,7 @@ export function updateRecord(
   if (vehicleId !== undefined) updateData.vehicleId = vehicleId;
   if (materialId !== undefined) updateData.materialId = materialId;
 
-  updateData.updatedAt = new Date().toISOString();
+  updateData.updatedAt = nowIso();
 
   const result = db.update(records).set(updateData).where(eq(records.id, id)).returning().get();
 

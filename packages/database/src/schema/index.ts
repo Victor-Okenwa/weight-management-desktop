@@ -1,4 +1,5 @@
 import { integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { sql } from 'drizzle-orm';
 
 // ---------- Settings ----------
 export const settings = sqliteTable('settings', {
@@ -35,14 +36,14 @@ export const vehicles = sqliteTable('vehicles', {
   name: text('name').notNull().unique(),
   tareWeight: real('tare_weight'),
   tareUnit: text('tare_unit'),
-  createdAt: text('created_at').default('CURRENT_TIMESTAMP'),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
 });
 
 // ---------- Materials ----------
 export const materials = sqliteTable('materials', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   name: text('name').notNull().unique(),
-  createdAt: text('created_at').default('CURRENT_TIMESTAMP'),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
 });
 
 // ---------- Records (weighing transactions) ----------
@@ -62,6 +63,6 @@ export const records = sqliteTable('records', {
   vehicleId: integer('vehicle_id').references(() => vehicles.id, { onDelete: 'set null' }),
   materialId: integer('material_id').references(() => materials.id, { onDelete: 'set null' }),
   remark: text('remark'),
-  createdAt: text('created_at').default('CURRENT_TIMESTAMP'),
-  updatedAt: text('updated_at').default('CURRENT_TIMESTAMP'),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
 });
