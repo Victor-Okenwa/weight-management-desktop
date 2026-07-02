@@ -1,35 +1,86 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createFileRoute } from '@tanstack/react-router';
+import { Building2, Cable, Settings2, SlidersHorizontal } from 'lucide-react';
+import { z } from 'zod';
 import { CompanyDetailsTab } from '@/components/company-details-tab';
 import { PreferencesTab } from '@/components/preferences-tab';
 import { SerialConfigurationsTab } from '@/components/serial-configurations-tab';
+import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { glassSurfaceClassName } from '@/lib/glass-surface';
+import { cn } from '@/lib/utils';
+
+const settingsTabs = ['serial', 'preferences', 'company'] as const;
+
+const settingsSearchSchema = z.object({
+  tab: z.enum(settingsTabs).default('serial'),
+});
+
+export type SettingsTab = z.infer<typeof settingsSearchSchema>['tab'];
 
 export const Route = createFileRoute('/_protected/settings')({
+  validateSearch: settingsSearchSchema,
   component: RouteComponent,
 });
 
 function RouteComponent() {
+  const { tab } = Route.useSearch();
+  const navigate = Route.useNavigate();
+
   return (
-    <article className="py-3 px-2">
-      <Tabs defaultValue="serial" className="w-full flex flex-col">
-        <TabsList>
-          <TabsTrigger value="serial">Serial</TabsTrigger>
-          <TabsTrigger value="preferences">Preferences</TabsTrigger>
-          <TabsTrigger value="company">Company Details</TabsTrigger>
-        </TabsList>
-        <TabsContent value="serial">
-          <SerialConfigurationsTab />
-        </TabsContent>
+    <div className="mx-auto w-full min-w-0 max-w-6xl space-y-6 overflow-x-hidden p-6">
+      <div className="flex items-center gap-3">
+        <div className="flex size-12 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 shadow-[0_0_20px_-8px] shadow-primary/30">
+          <Settings2 className="size-6 text-primary" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold">Settings</h2>
+          <p className="text-sm text-muted-foreground">
+            Configure serial connection, preferences, and company details
+          </p>
+        </div>
+      </div>
 
-        <TabsContent value="preferences">
-          <PreferencesTab />
-        </TabsContent>
+      <Separator />
 
-        <TabsContent value="company">
-          <CompanyDetailsTab />
-        </TabsContent>
-      </Tabs>
-    </article>
+      <div className={cn(glassSurfaceClassName, 'p-4')}>
+        <Tabs
+          value={tab}
+          onValueChange={(value) => {
+            navigate({
+              search: { tab: value as SettingsTab },
+            });
+          }}
+          className="relative z-10 flex w-full min-w-0 flex-col"
+        >
+          <TabsList>
+            <TabsTrigger value="serial">
+              <Cable className="size-4" />
+              Serial
+            </TabsTrigger>
+            <TabsTrigger value="preferences">
+              <SlidersHorizontal className="size-4" />
+              Preferences
+            </TabsTrigger>
+            <TabsTrigger value="company">
+              <Building2 className="size-4" />
+              Company Details
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="serial" className="min-w-0">
+            <SerialConfigurationsTab />
+          </TabsContent>
+
+          <TabsContent value="preferences" className="min-w-0">
+            <PreferencesTab />
+          </TabsContent>
+
+          <TabsContent value="company" className="min-w-0">
+            <CompanyDetailsTab />
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
   );
 }

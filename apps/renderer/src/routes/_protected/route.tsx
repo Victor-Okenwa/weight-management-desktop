@@ -356,7 +356,9 @@ function AppSidebar({ settings }: { settings: SettingsRow | null }) {
 
             <AlertDialogFooter>
               <AlertDialogAction asChild>
-                <Link to="/settings">Update Information</Link>
+                <Link to="/settings" search={{ tab: 'company' }}>
+                  Update Information
+                </Link>
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
