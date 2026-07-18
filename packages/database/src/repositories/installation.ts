@@ -43,21 +43,17 @@ export function saveLicense(
   db: DatabaseInstance,
   payload: {
     machineId: string;
-    licenseMachineId: string;
     licenseIssuedAt: string;
     licenseExpiresAt: string;
     licenseSignature: string;
-    licenseJson: string;
     activatedAt: string;
   },
 ) {
   upsertInstallation(db, {
     machineId: payload.machineId,
-    licenseMachineId: payload.licenseMachineId,
     licenseIssuedAt: payload.licenseIssuedAt,
     licenseExpiresAt: payload.licenseExpiresAt,
     licenseSignature: payload.licenseSignature,
-    licenseJson: payload.licenseJson,
     activatedAt: payload.activatedAt,
   });
 }

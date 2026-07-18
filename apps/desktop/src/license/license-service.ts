@@ -36,14 +36,47 @@ function isExpired(expiresAt: string | null | undefined): boolean {
   return Date.now() >= expires;
 }
 
+function hasStoredLicense(
+  row:
+    | {
+        licenseIssuedAt: string | null;
+        licenseExpiresAt: string | null;
+        licenseSignature: string | null;
+      }
+    | null
+    | undefined,
+): boolean {
+  return Boolean(row?.licenseSignature && row.licenseIssuedAt && row.licenseExpiresAt);
+}
+
+/** Rebuild license JSON from stored fields for setup resume / display. */
+function reconstructLicenseJson(row: {
+  machineId: string;
+  licenseIssuedAt: string | null;
+  licenseExpiresAt: string | null;
+  licenseSignature: string | null;
+}): string | null {
+  if (!hasStoredLicense(row) || !row.machineId) return null;
+  return JSON.stringify({
+    machineId: row.machineId,
+    issuedAt: row.licenseIssuedAt,
+    expiresAt: row.licenseExpiresAt,
+    signature: row.licenseSignature,
+  });
+}
+
 export function getMachineId(): string {
   const db = getDatabase();
   const machineId = computeMachineId();
   const row = getInstallation(db);
-  if (row?.machineId !== machineId) {
+
+  // Persist fingerprint only before a license is bound. After unlock, `machineId`
+  // is the licensed Machine ID and must not be overwritten on hardware change.
+  if (!hasStoredLicense(row) && row?.machineId !== machineId) {
     upsertInstallation(db, { machineId });
     db.save();
   }
+
   return machineId;
 }
 
@@ -88,11 +121,9 @@ export function activateLicense(licenseJson: string): ActivateLicenseResult {
   const activatedAt = new Date().toISOString();
   saveLicense(db, {
     machineId: currentMachineId,
-    licenseMachineId: parsed.machineId,
     licenseIssuedAt: parsed.issuedAt,
     licenseExpiresAt: parsed.expiresAt,
     licenseSignature: parsed.signature,
-    licenseJson: JSON.stringify(parsed),
     activatedAt,
   });
   db.save();
@@ -113,7 +144,7 @@ export function getLicenseStatus(): LicenseStatus {
   let currentMachineId: string | null = null;
   try {
     currentMachineId = computeMachineId();
-    if (row?.machineId !== currentMachineId) {
+    if (!hasStoredLicense(row) && row?.machineId !== currentMachineId) {
       upsertInstallation(db, { machineId: currentMachineId });
       db.save();
     }
@@ -121,16 +152,18 @@ export function getLicenseStatus(): LicenseStatus {
     logger.error(`Could not compute Machine ID for status: ${(error as Error).message}`);
   }
 
-  const hasLicense = Boolean(row?.licenseSignature && row.licenseMachineId && row.licenseJson);
-  const matchesMachine = currentMachineId !== null && row?.licenseMachineId === currentMachineId;
+  const licensed = hasStoredLicense(row);
+  const matchesMachine =
+    currentMachineId !== null && Boolean(row?.machineId) && row?.machineId === currentMachineId;
   const notExpired = !isExpired(row?.licenseExpiresAt);
-  const activated = hasLicense && matchesMachine && notExpired;
+  const activated = licensed && matchesMachine && notExpired;
 
   return {
     activated,
     machineId: currentMachineId ?? row?.machineId ?? null,
     expiresAt: row?.licenseExpiresAt ?? null,
     setupCompleted,
-    licenseJson: row?.licenseJson ?? null,
+    // Reconstructed for wizard resume — not stored as a separate column
+    licenseJson: row ? reconstructLicenseJson(row) : null,
   };
 }

@@ -14,6 +14,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { logger } from '@/lib/logger';
 import { cn } from '@/lib/utils';
+import { formatLicenseExpiry, parseLicenseExpiresAt } from './license-expiry';
 
 type SoftwareUnlockStepProps = {
   activated: boolean;
@@ -32,6 +33,7 @@ export function SoftwareUnlockStep({ activated, expiresAt }: SoftwareUnlockStepP
   const [loadingId, setLoadingId] = useState(true);
   const [activating, setActivating] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [pastedExpiryNotice, setPastedExpiryNotice] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -60,6 +62,19 @@ export function SoftwareUnlockStep({ activated, expiresAt }: SoftwareUnlockStepP
       cancelled = true;
     };
   }, []);
+
+  function announceExpiryFromLicense(licenseJson: string) {
+    const expiresAtRaw = parseLicenseExpiresAt(licenseJson);
+    const readable = formatLicenseExpiry(expiresAtRaw);
+    if (!readable) {
+      setPastedExpiryNotice(null);
+      return;
+    }
+
+    const notice = `Software will expire on ${readable}. Be sure to request a new license from SOLUTION ROAD TECH SUPPORT before then.`;
+    setPastedExpiryNotice(notice);
+    toast.info(notice, { duration: 8000 });
+  }
 
   async function handleCopy() {
     if (!machineId) return;
@@ -101,6 +116,8 @@ export function SoftwareUnlockStep({ activated, expiresAt }: SoftwareUnlockStepP
       setActivating(false);
     }
   }
+
+  const activatedExpiryLabel = formatLicenseExpiry(expiresAt);
 
   return (
     <div className="space-y-8">
@@ -169,7 +186,26 @@ export function SoftwareUnlockStep({ activated, expiresAt }: SoftwareUnlockStepP
                     className="mt-2 font-mono text-xs"
                     placeholder={`{\n  "machineId": "WMS-DEV-…",\n  "issuedAt": "…",\n  "expiresAt": "…",\n  "signature": "…"\n}`}
                     aria-invalid={fieldState.invalid}
+                    onPaste={(event) => {
+                      const pasted = event.clipboardData.getData('text');
+                      // Prefer clipboard text; fall back to value after paste settles
+                      window.setTimeout(() => {
+                        announceExpiryFromLicense(pasted || field.value);
+                      }, 0);
+                    }}
+                    onChange={(event) => {
+                      field.onChange(event);
+                      // Clear notice if the field is emptied; keep notice after a successful paste
+                      if (!event.target.value.trim()) {
+                        setPastedExpiryNotice(null);
+                      }
+                    }}
                   />
+                  {pastedExpiryNotice ? (
+                    <p className="mt-3 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-200">
+                      {pastedExpiryNotice}
+                    </p>
+                  ) : null}
                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )}
@@ -197,9 +233,10 @@ export function SoftwareUnlockStep({ activated, expiresAt }: SoftwareUnlockStepP
               {activated ? 'Unlocked' : 'Locked'}
             </Badge>
           </div>
-          {activated && expiresAt ? (
+          {activated && activatedExpiryLabel ? (
             <p className="text-muted-foreground mb-4 text-sm">
-              License valid until <span className="font-medium text-foreground">{expiresAt}</span>
+              License valid until{' '}
+              <span className="font-medium text-foreground">{activatedExpiryLabel}</span>
             </p>
           ) : (
             <p className="text-muted-foreground mb-4 text-sm">

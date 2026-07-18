@@ -42,8 +42,8 @@ The same string must appear in the license JSON `machineId` field. Activation re
 | Column | Purpose |
 | --- | --- |
 | `setup_completed` | First-time wizard finished |
-| `machine_id` | Last computed fingerprint for this PC |
-| `license_*` / `license_json` | Unlocked license payload |
+| `machine_id` | Machine ID this station / license is bound to |
+| `license_issued_at` / `license_expires_at` / `license_signature` | Unlocked license fields |
 | `activated_at` | When unlock succeeded |
 
 Company/hardware/ticket prefs stay in `settings`.
@@ -71,7 +71,7 @@ machineId + "\n" + issuedAt + "\n" + expiresAt
 - **Normal return (setup done + license valid):** protected routes open; setup wizard is not shown.
 - **Expired license or motherboard change:** `getLicenseStatus().activated` is false → user is sent to setup unlock again; company/hardware/preferences still prefill from `settings`.
 
-`activated` means: stored license exists, `licenseMachineId` matches this PC’s fingerprint, and `expiresAt` is still in the future.
+`activated` means: stored license exists, `machine_id` matches this PC’s fingerprint, and `expiresAt` is still in the future.
 
 ## Status
 

@@ -76,11 +76,9 @@ export interface InstallationRow {
   id: number;
   setupCompleted: boolean;
   machineId: string;
-  licenseMachineId: string | null;
   licenseIssuedAt: string | null;
   licenseExpiresAt: string | null;
   licenseSignature: string | null;
-  licenseJson: string | null;
   activatedAt: string | null;
 }
 
@@ -149,6 +147,6 @@ export interface LicenseStatus {
   machineId: string | null;
   expiresAt: string | null;
   setupCompleted: boolean;
-  /** Raw license JSON if one was saved (for resume / display). */
+  /** Reconstructed license JSON for setup resume / display (not a DB column). */
   licenseJson: string | null;
 }
