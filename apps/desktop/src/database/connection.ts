@@ -25,17 +25,22 @@ export async function setupDatabase(): Promise<DatabaseInstance> {
 
   const db = await initDatabase(dbPath);
 
-  // Path to migrations (drizzle folder in the database package)
+  // Path to migrations (drizzle folder in the database package).
+  // In dev, compiled code lives in apps/desktop/dist/database → climb to repo root.
   const migrationsFolder = isDev
-    ? path.join(__dirname, '..', '..', 'packages', 'database', 'drizzle')
+    ? path.join(__dirname, '..', '..', '..', '..', 'packages', 'database', 'drizzle')
     : path.join(process.resourcesPath, 'migrations');
+
+  logger.info(`Applying migrations from: ${migrationsFolder}`);
 
   try {
     migrate(db, { migrationsFolder });
     console.log('Database migrations applied successfully.');
+    logger.info('Database migrations applied successfully.');
   } catch (err) {
     console.error('Migration failed:', err);
     logger.error(`Migration failed: ${(err as Error).message}`);
+    throw err;
   }
 
   // Seed default settings if first run

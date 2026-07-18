@@ -18,7 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Field, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { logger } from '@/lib/logger';
 
 export const Route = createFileRoute('/app-lock')({
@@ -112,12 +112,10 @@ function RouteComponent() {
         <form onSubmit={(event) => void handleUnlock(event)} className="space-y-5 px-6 py-6">
           <Field>
             <FieldLabel htmlFor="app-lock-password">Password</FieldLabel>
-            <Input
+            <PasswordInput
               id="app-lock-password"
-              type="password"
               autoFocus
               autoComplete="current-password"
-              className="min-h-12"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               placeholder="Station password"

@@ -1,8 +1,9 @@
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PasswordInput } from '@/components/ui/password-input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { cn } from '@/lib/utils';
 import { RequiredLabel, requiredFields } from './required-label';
 
 export type SecurityFormFields = {
@@ -46,7 +47,12 @@ export function SecurityStep() {
             >
               <Label
                 htmlFor="security-mode-none"
-                className="flex cursor-pointer items-start gap-3 rounded-lg border border-border/80 bg-background/40 p-4"
+                className={cn(
+                  'flex cursor-pointer items-start gap-3 rounded-lg border bg-background/40 p-4 transition-colors',
+                  field.value === 'none'
+                    ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
+                    : 'border-border/80',
+                )}
               >
                 <RadioGroupItem value="none" id="security-mode-none" className="mt-0.5" />
                 <span className="space-y-1">
@@ -58,7 +64,12 @@ export function SecurityStep() {
               </Label>
               <Label
                 htmlFor="security-mode-required"
-                className="flex cursor-pointer items-start gap-3 rounded-lg border border-border/80 bg-background/40 p-4"
+                className={cn(
+                  'flex cursor-pointer items-start gap-3 rounded-lg border bg-background/40 p-4 transition-colors',
+                  field.value === 'required'
+                    ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
+                    : 'border-border/80',
+                )}
               >
                 <RadioGroupItem value="required" id="security-mode-required" className="mt-0.5" />
                 <span className="space-y-1">
@@ -85,12 +96,10 @@ export function SecurityStep() {
                 <FieldLabel htmlFor="security-password">
                   <RequiredLabel>Password</RequiredLabel>
                 </FieldLabel>
-                <Input
+                <PasswordInput
                   {...field}
                   id="security-password"
-                  type="password"
                   autoComplete="new-password"
-                  className="min-h-12"
                   placeholder="At least 6 characters"
                 />
                 <FieldDescription>Minimum 6 characters.</FieldDescription>
@@ -107,12 +116,10 @@ export function SecurityStep() {
                 <FieldLabel htmlFor="security-confirm">
                   <RequiredLabel>Confirm password</RequiredLabel>
                 </FieldLabel>
-                <Input
+                <PasswordInput
                   {...field}
                   id="security-confirm"
-                  type="password"
                   autoComplete="new-password"
-                  className="min-h-12"
                   placeholder="Re-enter password"
                 />
                 {fieldState.invalid && <FieldError errors={[fieldState.error]} />}

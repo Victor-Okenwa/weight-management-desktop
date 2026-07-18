@@ -4,11 +4,12 @@ import type { AuthStatus } from '@weight/shared/types/index';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PasswordInput } from '@/components/ui/password-input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Spinner } from '@/components/ui/spinner';
 import { logger } from '@/lib/logger';
+import { cn } from '@/lib/utils';
 
 export function SecurityTab() {
   const [auth, setAuth] = useState<AuthStatus | null>(null);
@@ -144,7 +145,12 @@ export function SecurityTab() {
           >
             <Label
               htmlFor="settings-security-none"
-              className="flex cursor-pointer items-start gap-3 rounded-lg border border-border/80 p-4"
+              className={cn(
+                'flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors',
+                desiredMode === 'none'
+                  ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
+                  : 'border-border/80',
+              )}
             >
               <RadioGroupItem value="none" id="settings-security-none" className="mt-0.5" />
               <span className="space-y-1">
@@ -156,7 +162,12 @@ export function SecurityTab() {
             </Label>
             <Label
               htmlFor="settings-security-required"
-              className="flex cursor-pointer items-start gap-3 rounded-lg border border-border/80 p-4"
+              className={cn(
+                'flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors',
+                desiredMode === 'required'
+                  ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
+                  : 'border-border/80',
+              )}
             >
               <RadioGroupItem value="required" id="settings-security-required" className="mt-0.5" />
               <span className="space-y-1">
@@ -172,11 +183,9 @@ export function SecurityTab() {
         {currentlyRequired && (
           <Field>
             <FieldLabel htmlFor="settings-current-password">Current password</FieldLabel>
-            <Input
+            <PasswordInput
               id="settings-current-password"
-              type="password"
               autoComplete="current-password"
-              className="min-h-12"
               value={currentPassword}
               onChange={(event) => setCurrentPassword(event.target.value)}
               placeholder="Required to change security"
@@ -193,11 +202,9 @@ export function SecurityTab() {
               <FieldLabel htmlFor="settings-new-password">
                 {currentlyRequired ? 'New password' : 'Password'}
               </FieldLabel>
-              <Input
+              <PasswordInput
                 id="settings-new-password"
-                type="password"
                 autoComplete="new-password"
-                className="min-h-12"
                 value={newPassword}
                 onChange={(event) => setNewPassword(event.target.value)}
                 placeholder="At least 6 characters"
@@ -205,11 +212,9 @@ export function SecurityTab() {
             </Field>
             <Field>
               <FieldLabel htmlFor="settings-confirm-password">Confirm password</FieldLabel>
-              <Input
+              <PasswordInput
                 id="settings-confirm-password"
-                type="password"
                 autoComplete="new-password"
-                className="min-h-12"
                 value={confirmPassword}
                 onChange={(event) => setConfirmPassword(event.target.value)}
                 placeholder="Re-enter password"
