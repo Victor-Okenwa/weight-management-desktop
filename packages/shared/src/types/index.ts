@@ -70,7 +70,18 @@ export interface SettingsRow {
   autoPrint: boolean;
   printerName: string;
   printCopies: number;
+}
+
+export interface InstallationRow {
+  id: number;
   setupCompleted: boolean;
+  machineId: string;
+  licenseMachineId: string | null;
+  licenseIssuedAt: string | null;
+  licenseExpiresAt: string | null;
+  licenseSignature: string | null;
+  licenseJson: string | null;
+  activatedAt: string | null;
 }
 
 export interface SerialPortInfo {
@@ -118,4 +129,26 @@ export interface PaginatedResult<T> {
   total: number;
   page: number;
   pageSize: number;
+}
+
+/** Offline license payload (matches WMS-licenser LICENSE_FORMAT). */
+export interface LicensePayload {
+  machineId: string;
+  issuedAt: string;
+  expiresAt: string;
+  signature: string;
+}
+
+export type ActivateLicenseResult =
+  | { ok: true; expiresAt: string; machineId: string }
+  | { ok: false; error: string };
+
+export interface LicenseStatus {
+  /** True when a stored license matches this PC and is not expired. */
+  activated: boolean;
+  machineId: string | null;
+  expiresAt: string | null;
+  setupCompleted: boolean;
+  /** Raw license JSON if one was saved (for resume / display). */
+  licenseJson: string | null;
 }

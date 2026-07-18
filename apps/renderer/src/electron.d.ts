@@ -6,9 +6,12 @@ import type {
 } from '@weight/database/repositories/record';
 import type { SerialStatus, WeightReading } from '@weight/shared';
 import type {
+  ActivateLicenseResult,
+  LicenseStatus,
   Material,
   PaginatedResult,
   Record as RecordType,
+  SerialPortInfo,
   SettingsRow,
   Vehicle,
 } from '@weight/shared/types/index';
@@ -21,6 +24,10 @@ declare global {
 
       isSetupCompleted: () => Promise<boolean>;
       completeSetup: (settings: Record<string, string>) => Promise<boolean>;
+
+      getMachineId: () => Promise<string>;
+      activateLicense: (licenseJson: string) => Promise<ActivateLicenseResult>;
+      getLicenseStatus: () => Promise<LicenseStatus>;
 
       onWeightUpdate: (callback: (reading: WeightReading) => void) => () => void;
 

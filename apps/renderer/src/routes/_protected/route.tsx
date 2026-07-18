@@ -74,11 +74,20 @@ export const Route = createFileRoute('/_protected')({
       return;
     }
 
-    const setupCompleted = await window.electronAPI.isSetupCompleted();
+    const [setupCompleted, licenseStatus] = await Promise.all([
+      window.electronAPI.isSetupCompleted(),
+      window.electronAPI.getLicenseStatus(),
+    ]);
 
-    if (!setupCompleted) {
-      // Redirect to setup-wizard if setup is NOT completed
-      window.electronAPI.log('info', 'App not connected');
+    // Need wizard when setup unfinished, or when unlock is no longer valid
+    // (expired license / different motherboard after hardware change).
+    if (!setupCompleted || !licenseStatus.activated) {
+      window.electronAPI.log(
+        'info',
+        !setupCompleted
+          ? 'Setup not completed — opening setup wizard'
+          : 'License not active — opening setup wizard for unlock',
+      );
 
       throw redirect({
         to: '/setup-wizard',

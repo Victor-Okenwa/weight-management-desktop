@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { type DatabaseInstance, initDatabase } from '@weight/database';
+import { ensureInstallationRow } from '@weight/database/repositories/installation';
 import { settings } from '@weight/database/schema';
 import { eq } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/sql-js/migrator';
@@ -34,6 +35,7 @@ export async function setupDatabase(): Promise<DatabaseInstance> {
     console.log('Database migrations applied successfully.');
   } catch (err) {
     console.error('Migration failed:', err);
+    logger.error(`Migration failed: ${(err as Error).message}`);
   }
 
   // Seed default settings if first run
@@ -71,11 +73,18 @@ export async function setupDatabase(): Promise<DatabaseInstance> {
         autoPrint: false,
         printerName: '',
         printCopies: 1,
-        setupCompleted: false,
       })
       .run();
-    db.save();
   }
+
+  // Always ensure the single-row installation record exists
+  try {
+    ensureInstallationRow(db);
+  } catch (err) {
+    logger.error(`Failed to ensure installation row: ${(err as Error).message}`);
+  }
+
+  db.save();
 
   dbInstance = db;
   return db;

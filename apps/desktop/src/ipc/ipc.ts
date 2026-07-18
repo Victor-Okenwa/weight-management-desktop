@@ -1,9 +1,12 @@
 // apps/desktop/src/ipc/ipc.ts
 
-import { deleteMaterial, getAllMaterials, getMaterialsPaginated, updateMaterial } from '@weight/database/repositories/materials';
 import {
-  checkDatabaseHealth,
-} from '@weight/database/repositories/health';
+  deleteMaterial,
+  getAllMaterials,
+  getMaterialsPaginated,
+  updateMaterial,
+} from '@weight/database/repositories/materials';
+import { checkDatabaseHealth } from '@weight/database/repositories/health';
 import {
   createRecord,
   deleteRecord,
@@ -12,12 +15,19 @@ import {
   getRecordsPaginated,
   updateRecord,
 } from '@weight/database/repositories/record';
+import { isSetupCompleted, markSetupCompleted } from '@weight/database/repositories/installation';
 import { getAllSettings, updateSettings } from '@weight/database/repositories/settings';
-import { deleteVehicle, getAllVehicles, getVehiclesPaginated, updateVehicle } from '@weight/database/repositories/vehicles';
+import {
+  deleteVehicle,
+  getAllVehicles,
+  getVehiclesPaginated,
+  updateVehicle,
+} from '@weight/database/repositories/vehicles';
 import type { SerialOptions } from '@weight/shared/types/index';
 import { ipcMain } from 'electron';
 import { SerialPort } from 'serialport';
 import { getDatabase } from '../database/connection.js';
+import { activateLicense, getLicenseStatus, getMachineId } from '../license/license-service.js';
 import { logger } from '../logger.js';
 import type { SerialManager } from '../serial/serial-manager.js';
 
@@ -83,7 +93,6 @@ export function registerIpcHandlers(serialManager: SerialManager) {
       autoPrint: row.autoPrint,
       printerName: row.printerName,
       printCopies: row.printCopies,
-      setupCompleted: row.setupCompleted,
       flowControl: row.flowControl,
       autoOpen: row.autoOpen,
     };
@@ -131,16 +140,32 @@ export function registerIpcHandlers(serialManager: SerialManager) {
   // ---------- Setup wizard ----------
   ipcMain.handle('app:is-setup-completed', () => {
     const db = getDatabase();
-    const row = getAllSettings(db);
-    console.log('is app setup?', row?.setupCompleted);
-    return row?.setupCompleted === true;
+    const completed = isSetupCompleted(db);
+    logger.info(`is app setup? ${completed}`);
+    return completed;
   });
 
   ipcMain.handle('app:complete-setup', async (_event, newSettings: Record<string, never>) => {
     const db = getDatabase();
-    updateSettings(db, { ...newSettings, setupCompleted: true });
+    if (newSettings && Object.keys(newSettings).length > 0) {
+      updateSettings(db, newSettings);
+    }
+    markSetupCompleted(db);
     db.save();
     return true;
+  });
+
+  // ---------- License (Machine ID + DB persist; Ed25519 verify pending) ----------
+  ipcMain.handle('license:get-machine-id', () => {
+    return getMachineId();
+  });
+
+  ipcMain.handle('license:activate', (_event, licenseJson: string) => {
+    return activateLicense(licenseJson);
+  });
+
+  ipcMain.handle('license:get-status', () => {
+    return getLicenseStatus();
   });
 
   // ---------- Serial status ----------
