@@ -136,30 +136,45 @@ export function updateRecord(
   return result as Record;
 }
 
+const recordSelect = {
+  id: records.id,
+  ticketId: records.ticketId,
+  operator: records.operator,
+  operationType: records.operationType,
+  grossWeight: records.grossWeight,
+  tareWeight: records.tareWeight,
+  netWeight: records.netWeight,
+  status: records.status,
+  vehicleId: records.vehicleId,
+  materialId: records.materialId,
+  remark: records.remark,
+  createdAt: records.createdAt,
+  updatedAt: records.updatedAt,
+  vehicleName: vehicles.name,
+  materialName: materials.name,
+};
+
 export function getRecordById(db: DatabaseInstance, id: number): Record | null {
   const result =
     db
-      .select({
-        id: records.id,
-        ticketId: records.ticketId,
-        operator: records.operator,
-        operationType: records.operationType,
-        grossWeight: records.grossWeight,
-        tareWeight: records.tareWeight,
-        netWeight: records.netWeight,
-        status: records.status,
-        vehicleId: records.vehicleId,
-        materialId: records.materialId,
-        remark: records.remark,
-        createdAt: records.createdAt,
-        updatedAt: records.updatedAt,
-        vehicleName: vehicles.name,
-        materialName: materials.name,
-      })
+      .select(recordSelect)
       .from(records)
       .leftJoin(vehicles, eq(records.vehicleId, vehicles.id))
       .leftJoin(materials, eq(records.materialId, materials.id))
       .where(eq(records.id, id))
+      .get() ?? null;
+
+  return result as Record;
+}
+
+export function getRecordByTicketId(db: DatabaseInstance, ticketId: string): Record | null {
+  const result =
+    db
+      .select(recordSelect)
+      .from(records)
+      .leftJoin(vehicles, eq(records.vehicleId, vehicles.id))
+      .leftJoin(materials, eq(records.materialId, materials.id))
+      .where(eq(records.ticketId, ticketId))
       .get() ?? null;
 
   return result as Record;

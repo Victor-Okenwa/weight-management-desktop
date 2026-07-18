@@ -1,67 +1,72 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import { CableIcon } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { WeightDisplay } from '@/components/weight-display';
+import { glassSurfaceClassName } from '@/lib/glass-surface';
+import { cn } from '@/lib/utils';
 import { useSettingsStore } from '@/store/settingsStore';
 
 export const Route = createFileRoute('/_protected/')({
   component: RouteComponent,
 });
 
+const connectionFields = [
+  { label: 'Serial Port', key: 'serialPort' },
+  { label: 'Baud Rate', key: 'baudRate' },
+  { label: 'Parity', key: 'parity' },
+  { label: 'Data Bits', key: 'dataBits' },
+  { label: 'Stop Bits', key: 'stopBits' },
+  { label: 'Flow Control', key: 'flowControl' },
+] as const;
+
 function RouteComponent() {
   const { settings } = useSettingsStore();
+
   return (
-    <article className="px-4 py-5 space-y-5">
+    <article className="space-y-5 px-4 py-5">
       <section>
         <WeightDisplay />
       </section>
 
-      <section className="">
-        <Card>
-          <CardHeader className="border-b">
-            <CardTitle className="flex gap-2">
-              <CableIcon /> Connection Settings
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-0">
-            <div className="pb-4 border-b flex justify-between items-center px-4">
-              <strong>Serial Port:</strong>
-
-              <p>{settings?.serialPort}</p>
+      <section>
+        <div className={cn(glassSurfaceClassName, 'overflow-hidden')}>
+          <div className="relative z-10 flex items-center justify-between gap-3 border-b border-border/50 bg-muted/60 px-4 py-3 shadow-[inset_0_1px_0_0_color-mix(in_oklch,var(--foreground)_8%,transparent)]">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 shadow-[0_0_20px_-8px] shadow-primary/30">
+                <CableIcon className="size-5 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                  Hardware
+                </p>
+                <h3 className="truncate font-semibold tracking-wide">Connection Settings</h3>
+              </div>
             </div>
 
-            <div className="py-4 border-b flex justify-between items-center px-4">
-              <strong>Baud Rate:</strong>
+            <Button asChild size="sm" variant="outline" className="shrink-0">
+              <Link to="/settings" search={{ tab: 'serial' }}>
+                Configure
+              </Link>
+            </Button>
+          </div>
 
-              <p>{settings?.baudRate}</p>
-            </div>
-
-            <div className="py-4 border-b flex justify-between items-center px-4">
-              <strong>Parity:</strong>
-
-              <p>{settings?.parity}</p>
-            </div>
-
-            <div className="py-4 border-b flex justify-between items-center px-4">
-              <strong>Data bits:</strong>
-
-              <p>{settings?.dataBits}</p>
-            </div>
-
-            <div className="py-4 border-b flex justify-between items-center px-4">
-              <strong>Stop Bits:</strong>
-
-              <p>{settings?.stopBits}</p>
-            </div>
-
-            <div className="pt-4 flex justify-between items-center px-4">
-              <strong>Flow Control:</strong>
-
-              <p>{settings?.flowControl}</p>
-            </div>
-          </CardContent>
-        </Card>
+          <div className="relative z-10 divide-y divide-border/40 p-2">
+            {connectionFields.map(({ label, key }) => (
+              <div
+                key={key}
+                className="flex items-center justify-between gap-4 rounded-lg px-3 py-3 transition-colors hover:bg-muted/25"
+              >
+                <span className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                  {label}
+                </span>
+                <span className="font-medium text-foreground tabular-nums">
+                  {settings?.[key] ?? '--'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
     </article>
   );

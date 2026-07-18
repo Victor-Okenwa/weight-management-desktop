@@ -65,6 +65,7 @@ declare global {
       createRecord: (data: CreateRecordInput) => Promise<RecordType>;
       updateRecord: (id: number, data: UpdateRecordInput) => Promise<RecordType | null>;
       getRecordById: (id: number) => Promise<RecordType | null>;
+      getRecordByTicketId: (ticketId: string) => Promise<RecordType | null>;
       getRecordsPaginated: (
         page: number,
         pageSize: number,

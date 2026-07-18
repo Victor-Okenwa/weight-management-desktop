@@ -84,6 +84,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('records:update', id, data),
   getRecordById: (id: number): Promise<RecordType | null> =>
     ipcRenderer.invoke('records:get-by-id', id),
+  getRecordByTicketId: (ticketId: string): Promise<RecordType | null> =>
+    ipcRenderer.invoke('records:get-by-ticket-id', ticketId),
   getRecordsPaginated: (
     page: number,
     pageSize: number,

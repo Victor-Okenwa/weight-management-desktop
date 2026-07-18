@@ -13,6 +13,7 @@ import {
   deleteRecord,
   deleteRecords,
   getRecordById,
+  getRecordByTicketId,
   getRecordsPaginated,
   updateRecord,
 } from '@weight/database/repositories/record';
@@ -238,6 +239,11 @@ export function registerIpcHandlers(serialManager: SerialManager) {
   ipcMain.handle('records:get-by-id', (_event, id: number) => {
     const db = getDatabase();
     return getRecordById(db, id);
+  });
+
+  ipcMain.handle('records:get-by-ticket-id', (_event, ticketId: string) => {
+    const db = getDatabase();
+    return getRecordByTicketId(db, ticketId);
   });
 
   ipcMain.handle('records:get-paginated', (_event, page: number, pageSize: number, filters?) => {
