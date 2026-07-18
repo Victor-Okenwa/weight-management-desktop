@@ -10,6 +10,7 @@ import {
 } from '@weight/database/repositories/installation';
 import { getDatabase } from '../database/connection.js';
 import { logger } from '../logger.js';
+import { invalidateSession } from './app-password.js';
 import { computeMachineId } from './machine-id.js';
 
 function isLicensePayload(value: unknown): value is LicensePayload {
@@ -127,6 +128,8 @@ export function activateLicense(licenseJson: string): ActivateLicenseResult {
     activatedAt,
   });
   db.save();
+  // License change always clears password (via saveLicense) and session
+  invalidateSession();
 
   logger.info(`License activated for machineId=${currentMachineId}`);
   return {
@@ -158,6 +161,9 @@ export function getLicenseStatus(): LicenseStatus {
   const notExpired = !isExpired(row?.licenseExpiresAt);
   const activated = licensed && matchesMachine && notExpired;
 
+  const passwordMode =
+    row?.passwordMode === 'none' || row?.passwordMode === 'required' ? row.passwordMode : null;
+
   return {
     activated,
     machineId: currentMachineId ?? row?.machineId ?? null,
@@ -165,5 +171,6 @@ export function getLicenseStatus(): LicenseStatus {
     setupCompleted,
     // Reconstructed for wizard resume — not stored as a separate column
     licenseJson: row ? reconstructLicenseJson(row) : null,
+    passwordMode,
   };
 }

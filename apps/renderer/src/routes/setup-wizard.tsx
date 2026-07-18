@@ -11,6 +11,7 @@ import { CompanyDetailsStep } from '@/components/setup/company-details-step';
 import { HardwareStep } from '@/components/setup/hardware-step';
 import { PreferencesStep } from '@/components/setup/preferences-step';
 import { ReviewStep } from '@/components/setup/review-step';
+import { SecurityStep } from '@/components/setup/security-step';
 import { SoftwareUnlockStep } from '@/components/setup/software-unlock-step';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -113,8 +114,35 @@ export const softwareUnlockSchema = z.object({
 
 export type SoftwareUnlock = z.infer<typeof softwareUnlockSchema>;
 
+export const securitySchema = z
+  .object({
+    mode: z.enum(['none', 'required']),
+    password: z.string(),
+    confirmPassword: z.string(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.mode !== 'required') return;
+    if (value.password.length < 6) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['password'],
+        message: 'Password must be at least 6 characters',
+      });
+    }
+    if (value.password !== value.confirmPassword) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['confirmPassword'],
+        message: 'Passwords do not match',
+      });
+    }
+  });
+
+export type Security = z.infer<typeof securitySchema>;
+
 export const formSchema = z.object({
   softwareUnlock: softwareUnlockSchema,
+  security: securitySchema,
   companyDetails: companyDetailsSchema,
   hardware: hardwareSchema,
   preferences: preferencesSchema,
@@ -132,6 +160,12 @@ const steps = [
     title: 'Unlock',
     description: 'Activate this PC',
     fields: ['softwareUnlock.licenseJson', 'softwareUnlock.activated'] as const,
+  },
+  {
+    value: 'security',
+    title: 'Security',
+    description: 'App password',
+    fields: ['security.mode', 'security.password', 'security.confirmPassword'] as const,
   },
   {
     value: 'companyDetails',
@@ -200,6 +234,11 @@ function RouteComponent() {
         licenseJson: '',
         activated: false,
         expiresAt: '',
+      },
+      security: {
+        mode: 'none',
+        password: '',
+        confirmPassword: '',
       },
       companyDetails: {
         name: '',
@@ -274,12 +313,18 @@ function RouteComponent() {
             : 'light';
         const parity = settings?.parity;
         const flowControl = settings?.flowControl;
+        const passwordMode = licenseStatus.passwordMode;
 
         form.reset({
           softwareUnlock: {
             licenseJson: licenseStatus.licenseJson ?? '',
             activated: licenseStatus.activated,
             expiresAt: licenseStatus.expiresAt ?? '',
+          },
+          security: {
+            mode: passwordMode === 'required' ? 'required' : 'none',
+            password: '',
+            confirmPassword: '',
           },
           companyDetails: {
             name: settings?.companyName ?? '',
@@ -317,7 +362,11 @@ function RouteComponent() {
           },
         });
 
-        if (licenseStatus.activated) {
+        if (licenseStatus.activated && passwordMode) {
+          // Unlock + security already done — resume at Company
+          setStepIndex(2);
+        } else if (licenseStatus.activated) {
+          // Unlock done — land on Security
           setStepIndex(1);
         }
       } catch (error) {
@@ -336,16 +385,48 @@ function RouteComponent() {
     };
   }, [form, router]);
 
+  async function persistSecurityChoice(): Promise<boolean> {
+    const security = form.getValues('security');
+    try {
+      if (security.mode === 'none') {
+        const result = await window.electronAPI.setPasswordless();
+        if (!result.ok) {
+          toast.error(result.error);
+          return false;
+        }
+        return true;
+      }
+
+      const result = await window.electronAPI.setPassword(security.password);
+      if (!result.ok) {
+        toast.error(result.error);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      logger('error', (error as Error).message);
+      toast.error('Could not save security settings');
+      return false;
+    }
+  }
+
   async function handleNext() {
     const isValid = await form.trigger(currentStep.fields);
 
     if (!isValid) {
       if (currentStep.value === 'softwareUnlock') {
         toast.info('Activate a valid license before continuing');
+      } else if (currentStep.value === 'security') {
+        toast.info('Choose passwordless or set a password to continue');
       } else {
         toast.info('Please complete all required fields');
       }
       return;
+    }
+
+    if (currentStep.value === 'security') {
+      const saved = await persistSecurityChoice();
+      if (!saved) return;
     }
 
     if (stepIndex < steps.length - 1) {
@@ -427,7 +508,8 @@ function RouteComponent() {
               Configure your station
             </h1>
             <p className="text-muted-foreground mt-1 max-w-2xl text-sm">
-              Unlock this PC, then set company details, scale hardware, and ticket preferences.
+              Unlock this PC, choose security, then set company details, scale hardware, and ticket
+              preferences.
             </p>
           </div>
         </div>
@@ -507,6 +589,7 @@ function RouteComponent() {
                 expiresAt={unlockExpiresAt ?? ''}
               />
             )}
+            {currentStep.value === 'security' && <SecurityStep />}
             {currentStep.value === 'companyDetails' && <CompanyDetailsStep />}
             {currentStep.value === 'hardware' && <HardwareStep ports={ports} />}
             {currentStep.value === 'preferences' && <PreferencesStep />}
@@ -529,7 +612,7 @@ function RouteComponent() {
                 </Button>
 
                 {stepIndex < steps.length - 1 && (
-                  <Button type="button" onClick={handleNext}>
+                  <Button type="button" onClick={() => void handleNext()}>
                     Next
                     <ArrowRight />
                   </Button>

@@ -7,9 +7,11 @@ import type {
 import type { SerialStatus, WeightReading } from '@weight/shared';
 import type {
   ActivateLicenseResult,
+  AuthStatus,
   LicenseStatus,
   Material,
   PaginatedResult,
+  PasswordActionResult,
   Record as RecordType,
   SerialPortInfo,
   SettingsRow,
@@ -28,6 +30,14 @@ declare global {
       getMachineId: () => Promise<string>;
       activateLicense: (licenseJson: string) => Promise<ActivateLicenseResult>;
       getLicenseStatus: () => Promise<LicenseStatus>;
+
+      getAuthStatus: () => Promise<AuthStatus>;
+      setPasswordless: () => Promise<PasswordActionResult>;
+      setPassword: (password: string) => Promise<PasswordActionResult>;
+      verifyPassword: (password: string) => Promise<PasswordActionResult>;
+      changePassword: (payload: { current: string; next: string }) => Promise<PasswordActionResult>;
+      clearPassword: (current: string) => Promise<PasswordActionResult>;
+      forgotPasswordReset: () => Promise<PasswordActionResult>;
 
       onWeightUpdate: (callback: (reading: WeightReading) => void) => () => void;
 

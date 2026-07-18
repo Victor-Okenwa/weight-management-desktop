@@ -45,8 +45,20 @@ The same string must appear in the license JSON `machineId` field. Activation re
 | `machine_id` | Machine ID this station / license is bound to |
 | `license_issued_at` / `license_expires_at` / `license_signature` | Unlocked license fields |
 | `activated_at` | When unlock succeeded |
+| `password_mode` | `null` (unset), `none` (passwordless), or `required` |
+| `password_salt` / `password_hash` | scrypt credentials when mode is `required` |
 
 Company/hardware/ticket prefs stay in `settings`.
+
+## App password
+
+Setup order: **Unlock → Security → Company → Hardware → Preferences → Review**.
+
+- **Passwordless:** app opens after license + setup without a password.
+- **Require password:** every app launch shows `/app-lock` until the password is verified (in-memory session for that process only).
+- **Forgot password:** confirmation dialog clears the stored license and password; user must request a **new license** from Solution Road Tech Support.
+- **License change / re-activate:** clears password fields; Security must be chosen again in setup (or reconfigured in Settings after setup).
+- **Settings → Security:** change password or switch modes; current password required when one is already set.
 
 ## License JSON
 
@@ -67,15 +79,15 @@ machineId + "\n" + issuedAt + "\n" + expiresAt
 
 ## Resume / re-entry behavior
 
-- **Unlocked mid-setup, then crash:** license stays in `installation`. Next launch skips the unlock step and prefills company/hardware/preferences from `settings`.
-- **Normal return (setup done + license valid):** protected routes open; setup wizard is not shown.
-- **Expired license or motherboard change:** `getLicenseStatus().activated` is false → user is sent to setup unlock again; company/hardware/preferences still prefill from `settings`.
+- **Unlocked mid-setup, then crash:** license stays in `installation`. Next launch skips Unlock; if Security was already saved, resume at Company; otherwise land on Security. Prefills company/hardware/preferences from `settings`.
+- **Normal return (setup done + license valid):** if password required and session locked → `/app-lock`; otherwise protected routes open.
+- **Expired license or motherboard change:** `getLicenseStatus().activated` is false → setup Unlock again; company/hardware/preferences still prefill from `settings`.
 
 `activated` means: stored license exists, `machine_id` matches this PC’s fingerprint, and `expiresAt` is still in the future.
 
 ## Status
 
-- **Done:** Setup unlock UI; real Machine ID fingerprint; `installation` table; activate persists license and requires Machine ID match; setup completion stored on `installation`; resume unlock + settings prefills; gate app on valid unlock.
+- **Done:** Setup unlock UI; real Machine ID fingerprint; `installation` table; activate persists license and requires Machine ID match; setup completion on `installation`; resume unlock + settings prefills; app password (setup + lock + settings); gate app on valid unlock + session.
 - **Pending:** Ed25519 verify against `public.pem`.
 
 ## Dev note

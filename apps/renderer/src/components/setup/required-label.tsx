@@ -4,6 +4,9 @@ import type { ReactNode } from 'react';
 export const requiredFields: Record<string, boolean> = {
   'softwareUnlock.licenseJson': true,
   'softwareUnlock.activated': true,
+  'security.mode': true,
+  'security.password': true,
+  'security.confirmPassword': true,
   'companyDetails.name': true,
   'companyDetails.email': false,
   'companyDetails.address': false,

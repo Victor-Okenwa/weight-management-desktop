@@ -72,6 +72,8 @@ export interface SettingsRow {
   printCopies: number;
 }
 
+export type PasswordMode = 'none' | 'required';
+
 export interface InstallationRow {
   id: number;
   setupCompleted: boolean;
@@ -80,6 +82,10 @@ export interface InstallationRow {
   licenseExpiresAt: string | null;
   licenseSignature: string | null;
   activatedAt: string | null;
+  /** null = not chosen yet during setup */
+  passwordMode: PasswordMode | null;
+  passwordSalt: string | null;
+  passwordHash: string | null;
 }
 
 export interface SerialPortInfo {
@@ -149,4 +155,16 @@ export interface LicenseStatus {
   setupCompleted: boolean;
   /** Reconstructed license JSON for setup resume / display (not a DB column). */
   licenseJson: string | null;
+  /** null = security step not completed yet */
+  passwordMode: PasswordMode | null;
 }
+
+export interface AuthStatus {
+  passwordMode: PasswordMode | null;
+  /** True when mode was chosen (none or required). */
+  passwordConfigured: boolean;
+  /** In-memory for this process; always false on app start. */
+  sessionUnlocked: boolean;
+}
+
+export type PasswordActionResult = { ok: true } | { ok: false; error: string };

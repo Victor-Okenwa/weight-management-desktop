@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SetupWizardRouteImport } from './routes/setup-wizard'
+import { Route as AppLockRouteImport } from './routes/app-lock'
 import { Route as ProtectedRouteRouteImport } from './routes/_protected/route'
 import { Route as ProtectedIndexRouteImport } from './routes/_protected/index'
 import { Route as ProtectedSettingsRouteImport } from './routes/_protected/settings'
@@ -19,6 +20,11 @@ import { Route as ProtectedHistoryRouteImport } from './routes/_protected/histor
 const SetupWizardRoute = SetupWizardRouteImport.update({
   id: '/setup-wizard',
   path: '/setup-wizard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppLockRoute = AppLockRouteImport.update({
+  id: '/app-lock',
+  path: '/app-lock',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProtectedRouteRoute = ProtectedRouteRouteImport.update({
@@ -48,12 +54,14 @@ const ProtectedHistoryRoute = ProtectedHistoryRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof ProtectedIndexRoute
+  '/app-lock': typeof AppLockRoute
   '/setup-wizard': typeof SetupWizardRoute
   '/history': typeof ProtectedHistoryRoute
   '/record-weight': typeof ProtectedRecordWeightRoute
   '/settings': typeof ProtectedSettingsRoute
 }
 export interface FileRoutesByTo {
+  '/app-lock': typeof AppLockRoute
   '/setup-wizard': typeof SetupWizardRoute
   '/history': typeof ProtectedHistoryRoute
   '/record-weight': typeof ProtectedRecordWeightRoute
@@ -63,6 +71,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_protected': typeof ProtectedRouteRouteWithChildren
+  '/app-lock': typeof AppLockRoute
   '/setup-wizard': typeof SetupWizardRoute
   '/_protected/history': typeof ProtectedHistoryRoute
   '/_protected/record-weight': typeof ProtectedRecordWeightRoute
@@ -71,12 +80,25 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/setup-wizard' | '/history' | '/record-weight' | '/settings'
+  fullPaths:
+    | '/'
+    | '/app-lock'
+    | '/setup-wizard'
+    | '/history'
+    | '/record-weight'
+    | '/settings'
   fileRoutesByTo: FileRoutesByTo
-  to: '/setup-wizard' | '/history' | '/record-weight' | '/settings' | '/'
+  to:
+    | '/app-lock'
+    | '/setup-wizard'
+    | '/history'
+    | '/record-weight'
+    | '/settings'
+    | '/'
   id:
     | '__root__'
     | '/_protected'
+    | '/app-lock'
     | '/setup-wizard'
     | '/_protected/history'
     | '/_protected/record-weight'
@@ -86,6 +108,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   ProtectedRouteRoute: typeof ProtectedRouteRouteWithChildren
+  AppLockRoute: typeof AppLockRoute
   SetupWizardRoute: typeof SetupWizardRoute
 }
 
@@ -96,6 +119,13 @@ declare module '@tanstack/react-router' {
       path: '/setup-wizard'
       fullPath: '/setup-wizard'
       preLoaderRoute: typeof SetupWizardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app-lock': {
+      id: '/app-lock'
+      path: '/app-lock'
+      fullPath: '/app-lock'
+      preLoaderRoute: typeof AppLockRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_protected': {
@@ -156,6 +186,7 @@ const ProtectedRouteRouteWithChildren = ProtectedRouteRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   ProtectedRouteRoute: ProtectedRouteRouteWithChildren,
+  AppLockRoute: AppLockRoute,
   SetupWizardRoute: SetupWizardRoute,
 }
 export const routeTree = rootRouteImport

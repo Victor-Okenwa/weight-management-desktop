@@ -55,6 +55,23 @@ export function saveLicense(
     licenseExpiresAt: payload.licenseExpiresAt,
     licenseSignature: payload.licenseSignature,
     activatedAt: payload.activatedAt,
+    // New / changed license always clears app password
+    passwordMode: null,
+    passwordSalt: null,
+    passwordHash: null,
+  });
+}
+
+export function clearLicenseAndPassword(db: DatabaseInstance) {
+  upsertInstallation(db, {
+    licenseIssuedAt: null,
+    licenseExpiresAt: null,
+    licenseSignature: null,
+    activatedAt: null,
+    passwordMode: null,
+    passwordSalt: null,
+    passwordHash: null,
+    setupCompleted: false,
   });
 }
 

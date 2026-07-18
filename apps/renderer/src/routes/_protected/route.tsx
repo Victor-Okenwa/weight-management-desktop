@@ -74,9 +74,10 @@ export const Route = createFileRoute('/_protected')({
       return;
     }
 
-    const [setupCompleted, licenseStatus] = await Promise.all([
+    const [setupCompleted, licenseStatus, authStatus] = await Promise.all([
       window.electronAPI.isSetupCompleted(),
       window.electronAPI.getLicenseStatus(),
+      window.electronAPI.getAuthStatus(),
     ]);
 
     // Need wizard when setup unfinished, or when unlock is no longer valid
@@ -91,6 +92,13 @@ export const Route = createFileRoute('/_protected')({
 
       throw redirect({
         to: '/setup-wizard',
+      });
+    }
+
+    if (authStatus.passwordMode === 'required' && !authStatus.sessionUnlocked) {
+      window.electronAPI.log('info', 'Password required — opening app lock');
+      throw redirect({
+        to: '/app-lock',
       });
     }
   },

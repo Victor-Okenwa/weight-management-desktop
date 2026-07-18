@@ -6,9 +6,11 @@ import type {
 import type { HealthResult } from '@weight/database/repositories/health';
 import type {
   ActivateLicenseResult,
+  AuthStatus,
   LicenseStatus,
   Material,
   PaginatedResult,
+  PasswordActionResult,
   Record as RecordType,
   SerialPortInfo,
   SettingsRow,
@@ -29,6 +31,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
   activateLicense: (licenseJson: string): Promise<ActivateLicenseResult> =>
     ipcRenderer.invoke('license:activate', licenseJson),
   getLicenseStatus: (): Promise<LicenseStatus> => ipcRenderer.invoke('license:get-status'),
+
+  getAuthStatus: (): Promise<AuthStatus> => ipcRenderer.invoke('auth:get-status'),
+  setPasswordless: (): Promise<PasswordActionResult> => ipcRenderer.invoke('auth:set-passwordless'),
+  setPassword: (password: string): Promise<PasswordActionResult> =>
+    ipcRenderer.invoke('auth:set-password', password),
+  verifyPassword: (password: string): Promise<PasswordActionResult> =>
+    ipcRenderer.invoke('auth:verify-password', password),
+  changePassword: (payload: { current: string; next: string }): Promise<PasswordActionResult> =>
+    ipcRenderer.invoke('auth:change-password', payload),
+  clearPassword: (current: string): Promise<PasswordActionResult> =>
+    ipcRenderer.invoke('auth:clear-password', current),
+  forgotPasswordReset: (): Promise<PasswordActionResult> =>
+    ipcRenderer.invoke('auth:forgot-password-reset'),
 
   onWeightUpdate: (callback: (reading: WeightReading) => void) => {
     const handler = (_event: any, reading: WeightReading) => callback(reading);

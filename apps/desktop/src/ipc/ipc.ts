@@ -27,6 +27,15 @@ import type { SerialOptions } from '@weight/shared/types/index';
 import { ipcMain } from 'electron';
 import { SerialPort } from 'serialport';
 import { getDatabase } from '../database/connection.js';
+import {
+  changePassword,
+  clearLicenseForPasswordReset,
+  clearPassword,
+  getAuthStatus,
+  setPassword,
+  setPasswordless,
+  verifyPassword,
+} from '../license/app-password.js';
 import { activateLicense, getLicenseStatus, getMachineId } from '../license/license-service.js';
 import { logger } from '../logger.js';
 import type { SerialManager } from '../serial/serial-manager.js';
@@ -166,6 +175,35 @@ export function registerIpcHandlers(serialManager: SerialManager) {
 
   ipcMain.handle('license:get-status', () => {
     return getLicenseStatus();
+  });
+
+  // ---------- App password / session ----------
+  ipcMain.handle('auth:get-status', () => {
+    return getAuthStatus();
+  });
+
+  ipcMain.handle('auth:set-passwordless', () => {
+    return setPasswordless();
+  });
+
+  ipcMain.handle('auth:set-password', (_event, password: string) => {
+    return setPassword(password);
+  });
+
+  ipcMain.handle('auth:verify-password', (_event, password: string) => {
+    return verifyPassword(password);
+  });
+
+  ipcMain.handle('auth:change-password', (_event, payload: { current: string; next: string }) => {
+    return changePassword(payload.current, payload.next);
+  });
+
+  ipcMain.handle('auth:clear-password', (_event, current: string) => {
+    return clearPassword(current);
+  });
+
+  ipcMain.handle('auth:forgot-password-reset', () => {
+    return clearLicenseForPasswordReset();
   });
 
   // ---------- Serial status ----------

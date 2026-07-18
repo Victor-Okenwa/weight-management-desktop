@@ -6,6 +6,9 @@ type ReviewFormValues = {
     activated: boolean;
     expiresAt: string;
   };
+  security: {
+    mode: 'none' | 'required';
+  };
   companyDetails: {
     name: string;
     phone?: string;
@@ -30,6 +33,8 @@ export function ReviewStep() {
   const unlocked = Boolean(values.softwareUnlock?.activated);
   const expiresLabel = formatLicenseExpiry(values.softwareUnlock?.expiresAt);
   const port = values.hardware?.port;
+  const securityLabel =
+    values.security?.mode === 'required' ? 'Password protected' : 'Passwordless';
 
   return (
     <div className="space-y-6">
@@ -53,6 +58,18 @@ export function ReviewStep() {
             <div className="flex justify-between gap-3">
               <dt className="text-muted-foreground">Expires</dt>
               <dd className="font-medium text-right">{expiresLabel || '—'}</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section className="rounded-lg border border-border/70 bg-background/50 p-4">
+          <h3 className="mb-3 text-sm font-semibold tracking-wide uppercase text-muted-foreground">
+            Security
+          </h3>
+          <dl className="space-y-2 text-sm">
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted-foreground">Access</dt>
+              <dd className="font-medium text-right">{securityLabel}</dd>
             </div>
           </dl>
         </section>
@@ -103,11 +120,11 @@ export function ReviewStep() {
           </dl>
         </section>
 
-        <section className="rounded-lg border border-border/70 bg-background/50 p-4">
+        <section className="rounded-lg border border-border/70 bg-background/50 p-4 md:col-span-2">
           <h3 className="mb-3 text-sm font-semibold tracking-wide uppercase text-muted-foreground">
             Preferences
           </h3>
-          <dl className="space-y-2 text-sm">
+          <dl className="grid gap-2 text-sm sm:grid-cols-3">
             <div className="flex justify-between gap-3">
               <dt className="text-muted-foreground">Unit</dt>
               <dd className="font-medium">{values.preferences?.defaultUnit}</dd>

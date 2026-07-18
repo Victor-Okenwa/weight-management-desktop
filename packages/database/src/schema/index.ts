@@ -38,6 +38,10 @@ export const installation = sqliteTable('installation', {
   licenseExpiresAt: text('license_expires_at'),
   licenseSignature: text('license_signature'),
   activatedAt: text('activated_at'),
+  /** null = not chosen yet during setup; 'none' = passwordless; 'required' = app password */
+  passwordMode: text('password_mode', { enum: ['none', 'required'] }),
+  passwordSalt: text('password_salt'),
+  passwordHash: text('password_hash'),
 });
 
 // ---------- Vehicles ----------
