@@ -50,6 +50,15 @@ The same string must appear in the license JSON `machineId` field. Activation re
 
 Company/hardware/ticket prefs stay in `settings`.
 
+## Viewing & renewing
+
+Inside the app (after setup):
+
+- Footer shows Machine ID, expiry, and links to **View license** / **Renew license**
+- `/license` — issued / expires / days remaining
+- `/renew-license` — paste a new license JSON (clears app password, same as re-activate)
+- When ≤ 14 days remain, a red **Fix license** control appears bottom-right and a toast warns on launch
+
 ## App password
 
 Setup order: **Unlock → Security → Company → Hardware → Preferences → Review**.

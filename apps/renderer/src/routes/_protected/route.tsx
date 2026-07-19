@@ -15,6 +15,7 @@ import {
 import { useEffect } from 'react';
 import { toast } from 'sonner';
 
+import { AppFooter } from '@/components/app-footer';
 import { NotFound } from '@/components/not-found';
 import { type Theme, useTheme } from '@/components/providers/theme-provider';
 import {
@@ -131,17 +132,7 @@ function RouteComponent() {
           <TopBar />
           <Outlet />
         </main>
-        <footer className="border-t px-4 py-3">
-          <p className="text-center text-sm">
-            In case of any bugs,issues or tech support please contact{' '}
-            <b>Solution Road Equipment and Spars limited</b>
-          </p>
-          <hr className="my-3" />
-          <p className="text-center text-sm">
-            This sharing and remaking of this software is strictly prohibited except licensed by{' '}
-            <b>Solution Road Equipment and Spars limited</b> Tech Support
-          </p>
-        </footer>
+        <AppFooter />
       </div>
     </SidebarProvider>
   );

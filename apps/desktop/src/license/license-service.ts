@@ -37,6 +37,16 @@ function isExpired(expiresAt: string | null | undefined): boolean {
   return Date.now() >= expires;
 }
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/** Whole days until expiry (ceil). Negative when already past. */
+function daysUntilExpiry(expiresAt: string | null | undefined): number | null {
+  if (!expiresAt) return null;
+  const expires = Date.parse(expiresAt);
+  if (Number.isNaN(expires)) return null;
+  return Math.ceil((expires - Date.now()) / MS_PER_DAY);
+}
+
 function hasStoredLicense(
   row:
     | {
@@ -163,11 +173,17 @@ export function getLicenseStatus(): LicenseStatus {
 
   const passwordMode =
     row?.passwordMode === 'none' || row?.passwordMode === 'required' ? row.passwordMode : null;
+  const daysRemaining = daysUntilExpiry(row?.licenseExpiresAt);
+  const isExpiringSoon =
+    activated && daysRemaining !== null && daysRemaining >= 0 && daysRemaining <= 14;
 
   return {
     activated,
     machineId: currentMachineId ?? row?.machineId ?? null,
+    issuedAt: row?.licenseIssuedAt ?? null,
     expiresAt: row?.licenseExpiresAt ?? null,
+    daysRemaining,
+    isExpiringSoon,
     setupCompleted,
     // Reconstructed for wizard resume — not stored as a separate column
     licenseJson: row ? reconstructLicenseJson(row) : null,

@@ -151,7 +151,12 @@ export interface LicenseStatus {
   /** True when a stored license matches this PC and is not expired. */
   activated: boolean;
   machineId: string | null;
+  issuedAt: string | null;
   expiresAt: string | null;
+  /** Whole days until expiry (ceil). Null when no expiry date. Negative if past. */
+  daysRemaining: number | null;
+  /** True when activated and 0–14 days remain. */
+  isExpiringSoon: boolean;
   setupCompleted: boolean;
   /** Reconstructed license JSON for setup resume / display (not a DB column). */
   licenseJson: string | null;

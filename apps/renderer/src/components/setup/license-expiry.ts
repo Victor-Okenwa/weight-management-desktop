@@ -23,3 +23,23 @@ export function formatLicenseExpiry(expiresAt: string | null | undefined): strin
     day: 'numeric',
   });
 }
+
+/** Compact date for footers, e.g. "18 Jul 2026". */
+export function formatLicenseDateShort(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+export function formatDaysRemaining(days: number | null | undefined): string {
+  if (days === null || days === undefined) return '—';
+  if (days < 0) return 'Expired';
+  if (days === 0) return 'Expires today';
+  if (days === 1) return '1 day left';
+  return `${days} days left`;
+}
