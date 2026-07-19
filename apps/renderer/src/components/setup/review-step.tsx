@@ -18,6 +18,8 @@ type ReviewFormValues = {
     port: string;
     baudRate: string;
     indicator: string;
+    stableTolerance: number;
+    stableDurationMs: number;
   };
   preferences: {
     defaultUnit: string;
@@ -116,6 +118,22 @@ export function ReviewStep() {
             <div className="flex justify-between gap-3">
               <dt className="text-muted-foreground">Indicator</dt>
               <dd className="font-medium capitalize">{values.hardware?.indicator || '—'}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted-foreground">Stable tolerance</dt>
+              <dd className="font-medium">
+                {values.hardware?.stableTolerance != null
+                  ? `${values.hardware.stableTolerance} kg`
+                  : '—'}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted-foreground">Stability duration</dt>
+              <dd className="font-medium">
+                {values.hardware?.stableDurationMs != null
+                  ? `${values.hardware.stableDurationMs} ms`
+                  : '—'}
+              </dd>
             </div>
           </dl>
         </section>

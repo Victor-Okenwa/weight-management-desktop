@@ -123,6 +123,10 @@ app.whenReady().then(async () => {
         mainWindow.webContents.send('serial:status', status);
       }
     },
+    {
+      tolerance: settingsRow?.stableTolerance ?? 0.5,
+      durationMs: settingsRow?.stableDurationMs ?? 3000,
+    },
   );
 
   // 4. Register all IPC handlers (now they have access to serialManager)

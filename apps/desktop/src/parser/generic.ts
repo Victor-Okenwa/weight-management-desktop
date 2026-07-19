@@ -1,14 +1,12 @@
 import type { WeightReading } from '@weight/shared/types/index';
-import type { IWeightParser } from './index.js';
 
 /**
  * Generic fallback parser.
  * Attempts to extract: number + optional unit string
  * Example: "  2450 kg" → weight: 2450, unit: "kg"
+ * Stability is decided by SerialManager (tolerance + duration).
  */
-export class GenericWeightParser implements IWeightParser {
-  private lastWeight: number | null = null;
-
+export class GenericWeightParser {
   parse(data: string, unit: string = 'kg'): WeightReading | null {
     const trimmed = data.trim();
     // Match: number (with optional decimal), followed by optional spaces and a unit word
@@ -18,14 +16,11 @@ export class GenericWeightParser implements IWeightParser {
     const weight = Number.parseFloat(match[1]);
     const parsedUnit = match[2].trim() || unit;
 
-    const isStable = this.lastWeight !== null && weight === this.lastWeight;
-    this.lastWeight = weight;
-
     return {
       weight,
       unit: parsedUnit.toLowerCase(),
       raw: data,
-      isStable,
+      isStable: false,
     };
   }
 }

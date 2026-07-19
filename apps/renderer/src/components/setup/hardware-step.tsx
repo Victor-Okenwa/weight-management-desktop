@@ -1,15 +1,15 @@
 import { BAUD_RATES, FLOW_CONTROL_OPTIONS, PARITY_FLAGS } from '@weight/shared/constants/index';
 import type { SerialPortInfo } from '@weight/shared/types/index';
-import { EthernetPortIcon, InfoIcon } from 'lucide-react';
+import { EthernetPortIcon } from 'lucide-react';
 import { Controller, useFormContext } from 'react-hook-form';
-import { Button } from '@/components/ui/button';
 import {
-  Field,
-  FieldContent,
-  FieldDescription,
-  FieldError,
-  FieldLabel,
-} from '@/components/ui/field';
+  FieldInfoTooltip,
+  FieldLabelWithInfo,
+  SerialConfigHint,
+} from '@/components/serial-config-help';
+import { Button } from '@/components/ui/button';
+import { Field, FieldContent, FieldError } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
 import {
   InputGroup,
   InputGroupAddon,
@@ -24,7 +24,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { RequiredLabel, requiredFields } from './required-label';
 
 type HardwareFields = {
@@ -37,12 +36,18 @@ type HardwareFields = {
     dataBits: number;
     autoOpen: boolean;
     indicator: string;
+    stableTolerance: number;
+    stableDurationMs: number;
   };
 };
 
 type HardwareStepProps = {
   ports: SerialPortInfo[];
 };
+
+function label(path: keyof typeof requiredFields, text: string) {
+  return requiredFields[path] ? <RequiredLabel>{text}</RequiredLabel> : text;
+}
 
 export function HardwareStep({ ports }: HardwareStepProps) {
   const { control, setValue } = useFormContext<HardwareFields>();
@@ -57,24 +62,52 @@ export function HardwareStep({ ports }: HardwareStepProps) {
   }
 
   return (
-    <div className="space-y-4 gap-4 grid md:grid-cols-2 grid-cols-1 items-start">
+    <div className="grid grid-cols-1 items-start gap-x-4 gap-y-5 md:grid-cols-2">
       <div className="md:col-span-2">
         <hgroup>
           <h2 className="text-2xl font-bold tracking-tight">Hardware setup</h2>
-          <p className="text-muted-foreground mt-1 text-sm">
+          <p className="mt-1 text-sm text-muted-foreground">
             Connect the weighing indicator so live weight can be captured at this station.
           </p>
         </hgroup>
       </div>
+
+      <SerialConfigHint />
 
       <Controller
         name="hardware.port"
         control={control}
         render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
-            <FieldLabel htmlFor="hardware-port">
-              {requiredFields['hardware.port'] ? <RequiredLabel>Port</RequiredLabel> : <>Port</>}
-            </FieldLabel>
+            <FieldLabelWithInfo
+              htmlFor="hardware-port"
+              info={
+                <>
+                  <strong>How to locate Device Manager:</strong>
+                  <ol>
+                    <li>
+                      Press <kbd>Windows</kbd> + <kbd>X</kbd> on your keyboard.
+                    </li>
+                    <li>
+                      Select <span className="font-semibold">Device Manager</span> from the menu.
+                    </li>
+                    <li>
+                      In Device Manager, expand{' '}
+                      <span className="font-semibold">&quot;Ports (COM &amp; LPT)&quot;</span>.
+                    </li>
+                    <li>
+                      Find your device and note the <span className="font-semibold">COM#</span>.
+                    </li>
+                    <li>
+                      Enter that number above (e.g. <span className="font-mono">3</span> for{' '}
+                      <span className="font-mono">COM3</span>), or leave as 3 if unsure.
+                    </li>
+                  </ol>
+                </>
+              }
+            >
+              {label('hardware.port', 'Port')}
+            </FieldLabelWithInfo>
             <InputGroup className="min-h-12!">
               <InputGroupInput
                 defaultValue={3}
@@ -84,16 +117,14 @@ export function HardwareStep({ ports }: HardwareStepProps) {
                 placeholder="3"
               />
               <InputGroupAddon>COM</InputGroupAddon>
-
               <Popover>
                 <PopoverTrigger asChild>
-                  <InputGroupButton>
+                  <InputGroupButton type="button">
                     <EthernetPortIcon />
                   </InputGroupButton>
                 </PopoverTrigger>
-
                 <PopoverContent className="w-80 p-4">
-                  <h4 className="text-md font-semibold mb-2">Available Ports</h4>
+                  <h4 className="mb-2 text-md font-semibold">Available Ports</h4>
                   {ports && ports.length > 0 ? (
                     <ul className="grid gap-2">
                       {ports.map((port, idx) => (
@@ -105,99 +136,30 @@ export function HardwareStep({ ports }: HardwareStepProps) {
                               : 'outline'
                           }
                           key={port.path ?? idx}
-                          className={`border rounded-lg p-2 flex gap-1 transition cursor-pointer text-left justify-between ${
+                          className={`flex cursor-pointer justify-between gap-1 rounded-lg border p-2 text-left transition ${
                             String(port.path).replace('COM', '') === String(field.value)
                               ? 'border-primary bg-primary/10'
                               : 'border-border'
                           }`}
                           onClick={() => selectPort(port.path)}
-                          onKeyUp={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              selectPort(port.path);
-                            }
-                          }}
-                          tabIndex={0}
                         >
-                          <span className="font-mono font-medium text-sm">{port.path}</span>
+                          <span className="font-mono text-sm font-medium">{port.path}</span>
                           {port.manufacturer && (
                             <span className="text-xs text-muted-foreground">
                               {port.manufacturer}
-                            </span>
-                          )}
-                          {port.serialNumber && (
-                            <span className="text-xs text-muted-foreground">
-                              Serial: {port.serialNumber}
-                            </span>
-                          )}
-                          {port.friendlyName && (
-                            <span className="text-xs text-muted-foreground">
-                              {port.friendlyName}
                             </span>
                           )}
                         </Button>
                       ))}
                     </ul>
                   ) : (
-                    <span className="text-muted-foreground text-sm block p-2">
+                    <span className="block p-2 text-sm text-muted-foreground">
                       No serial ports found.
                     </span>
                   )}
                 </PopoverContent>
               </Popover>
             </InputGroup>
-
-            <Tooltip>
-              <TooltipTrigger type="button" className="text-foreground/50 text-xs flex gap-1">
-                <InfoIcon className="size-4" />
-                Hover to see details on how to get your port or leave it as 3
-              </TooltipTrigger>
-
-              <TooltipContent>
-                <div className="text-sm max-w-xs">
-                  <strong>How to locate Device Manager:</strong>
-                  <ol className="list-decimal ml-5 mt-2 space-y-1">
-                    <li>
-                      <span>
-                        Press{' '}
-                        <kbd className="px-1 py-0.5 bg-muted rounded text-xs text-accent-foreground">
-                          Windows
-                        </kbd>{' '}
-                        +{' '}
-                        <kbd className="px-1 py-0.5 bg-muted rounded text-xs text-accent-foreground">
-                          X
-                        </kbd>{' '}
-                        on your keyboard.
-                      </span>
-                    </li>
-                    <li>
-                      <span>
-                        Select <span className="font-semibold">Device Manager</span> from the menu.
-                      </span>
-                    </li>
-                    <li>
-                      <span>
-                        In Device Manager, expand{' '}
-                        <span className="font-semibold">&quot;Ports (COM &amp; LPT)&quot;</span>.
-                      </span>
-                    </li>
-                    <li>
-                      <span>
-                        Find the device that matches your hardware (e.g., &quot;USB Serial
-                        Device&quot;), and note the number listed as{' '}
-                        <span className="font-semibold">COM#</span>.
-                      </span>
-                    </li>
-                    <li>
-                      <span>
-                        Enter that number above (e.g., <span className="font-mono">3</span> for{' '}
-                        <span className="font-mono">COM3</span>).
-                      </span>
-                    </li>
-                  </ol>
-                </div>
-              </TooltipContent>
-            </Tooltip>
-
             {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
           </Field>
         )}
@@ -209,13 +171,16 @@ export function HardwareStep({ ports }: HardwareStepProps) {
         render={({ field, fieldState }) => (
           <Field orientation="responsive" data-invalid={fieldState.invalid}>
             <FieldContent>
-              <FieldLabel htmlFor="hardware-baudRate">
-                {requiredFields['hardware.baudRate'] ? (
-                  <RequiredLabel>Baud Rate</RequiredLabel>
-                ) : (
-                  <>Baud Rate</>
-                )}
-              </FieldLabel>
+              <FieldLabelWithInfo
+                htmlFor="hardware-baudRate"
+                info={
+                  <span>
+                    Set Baud Rate to <strong>2400</strong> if you are unsure.
+                  </span>
+                }
+              >
+                {label('hardware.baudRate', 'Baud Rate')}
+              </FieldLabelWithInfo>
             </FieldContent>
             <Select
               name={field.name}
@@ -238,9 +203,6 @@ export function HardwareStep({ ports }: HardwareStepProps) {
                 ))}
               </SelectContent>
             </Select>
-
-            <FieldDescription>Set Baud Rate to 2400 if you are unsure</FieldDescription>
-
             {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
           </Field>
         )}
@@ -251,13 +213,20 @@ export function HardwareStep({ ports }: HardwareStepProps) {
         control={control}
         render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
-            <FieldLabel htmlFor="hardware-parity">
-              {requiredFields['hardware.parity'] ? (
-                <RequiredLabel>Parity</RequiredLabel>
-              ) : (
-                <>Parity</>
-              )}
-            </FieldLabel>
+            <FieldLabelWithInfo
+              htmlFor="hardware-parity"
+              info={
+                <span>
+                  Parity is a form of error checking used in serial communication to detect
+                  accidental changes to raw data. For most modern weighing devices,{' '}
+                  <strong>none</strong> is recommended unless your device specifically requires
+                  even, odd, mark, or space parity. Selecting <strong>none</strong> ensures simpler
+                  and more compatible communication.
+                </span>
+              }
+            >
+              {label('hardware.parity', 'Parity')}
+            </FieldLabelWithInfo>
             <Select
               name={field.name}
               value={field.value}
@@ -279,17 +248,6 @@ export function HardwareStep({ ports }: HardwareStepProps) {
                 ))}
               </SelectContent>
             </Select>
-
-            <FieldDescription>
-              <span>
-                Parity is a form of error checking used in serial communication to detect accidental
-                changes to raw data. For most modern weighing devices, <strong>none</strong> is
-                recommended unless your device specifically requires even, odd, mark, or space
-                parity. Selecting <strong>none</strong> ensures simpler and more compatible
-                communication.
-              </span>
-            </FieldDescription>
-
             {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
           </Field>
         )}
@@ -300,13 +258,19 @@ export function HardwareStep({ ports }: HardwareStepProps) {
         control={control}
         render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
-            <FieldLabel htmlFor="hardware-flowControl">
-              {requiredFields['hardware.flowControl'] ? (
-                <RequiredLabel>Flow Control</RequiredLabel>
-              ) : (
-                <>Flow Control</>
-              )}
-            </FieldLabel>
+            <FieldLabelWithInfo
+              htmlFor="hardware-flowControl"
+              info={
+                <span>
+                  Flow control manages how data is sent between your station and the weighing device
+                  to prevent data loss or overflow. In most cases, especially for standard weighing
+                  devices, <strong>none</strong> is recommended. Use other options only if your
+                  device documentation requires them.
+                </span>
+              }
+            >
+              {label('hardware.flowControl', 'Flow Control')}
+            </FieldLabelWithInfo>
             <Select
               name={field.name}
               value={field.value}
@@ -328,16 +292,6 @@ export function HardwareStep({ ports }: HardwareStepProps) {
                 ))}
               </SelectContent>
             </Select>
-
-            <FieldDescription>
-              <span>
-                Flow control manages the way data is sent between your station and the weighing
-                device to prevent data loss or overflow. In most cases, especially for standard
-                weighing devices, <strong>none</strong> is recommended. Use other options only if
-                your device documentation requires them.
-              </span>
-            </FieldDescription>
-
             {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
           </Field>
         )}
@@ -348,13 +302,19 @@ export function HardwareStep({ ports }: HardwareStepProps) {
         control={control}
         render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
-            <FieldLabel htmlFor="hardware-stopBits">
-              {requiredFields['hardware.stopBits'] ? (
-                <RequiredLabel>Stop Bits</RequiredLabel>
-              ) : (
-                <>Stop Bits</>
-              )}
-            </FieldLabel>
+            <FieldLabelWithInfo
+              htmlFor="hardware-stopBits"
+              info={
+                <span>
+                  Stop bits define the end of a byte in serial communication. For most devices,{' '}
+                  <strong>1</strong> stop bit is standard and recommended. Only choose{' '}
+                  <strong>2</strong> stop bits if your hardware documentation specifically requires
+                  it.
+                </span>
+              }
+            >
+              {label('hardware.stopBits', 'Stop Bits')}
+            </FieldLabelWithInfo>
             <Select
               name={field.name}
               value={String(field.value)}
@@ -376,16 +336,6 @@ export function HardwareStep({ ports }: HardwareStepProps) {
                 ))}
               </SelectContent>
             </Select>
-
-            <FieldDescription>
-              <span>
-                Stop bits define the end of a byte in serial communication. For most devices,{' '}
-                <strong>1</strong> stop bit is standard and recommended. Only choose{' '}
-                <strong>2</strong> stop bits if your hardware documentation specifically requires
-                it.
-              </span>
-            </FieldDescription>
-
             {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
           </Field>
         )}
@@ -396,13 +346,18 @@ export function HardwareStep({ ports }: HardwareStepProps) {
         control={control}
         render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
-            <FieldLabel htmlFor="hardware-dataBits">
-              {requiredFields['hardware.dataBits'] ? (
-                <RequiredLabel>Data Bits</RequiredLabel>
-              ) : (
-                <>Data Bits</>
-              )}
-            </FieldLabel>
+            <FieldLabelWithInfo
+              htmlFor="hardware-dataBits"
+              info={
+                <span>
+                  Set the number of data bits per character. Common values are 7 or 8, but check
+                  your device specifications for the correct setting. We recommend <strong>8</strong>{' '}
+                  as most indicators are compatible with it.
+                </span>
+              }
+            >
+              {label('hardware.dataBits', 'Data Bits')}
+            </FieldLabelWithInfo>
             <Select
               name={field.name}
               value={String(field.value)}
@@ -424,13 +379,6 @@ export function HardwareStep({ ports }: HardwareStepProps) {
                 ))}
               </SelectContent>
             </Select>
-
-            <FieldDescription>
-              Set the number of data bits per character. Common values are 7 or 8, but check your
-              device specifications for the correct setting. But we recommend setting it to 8 as
-              most indicators are compatible to it.
-            </FieldDescription>
-
             {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
           </Field>
         )}
@@ -441,21 +389,27 @@ export function HardwareStep({ ports }: HardwareStepProps) {
         control={control}
         render={({ field }) => (
           <Field>
-            <label className="inline-flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={field.value}
-                onChange={field.onChange}
-                className="h-4 w-4 rounded border"
-                id="hardware-autoOpen"
+            <div className="inline-flex items-center gap-2">
+              <label htmlFor="hardware-autoOpen" className="inline-flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={field.value}
+                  onChange={field.onChange}
+                  className="h-4 w-4 rounded border"
+                  id="hardware-autoOpen"
+                />
+                <span>Auto Open Connection</span>
+              </label>
+              <FieldInfoTooltip
+                info={
+                  <span>
+                    Automatically open and connect to the device when the application starts. We
+                    recommend leaving this unchecked unless you want the connection to be
+                    established on startup.
+                  </span>
+                }
               />
-              <span>Auto Open Connection</span>
-            </label>
-
-            <FieldDescription>
-              Automatically open and connect to the device when the application starts. We recommend
-              leaving this unchecked unless you want the connection to be established on startup.
-            </FieldDescription>
+            </div>
           </Field>
         )}
       />
@@ -465,18 +419,22 @@ export function HardwareStep({ ports }: HardwareStepProps) {
         control={control}
         render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
-            <FieldLabel htmlFor="hardware-indicator">
-              {requiredFields['hardware.indicator'] ? (
-                <RequiredLabel>Indicator</RequiredLabel>
-              ) : (
-                <>Indicator</>
-              )}
-            </FieldLabel>
+            <FieldLabelWithInfo
+              htmlFor="hardware-indicator"
+              info={
+                <span>
+                  Choose the type of indicator your hardware uses. We recommend selecting{' '}
+                  <strong>D300</strong> unless you have been provided a different option.
+                </span>
+              }
+            >
+              {label('hardware.indicator', 'Indicator')}
+            </FieldLabelWithInfo>
             <Select
               name={field.name}
               value={field.value}
               onValueChange={field.onChange}
-              defaultValue={'d300'}
+              defaultValue="d300"
             >
               <SelectTrigger
                 id="hardware-indicator"
@@ -489,13 +447,70 @@ export function HardwareStep({ ports }: HardwareStepProps) {
                 <SelectItem value="d300">D300</SelectItem>
               </SelectContent>
             </Select>
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )}
+      />
 
-            <FieldDescription>
-              Choose the type of indicator your hardware uses. We recommend selecting{' '}
-              <span className="font-semibold">D300</span> unless you have been provided a different
-              option.
-            </FieldDescription>
+      <Controller
+        name="hardware.stableTolerance"
+        control={control}
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabelWithInfo
+              htmlFor="hardware-stableTolerance"
+              info={
+                <span>
+                  How much the live weight may vary (in kg) and still count as settled. Default is{' '}
+                  <strong>0.5</strong>.
+                </span>
+              }
+            >
+              {label('hardware.stableTolerance', 'Stable Tolerance (kg)')}
+            </FieldLabelWithInfo>
+            <Input
+              {...field}
+              id="hardware-stableTolerance"
+              type="number"
+              step="0.1"
+              min={0}
+              className="min-h-12"
+              value={field.value ?? ''}
+              onChange={(e) => field.onChange(e.target.value === '' ? '' : Number(e.target.value))}
+              aria-invalid={fieldState.invalid}
+            />
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )}
+      />
 
+      <Controller
+        name="hardware.stableDurationMs"
+        control={control}
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabelWithInfo
+              htmlFor="hardware-stableDurationMs"
+              info={
+                <span>
+                  How long the weight must stay within tolerance before capture is allowed. Default
+                  is <strong>3000</strong> ms (3 seconds).
+                </span>
+              }
+            >
+              {label('hardware.stableDurationMs', 'Stability Duration (ms)')}
+            </FieldLabelWithInfo>
+            <Input
+              {...field}
+              id="hardware-stableDurationMs"
+              type="number"
+              step="100"
+              min={100}
+              className="min-h-12"
+              value={field.value ?? ''}
+              onChange={(e) => field.onChange(e.target.value === '' ? '' : Number(e.target.value))}
+              aria-invalid={fieldState.invalid}
+            />
             {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
           </Field>
         )}

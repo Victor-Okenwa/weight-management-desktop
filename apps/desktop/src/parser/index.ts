@@ -15,7 +15,6 @@ type LineParserFn = (line: string) => { weight: number; unit: string; raw: strin
 
 export class LineBasedWeightParser extends Transform {
   private buffer = '';
-  private lastWeight: number | null = null;
   private readonly parseFn: LineParserFn;
 
   constructor(parseFn: LineParserFn) {
@@ -33,10 +32,9 @@ export class LineBasedWeightParser extends Transform {
       const parsed = this.parseFn(line.trim());
       if (parsed) {
         const { weight, unit, raw } = parsed;
-        const isStable = this.lastWeight !== null && weight === this.lastWeight;
-        const reading: WeightReading = { weight, unit, raw, isStable };
+        // Stability is decided by SerialManager; parsers leave isStable false.
+        const reading: WeightReading = { weight, unit, raw, isStable: false };
         this.push(reading);
-        this.lastWeight = weight;
       }
     }
     callback();
@@ -47,8 +45,7 @@ export class LineBasedWeightParser extends Transform {
       const parsed = this.parseFn(this.buffer.trim());
       if (parsed) {
         const { weight, unit, raw } = parsed;
-        const isStable = this.lastWeight !== null && weight === this.lastWeight;
-        this.push({ weight, unit, raw, isStable });
+        this.push({ weight, unit, raw, isStable: false });
       }
     }
     callback();

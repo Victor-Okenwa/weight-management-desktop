@@ -146,6 +146,15 @@ export function registerIpcHandlers(serialManager: SerialManager) {
       }
     }
 
+    const stabilityKeys = ['stableTolerance', 'stableDurationMs'];
+    const hasStabilityChange = Object.keys(data).some((key) => stabilityKeys.includes(key));
+    if (hasStabilityChange) {
+      const row = getAllSettings(db);
+      if (row) {
+        serialManager.setStabilityConfig(row.stableTolerance, row.stableDurationMs);
+      }
+    }
+
     return true;
   });
 
