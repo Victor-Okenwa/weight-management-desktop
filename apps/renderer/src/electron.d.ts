@@ -15,6 +15,8 @@ import type {
   PaginatedResult,
   PasswordActionResult,
   PrintersGrouped,
+  PrintPreviewInput,
+  PrintPreviewResult,
   PrintTicketInput,
   PrintTicketResult,
   Record as RecordType,
@@ -98,6 +100,7 @@ declare global {
 
       // Printing
       listPrintersGrouped: () => Promise<{ groups: PrintersGrouped }>;
+      previewTicket: (input: PrintPreviewInput) => Promise<PrintPreviewResult>;
       printTicket: (input: PrintTicketInput) => Promise<PrintTicketResult>;
     };
   }

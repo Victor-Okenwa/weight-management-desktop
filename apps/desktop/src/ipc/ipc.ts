@@ -28,6 +28,7 @@ import {
 } from '@weight/database/repositories/vehicles';
 import type {
   PaperSizeGroup,
+  PrintPreviewInput,
   PrintTicketInput,
   SerialOptions,
 } from '@weight/shared/types/index';
@@ -46,6 +47,7 @@ import {
 import { activateLicense, getLicenseStatus, getMachineId } from '../license/license-service.js';
 import { logger } from '../logger.js';
 import { listPrintersGrouped } from '../printing/list-printers.js';
+import { previewTicket } from '../printing/preview-ticket.js';
 import { printTicket } from '../printing/print-ticket.js';
 import type { SerialManager } from '../serial/serial-manager.js';
 
@@ -338,6 +340,8 @@ export function registerIpcHandlers(serialManager: SerialManager) {
 
   // ---------- Printing ----------
   ipcMain.handle('printers:list-grouped', async () => listPrintersGrouped());
+
+  ipcMain.handle('print:preview', (_event, input: PrintPreviewInput) => previewTicket(input));
 
   ipcMain.handle('print:ticket', async (_event, input: PrintTicketInput) => printTicket(input));
 

@@ -43,6 +43,7 @@
     "dev": "tsc --watch",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/migrate.ts",
+    "db:seed-records": "tsx src/seed-records.ts",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {

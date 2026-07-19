@@ -12,6 +12,8 @@ import type {
   PaginatedResult,
   PasswordActionResult,
   PrintersGrouped,
+  PrintPreviewInput,
+  PrintPreviewResult,
   PrintTicketInput,
   PrintTicketResult,
   Record as RecordType,
@@ -124,6 +126,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Printing
   listPrintersGrouped: (): Promise<{ groups: PrintersGrouped }> =>
     ipcRenderer.invoke('printers:list-grouped'),
+  previewTicket: (input: PrintPreviewInput): Promise<PrintPreviewResult> =>
+    ipcRenderer.invoke('print:preview', input),
   printTicket: (input: PrintTicketInput): Promise<PrintTicketResult> =>
     ipcRenderer.invoke('print:ticket', input),
 });

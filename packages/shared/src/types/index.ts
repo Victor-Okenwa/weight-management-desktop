@@ -67,6 +67,13 @@ export interface PrintTicketInput {
 
 export type PrintTicketResult = { ok: true } | { ok: false; error: string };
 
+export interface PrintPreviewInput {
+  recordId: number;
+  paperSize: PaperSizeGroup;
+}
+
+export type PrintPreviewResult = { ok: true; html: string } | { ok: false; error: string };
+
 export interface SettingsRow {
   companyName: string;
   companyAddress: string;

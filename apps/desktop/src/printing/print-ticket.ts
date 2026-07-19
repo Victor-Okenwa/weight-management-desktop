@@ -1,10 +1,7 @@
-import type { PaperSizeGroup, PrintTicketResult, SettingsRow } from '@weight/shared/types/index';
-import { getRecordById } from '@weight/database/repositories/record';
-import { getAllSettings } from '@weight/database/repositories/settings';
+import type { PaperSizeGroup, PrintTicketResult } from '@weight/shared/types/index';
 import { BrowserWindow } from 'electron';
-import { getDatabase } from '../database/connection.js';
 import { logger } from '../logger.js';
-import { buildSlipHtml } from './slip-template.js';
+import { buildSlipForRecord } from './load-print-context.js';
 
 export async function printTicket(input: {
   printerName: string;
@@ -19,28 +16,10 @@ export async function printTicket(input: {
 
   const copies = Number.isFinite(input.copies) ? Math.max(1, Math.floor(input.copies)) : 1;
 
-  const db = getDatabase();
-  const record = getRecordById(db, input.recordId);
-  if (!record) {
-    return { ok: false, error: `Record ${input.recordId} not found` };
+  const slip = buildSlipForRecord(input.recordId, input.paperSize);
+  if (!slip.ok) {
+    return { ok: false, error: slip.error };
   }
-
-  const settingsRow = getAllSettings(db);
-  if (!settingsRow) {
-    return { ok: false, error: 'Settings not initialized' };
-  }
-
-  const settings: SettingsRow = {
-    ...settingsRow,
-    baudRate: settingsRow.baudRate as SettingsRow['baudRate'],
-    dataBits: settingsRow.dataBits as SettingsRow['dataBits'],
-    stopBits: settingsRow.stopBits as SettingsRow['stopBits'],
-    parity: settingsRow.parity as SettingsRow['parity'],
-    flowControl: settingsRow.flowControl as SettingsRow['flowControl'],
-    printPaperSize: (settingsRow.printPaperSize || '80mm') as PaperSizeGroup,
-  };
-
-  const html = buildSlipHtml(record, settings, input.paperSize);
 
   const printWindow = new BrowserWindow({
     show: false,
@@ -52,7 +31,7 @@ export async function printTicket(input: {
   });
 
   try {
-    await printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+    await printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(slip.html)}`);
 
     const printers = await printWindow.webContents.getPrintersAsync();
     const matched = printers.find(

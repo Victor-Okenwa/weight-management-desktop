@@ -2,6 +2,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { type DatabaseInstance, initDatabase } from '@weight/database';
 import { ensureInstallationRow } from '@weight/database/repositories/installation';
+import { seedDummyRecords } from '@weight/database/repositories/seed-dummy-records';
 import { settings } from '@weight/database/schema';
 import { eq } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/sql-js/migrator';
@@ -90,6 +91,18 @@ export async function setupDatabase(): Promise<DatabaseInstance> {
     ensureInstallationRow(db);
   } catch (err) {
     logger.error(`Failed to ensure installation row: ${(err as Error).message}`);
+  }
+
+  // Dev-only: seed 15 dummy weigh tickets once for print / history testing
+  if (isDev) {
+    try {
+      const seeded = seedDummyRecords(db);
+      if (seeded) {
+        logger.log('Seeded 15 dummy records for print testing.');
+      }
+    } catch (err) {
+      logger.error(`Failed to seed dummy records: ${(err as Error).message}`);
+    }
   }
 
   db.save();

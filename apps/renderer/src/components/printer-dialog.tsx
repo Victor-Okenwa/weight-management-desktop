@@ -50,6 +50,20 @@ const EMPTY_GROUPS = Object.fromEntries(
   paperSizeOptions.map((o) => [o.value, [] as PrinterInfo[]]),
 ) as PrintersGrouped;
 
+function previewWidthClass(paperSize: PaperSizeGroup): string {
+  switch (paperSize) {
+    case '58mm':
+      return 'w-[200px]';
+    case 'A4':
+    case 'Letter':
+      return 'w-full max-w-[360px]';
+    case 'Other':
+    case '80mm':
+    default:
+      return 'w-[260px]';
+  }
+}
+
 export function PrinterDialog({
   open,
   onOpenChange,
@@ -68,6 +82,9 @@ export function PrinterDialog({
   const [printerName, setPrinterName] = useState(defaultPrinterName);
   const [copies, setCopies] = useState(defaultCopies);
   const [saveAsDefault, setSaveAsDefault] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState('');
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -76,6 +93,8 @@ export function PrinterDialog({
     setPrinterName(defaultPrinterName);
     setCopies(defaultCopies);
     setSaveAsDefault(false);
+    setPreviewHtml('');
+    setPreviewError(null);
 
     let cancelled = false;
     setIsLoadingPrinters(true);
@@ -109,6 +128,43 @@ export function PrinterDialog({
       printersInGroup.find((p) => p.isDefault)?.name ?? printersInGroup[0]?.name ?? '';
     setPrinterName(fallback);
   }, [open, printersInGroup, printerName]);
+
+  useEffect(() => {
+    if (!open || mode !== 'print' || !record) {
+      setPreviewHtml('');
+      setPreviewError(null);
+      return;
+    }
+
+    let cancelled = false;
+    setIsLoadingPreview(true);
+    setPreviewError(null);
+
+    void window.electronAPI
+      .previewTicket({ recordId: record.id, paperSize })
+      .then((result) => {
+        if (cancelled) return;
+        if (!result.ok) {
+          setPreviewHtml('');
+          setPreviewError(result.error);
+          return;
+        }
+        setPreviewHtml(result.html);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPreviewHtml('');
+          setPreviewError('Failed to load print preview');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingPreview(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, mode, record, paperSize]);
 
   async function handleConfirm() {
     if (!printerName) {
@@ -154,8 +210,13 @@ export function PrinterDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] max-w-lg flex-col gap-4">
-        <DialogHeader>
+      <DialogContent
+        className={cn(
+          'flex max-h-[92vh] w-full flex-col gap-4 overflow-hidden',
+          mode === 'print' ? 'max-w-[calc(100%-2rem)] sm:max-w-6xl' : 'max-w-lg sm:max-w-xl',
+        )}
+      >
+        <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Printer className="size-5" />
             {mode === 'print' ? 'Print Ticket' : 'Choose Printer'}
@@ -167,104 +228,151 @@ export function PrinterDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <DialogScrollBody>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="print-paper-size">Paper size</Label>
-              <Select
-                value={paperSize}
-                onValueChange={(value) => setPaperSize(value as PaperSizeGroup)}
-              >
-                <SelectTrigger id="print-paper-size" className="min-h-11">
-                  <SelectValue placeholder="Select paper size" />
-                </SelectTrigger>
-                <SelectContent>
-                  {paperSizeOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                      <span className="ml-2 text-muted-foreground">
-                        ({groups[option.value]?.length ?? 0})
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        <DialogScrollBody
+          className="min-h-0 flex-1 overflow-y-auto"
+          maxHeightClassName="max-h-[min(72vh,44rem)]"
+        >
+          <div
+            className={cn(
+              'gap-6',
+              mode === 'print' ? 'grid grid-cols-1 md:grid-cols-[1fr_minmax(240px,320px)]' : '',
+            )}
+          >
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="print-paper-size">Paper size</Label>
+                <Select
+                  value={paperSize}
+                  onValueChange={(value) => setPaperSize(value as PaperSizeGroup)}
+                >
+                  <SelectTrigger id="print-paper-size" className="min-h-11">
+                    <SelectValue placeholder="Select paper size" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {paperSizeOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                        <span className="ml-2 text-muted-foreground">
+                          ({groups[option.value]?.length ?? 0})
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <Label>Printers ({paperSize})</Label>
-              {isLoadingPrinters ? (
-                <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
-                  <Spinner className="size-4" />
-                  Loading printers…
+              <div className="space-y-2">
+                <Label>Printers ({paperSize})</Label>
+                {isLoadingPrinters ? (
+                  <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
+                    <Spinner className="size-4" />
+                    Loading printers…
+                  </div>
+                ) : printersInGroup.length === 0 ? (
+                  <p className="rounded-lg border border-dashed px-3 py-6 text-center text-sm text-muted-foreground">
+                    No printers matched this paper size. Try another size group, or install the
+                    printer driver.
+                  </p>
+                ) : (
+                  <ul className="max-h-48 space-y-1 overflow-y-auto rounded-lg border p-1">
+                    {printersInGroup.map((printer) => {
+                      const selected = printer.name === printerName;
+                      return (
+                        <li key={printer.name}>
+                          <button
+                            type="button"
+                            onClick={() => setPrinterName(printer.name)}
+                            className={cn(
+                              'flex w-full items-center justify-between gap-2 rounded-md px-3 py-2.5 text-left text-sm transition-colors',
+                              selected
+                                ? 'bg-primary text-primary-foreground'
+                                : 'hover:bg-muted/60',
+                            )}
+                          >
+                            <span className="truncate font-medium">{printer.displayName}</span>
+                            {printer.isDefault && (
+                              <span
+                                className={cn(
+                                  'shrink-0 text-[10px] uppercase tracking-wide',
+                                  selected
+                                    ? 'text-primary-foreground/80'
+                                    : 'text-muted-foreground',
+                                )}
+                              >
+                                Default
+                              </span>
+                            )}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="print-copies">Copies</Label>
+                <Input
+                  id="print-copies"
+                  type="number"
+                  min={1}
+                  max={20}
+                  className="min-h-11"
+                  value={copies}
+                  onChange={(e) => setCopies(Number(e.target.value) || 1)}
+                />
+              </div>
+
+              {allowSaveDefault && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Checkbox
+                    id="save-as-default-printer"
+                    checked={saveAsDefault}
+                    onCheckedChange={(checked) => setSaveAsDefault(checked === true)}
+                  />
+                  <Label htmlFor="save-as-default-printer" className="font-normal">
+                    Remember as default printer settings
+                  </Label>
                 </div>
-              ) : printersInGroup.length === 0 ? (
-                <p className="rounded-lg border border-dashed px-3 py-6 text-center text-sm text-muted-foreground">
-                  No printers matched this paper size. Try another size group, or install the
-                  printer driver.
-                </p>
-              ) : (
-                <ul className="max-h-48 space-y-1 overflow-y-auto rounded-lg border p-1">
-                  {printersInGroup.map((printer) => {
-                    const selected = printer.name === printerName;
-                    return (
-                      <li key={printer.name}>
-                        <button
-                          type="button"
-                          onClick={() => setPrinterName(printer.name)}
-                          className={cn(
-                            'flex w-full items-center justify-between gap-2 rounded-md px-3 py-2.5 text-left text-sm transition-colors',
-                            selected ? 'bg-primary text-primary-foreground' : 'hover:bg-muted/60',
-                          )}
-                        >
-                          <span className="truncate font-medium">{printer.displayName}</span>
-                          {printer.isDefault && (
-                            <span
-                              className={cn(
-                                'shrink-0 text-[10px] uppercase tracking-wide',
-                                selected ? 'text-primary-foreground/80' : 'text-muted-foreground',
-                              )}
-                            >
-                              Default
-                            </span>
-                          )}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="print-copies">Copies</Label>
-              <Input
-                id="print-copies"
-                type="number"
-                min={1}
-                max={20}
-                className="min-h-11"
-                value={copies}
-                onChange={(e) => setCopies(Number(e.target.value) || 1)}
-              />
-            </div>
-
-            {allowSaveDefault && (
-              <div className="flex items-center gap-2 text-sm">
-                <Checkbox
-                  id="save-as-default-printer"
-                  checked={saveAsDefault}
-                  onCheckedChange={(checked) => setSaveAsDefault(checked === true)}
-                />
-                <Label htmlFor="save-as-default-printer" className="font-normal">
-                  Remember as default printer settings
-                </Label>
+            {mode === 'print' && (
+              <div className="space-y-2">
+                <Label>Preview</Label>
+                <div className="flex max-h-[min(60vh,36rem)] min-h-[320px] items-start justify-center overflow-y-auto rounded-lg border bg-muted/30 p-4">
+                  {isLoadingPreview ? (
+                    <div className="flex items-center gap-2 py-16 text-sm text-muted-foreground">
+                      <Spinner className="size-4" />
+                      Loading preview…
+                    </div>
+                  ) : previewError ? (
+                    <p className="py-16 text-center text-sm text-destructive">{previewError}</p>
+                  ) : previewHtml ? (
+                    <iframe
+                      title={`Print preview ${record?.ticketId ?? ''}`.trim()}
+                      srcDoc={previewHtml}
+                      sandbox=""
+                      className={cn(
+                        'min-h-[320px] rounded-md border bg-white shadow-sm',
+                        previewWidthClass(paperSize),
+                      )}
+                    />
+                  ) : (
+                    <p className="py-16 text-center text-sm text-muted-foreground">
+                      No preview available
+                    </p>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Preview updates when you change paper size. Layout matches the printed slip.
+                </p>
               </div>
             )}
           </div>
         </DialogScrollBody>
 
-        <DialogFooter>
+        <DialogFooter className="shrink-0">
           <Button
             type="button"
             variant="outline"
