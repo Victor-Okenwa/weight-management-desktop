@@ -1,4 +1,4 @@
-import { integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 // ---------- Settings ----------
 export const settings = sqliteTable('settings', {
@@ -61,22 +61,31 @@ export const materials = sqliteTable('materials', {
 });
 
 // ---------- Records (weighing transactions) ----------
-export const records = sqliteTable('records', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  ticketId: text('ticket_id').notNull().unique(),
-  operator: text('operator'),
-  operationType: text('operation_type', { enum: ['single', 'double'] })
-    .notNull()
-    .default('single'),
-  grossWeight: real('gross_weight'),
-  tareWeight: real('tare_weight'),
-  netWeight: real('net_weight'),
-  status: text('status', { enum: ['pending', 'completed'] })
-    .notNull()
-    .default('pending'),
-  vehicleId: integer('vehicle_id').references(() => vehicles.id, { onDelete: 'set null' }),
-  materialId: integer('material_id').references(() => materials.id, { onDelete: 'set null' }),
-  remark: text('remark'),
-  createdAt: text('created_at').notNull(),
-  updatedAt: text('updated_at').notNull(),
-});
+export const records = sqliteTable(
+  'records',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    ticketId: text('ticket_id').notNull().unique(),
+    operator: text('operator'),
+    operationType: text('operation_type', { enum: ['single', 'double'] })
+      .notNull()
+      .default('single'),
+    grossWeight: real('gross_weight'),
+    tareWeight: real('tare_weight'),
+    netWeight: real('net_weight'),
+    status: text('status', { enum: ['pending', 'completed'] })
+      .notNull()
+      .default('pending'),
+    vehicleId: integer('vehicle_id').references(() => vehicles.id, { onDelete: 'set null' }),
+    materialId: integer('material_id').references(() => materials.id, { onDelete: 'set null' }),
+    remark: text('remark'),
+    createdAt: text('created_at').notNull(),
+    updatedAt: text('updated_at').notNull(),
+  },
+  (table) => ({
+    createdAtIdx: index('records_created_at_idx').on(table.createdAt),
+    statusIdx: index('records_status_idx').on(table.status),
+    vehicleIdIdx: index('records_vehicle_id_idx').on(table.vehicleId),
+    materialIdIdx: index('records_material_id_idx').on(table.materialId),
+  }),
+);

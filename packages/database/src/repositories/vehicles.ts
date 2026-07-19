@@ -1,5 +1,5 @@
 import type { PaginatedResult, Vehicle } from '@weight/shared/types/index';
-import { count, eq, inArray, sql } from 'drizzle-orm';
+import { and, count, eq, inArray, sql } from 'drizzle-orm';
 import type { DatabaseInstance } from '../index.js';
 import { records, vehicles } from '../schema/index.js';
 import { nowIso } from '../timestamps.js';
@@ -50,11 +50,17 @@ export function getAllVehicles(db: DatabaseInstance): Vehicle[] {
   return db.select().from(vehicles).orderBy(vehicles.name).all() as Vehicle[];
 }
 
+export interface VehicleFilters {
+  search?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
 export function getVehiclesPaginated(
   db: DatabaseInstance,
   page: number,
   pageSize: number,
-  filters?: { search?: string },
+  filters?: VehicleFilters,
 ): PaginatedResult<Vehicle> {
   const offset = (page - 1) * pageSize;
   const conditions = [];
@@ -62,8 +68,14 @@ export function getVehiclesPaginated(
   if (filters?.search) {
     conditions.push(sql`${vehicles.name} LIKE ${`%${filters.search}%`}`);
   }
+  if (filters?.startDate) {
+    conditions.push(sql`${vehicles.createdAt} >= ${filters.startDate}`);
+  }
+  if (filters?.endDate) {
+    conditions.push(sql`${vehicles.createdAt} <= ${filters.endDate}`);
+  }
 
-  const whereClause = conditions.length > 0 ? conditions[0] : undefined;
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
   const data = db
     .select()

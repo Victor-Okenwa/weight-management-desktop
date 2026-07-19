@@ -1,5 +1,6 @@
 import type { Material } from '@weight/shared/types/index';
 import type { ReactNode } from 'react';
+import { DialogScrollBody } from '@/components/history/shared/dialog-scroll-body';
 import {
   Dialog,
   DialogContent,
@@ -8,7 +9,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { formatDate } from '@/lib/format';
-import { DialogScrollBody } from '@/components/history/shared/dialog-scroll-body';
 
 function DetailRow({ label, value }: { label: string; value: ReactNode }) {
   return (

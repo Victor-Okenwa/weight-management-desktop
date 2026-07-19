@@ -1,14 +1,16 @@
+import type { ColumnFiltersState } from '@tanstack/react-table';
 import type { PaginatedResult, Vehicle } from '@weight/shared/types/index';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { DataTableDateFilter } from '@/components/data-table/data-table-date-filter';
 import { DeleteConfirmDialog } from '@/components/history/shared/delete-confirm-dialog';
-import { createVehiclesColumns } from '@/components/history/vehicles/vehicles-table-columns';
+import { HistoryDataTable } from '@/components/history/shared/history-data-table';
+import { getDateRangeFilter } from '@/components/history/shared/server-filter-utils';
 import { VehicleEditDialog } from '@/components/history/vehicles/vehicle-edit-dialog';
 import { VehicleViewDialog } from '@/components/history/vehicles/vehicle-view-dialog';
-import { HistoryDataTable } from '@/components/history/shared/history-data-table';
-import { logger } from '@/lib/logger';
+import { createVehiclesColumns } from '@/components/history/vehicles/vehicles-table-columns';
 import { useServerDataTable } from '@/hooks/use-server-data-table';
+import { logger } from '@/lib/logger';
 
 const CASCADE_WARNING =
   'Deleting this vehicle will also permanently delete all weight records linked to it. This action cannot be undone.';
@@ -17,8 +19,15 @@ function fetchVehicles(
   page: number,
   pageSize: number,
   search: string,
+  columnFilters: ColumnFiltersState,
 ): Promise<PaginatedResult<Vehicle>> {
-  return window.electronAPI.getVehiclesPaginated(page, pageSize, search ? { search } : undefined);
+  const { startDate, endDate } = getDateRangeFilter(columnFilters, 'createdAt');
+
+  return window.electronAPI.getVehiclesPaginated(page, pageSize, {
+    ...(search ? { search } : {}),
+    ...(startDate ? { startDate } : {}),
+    ...(endDate ? { endDate } : {}),
+  });
 }
 
 function deleteVehicles(ids: number[]): Promise<number> {
@@ -42,7 +51,7 @@ export function VehiclesTable() {
     [],
   );
 
-  const { table, isLoading, setSearch, refetch } = useServerDataTable<Vehicle>({
+  const { table, isLoading, isInitialLoading, setSearch, refetch } = useServerDataTable<Vehicle>({
     columns,
     fetchPage: fetchVehicles,
     onError: (error) => {
@@ -73,6 +82,7 @@ export function VehiclesTable() {
       <HistoryDataTable
         table={table}
         isLoading={isLoading}
+        isInitialLoading={isInitialLoading}
         columnCount={columns.length}
         entityName="vehicle"
         searchPlaceholder="Search vehicles..."

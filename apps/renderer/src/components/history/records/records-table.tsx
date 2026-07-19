@@ -1,22 +1,38 @@
 import { useNavigate } from '@tanstack/react-router';
+import type { ColumnFiltersState } from '@tanstack/react-table';
 import type { PaginatedResult, Record as WeightRecord } from '@weight/shared/types/index';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { DataTableDateFilter } from '@/components/data-table/data-table-date-filter';
 import { DataTableFacetedFilter } from '@/components/data-table/data-table-faceted-filter';
-import { DeleteConfirmDialog } from '@/components/history/shared/delete-confirm-dialog';
-import { createRecordsColumns } from '@/components/history/records/records-table-columns';
 import { RecordViewDialog } from '@/components/history/records/record-view-dialog';
+import { createRecordsColumns } from '@/components/history/records/records-table-columns';
+import { DeleteConfirmDialog } from '@/components/history/shared/delete-confirm-dialog';
 import { HistoryDataTable } from '@/components/history/shared/history-data-table';
-import { logger } from '@/lib/logger';
+import {
+  getDateRangeFilter,
+  getStringListFilter,
+} from '@/components/history/shared/server-filter-utils';
 import { useServerDataTable } from '@/hooks/use-server-data-table';
+import { logger } from '@/lib/logger';
 
 function fetchRecords(
   page: number,
   pageSize: number,
   search: string,
+  columnFilters: ColumnFiltersState,
 ): Promise<PaginatedResult<WeightRecord>> {
-  return window.electronAPI.getRecordsPaginated(page, pageSize, search ? { search } : undefined);
+  const operationTypes = getStringListFilter(columnFilters, 'operationType');
+  const statusValues = getStringListFilter(columnFilters, 'status');
+  const { startDate, endDate } = getDateRangeFilter(columnFilters, 'createdAt');
+
+  return window.electronAPI.getRecordsPaginated(page, pageSize, {
+    ...(search ? { search } : {}),
+    ...(operationTypes ? { operationType: operationTypes as ('single' | 'double')[] } : {}),
+    ...(statusValues ? { status: statusValues as ('pending' | 'completed')[] } : {}),
+    ...(startDate ? { startDate } : {}),
+    ...(endDate ? { endDate } : {}),
+  });
 }
 
 function deleteRecords(ids: number[]): Promise<number> {
@@ -42,14 +58,15 @@ export function RecordsTable() {
     [navigate],
   );
 
-  const { table, isLoading, setSearch, refetch } = useServerDataTable<WeightRecord>({
-    columns,
-    fetchPage: fetchRecords,
-    onError: (error) => {
-      logger('error', `Failed to load records: ${String(error)}`);
-      toast.error('Failed to load records');
-    },
-  });
+  const { table, isLoading, isInitialLoading, setSearch, refetch } =
+    useServerDataTable<WeightRecord>({
+      columns,
+      fetchPage: fetchRecords,
+      onError: (error) => {
+        logger('error', `Failed to load records: ${String(error)}`);
+        toast.error('Failed to load records');
+      },
+    });
 
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteItem) return;
@@ -75,6 +92,7 @@ export function RecordsTable() {
       <HistoryDataTable
         table={table}
         isLoading={isLoading}
+        isInitialLoading={isInitialLoading}
         columnCount={columns.length}
         entityName="record"
         searchPlaceholder="Search ticket, operator, vehicle..."

@@ -1,0 +1,55 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1780311600562,
+      "tag": "0000_last_gideon",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1782984019197,
+      "tag": "0001_fix_timestamp_defaults",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1784401389189,
+      "tag": "0002_typical_corsair",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1784403714057,
+      "tag": "0003_sloppy_mentor",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1784407553725,
+      "tag": "0004_regular_gladiator",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1784409075804,
+      "tag": "0005_stormy_the_stranger",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1784425069173,
+      "tag": "0006_late_chimera",
+      "breakpoints": true
+    }
+  ]
+}

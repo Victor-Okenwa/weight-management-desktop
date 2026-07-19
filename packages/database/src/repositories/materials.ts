@@ -1,5 +1,5 @@
 import type { Material, PaginatedResult } from '@weight/shared/types/index';
-import { count, eq, inArray, sql } from 'drizzle-orm';
+import { and, count, eq, inArray, sql } from 'drizzle-orm';
 import type { DatabaseInstance } from '../index.js';
 import { materials, records } from '../schema/index.js';
 import { nowIso } from '../timestamps.js';
@@ -27,11 +27,17 @@ export function getAllMaterials(db: DatabaseInstance): Material[] {
   return db.select().from(materials).orderBy(materials.name).all() as Material[];
 }
 
+export interface MaterialFilters {
+  search?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
 export function getMaterialsPaginated(
   db: DatabaseInstance,
   page: number,
   pageSize: number,
-  filters?: { search?: string },
+  filters?: MaterialFilters,
 ): PaginatedResult<Material> {
   const offset = (page - 1) * pageSize;
   const conditions = [];
@@ -39,8 +45,14 @@ export function getMaterialsPaginated(
   if (filters?.search) {
     conditions.push(sql`${materials.name} LIKE ${`%${filters.search}%`}`);
   }
+  if (filters?.startDate) {
+    conditions.push(sql`${materials.createdAt} >= ${filters.startDate}`);
+  }
+  if (filters?.endDate) {
+    conditions.push(sql`${materials.createdAt} <= ${filters.endDate}`);
+  }
 
-  const whereClause = conditions.length > 0 ? conditions[0] : undefined;
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
   const data = db
     .select()

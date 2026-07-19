@@ -1,5 +1,6 @@
 import type { Record as WeightRecord } from '@weight/shared/types/index';
 import type { ReactNode } from 'react';
+import { DialogScrollBody } from '@/components/history/shared/dialog-scroll-body';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
@@ -9,7 +10,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { formatDate } from '@/lib/format';
-import { DialogScrollBody } from '@/components/history/shared/dialog-scroll-body';
 
 function formatWeight(value: number | null): string {
   return value == null ? '--' : value.toLocaleString();

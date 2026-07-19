@@ -2,24 +2,22 @@ import {
   type ColumnDef,
   type ColumnFiltersState,
   getCoreRowModel,
-  getFacetedMinMaxValues,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
-  getFilteredRowModel,
   getSortedRowModel,
   type PaginationState,
   type RowSelectionState,
   type SortingState,
+  type Updater,
   useReactTable,
   type VisibilityState,
 } from '@tanstack/react-table';
 import type { PaginatedResult } from '@weight/shared/types/index';
 import * as React from 'react';
 
-type FetchPage<TData> = (
+export type FetchPage<TData> = (
   page: number,
   pageSize: number,
   search: string,
+  columnFilters: ColumnFiltersState,
 ) => Promise<PaginatedResult<TData>>;
 
 interface UseServerDataTableProps<TData extends { id: number }> {
@@ -30,9 +28,8 @@ interface UseServerDataTableProps<TData extends { id: number }> {
 }
 
 /**
- * Hybrid table state: pagination and search are served from the main process,
- * while filtering, sorting, column visibility and selection are handled on the
- * client against the currently loaded page.
+ * Server-driven table state: pagination, search, and column filters are served
+ * from the main process. Sorting and selection apply to the loaded page.
  */
 export function useServerDataTable<TData extends { id: number }>({
   columns,
@@ -53,6 +50,7 @@ export function useServerDataTable<TData extends { id: number }>({
   const [data, setData] = React.useState<TData[]>([]);
   const [total, setTotal] = React.useState(0);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [hasLoaded, setHasLoaded] = React.useState(false);
 
   const onErrorRef = React.useRef(onError);
   onErrorRef.current = onError;
@@ -62,7 +60,7 @@ export function useServerDataTable<TData extends { id: number }>({
   const load = React.useCallback(async () => {
     setIsLoading(true);
     try {
-      const result = await fetchPage(pageIndex + 1, pageSize, search);
+      const result = await fetchPage(pageIndex + 1, pageSize, search, columnFilters);
       setData(result.data);
       setTotal(result.total);
     } catch (error) {
@@ -71,8 +69,9 @@ export function useServerDataTable<TData extends { id: number }>({
       setTotal(0);
     } finally {
       setIsLoading(false);
+      setHasLoaded(true);
     }
-  }, [fetchPage, pageIndex, pageSize, search]);
+  }, [fetchPage, pageIndex, pageSize, search, columnFilters]);
 
   React.useEffect(() => {
     void load();
@@ -84,7 +83,17 @@ export function useServerDataTable<TData extends { id: number }>({
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
   }, []);
 
+  const onColumnFiltersChange = React.useCallback((updater: Updater<ColumnFiltersState>) => {
+    setColumnFilters((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      return next;
+    });
+    setRowSelection({});
+    setPagination((prev) => (prev.pageIndex === 0 ? prev : { ...prev, pageIndex: 0 }));
+  }, []);
+
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  const isInitialLoading = isLoading && !hasLoaded;
 
   const table = useReactTable({
     data,
@@ -94,18 +103,23 @@ export function useServerDataTable<TData extends { id: number }>({
     state: { pagination, sorting, columnFilters, rowSelection, columnVisibility },
     enableRowSelection: true,
     manualPagination: true,
+    manualFiltering: true,
     onPaginationChange: setPagination,
     onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
+    onColumnFiltersChange,
     onRowSelectionChange: setRowSelection,
     onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
-    getFacetedMinMaxValues: getFacetedMinMaxValues(),
   });
 
-  return { table, isLoading, search, setSearch, total, refetch: load };
+  return {
+    table,
+    isLoading,
+    isInitialLoading,
+    search,
+    setSearch,
+    total,
+    refetch: load,
+  };
 }

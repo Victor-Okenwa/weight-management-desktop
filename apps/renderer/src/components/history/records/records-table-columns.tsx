@@ -1,10 +1,10 @@
-import type { Record as WeightRecord } from '@weight/shared/types/index';
 import type { ColumnDef } from '@tanstack/react-table';
+import type { Record as WeightRecord } from '@weight/shared/types/index';
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { DataTableRowActions } from '@/components/history/shared/data-table-row-actions';
 import { dateRangeFilterFn, facetedFilterFn } from '@/components/history/shared/filter-fns';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { formatDate } from '@/lib/format';
 
 function formatWeight(value: number | null): string {

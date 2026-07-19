@@ -1,9 +1,9 @@
-import type { Vehicle } from '@weight/shared/types/index';
 import type { ColumnDef } from '@tanstack/react-table';
+import type { Vehicle } from '@weight/shared/types/index';
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
-import { Checkbox } from '@/components/ui/checkbox';
 import { DataTableRowActions } from '@/components/history/shared/data-table-row-actions';
 import { dateRangeFilterFn } from '@/components/history/shared/filter-fns';
+import { Checkbox } from '@/components/ui/checkbox';
 import { formatDate } from '@/lib/format';
 
 export interface VehiclesColumnActions {
