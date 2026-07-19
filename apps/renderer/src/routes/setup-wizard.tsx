@@ -69,7 +69,7 @@ export const hardwareSchema = z.object({
 export type Hardware = z.infer<typeof hardwareSchema>;
 
 export const preferencesSchema = z.object({
-  defaultUnit: z.enum(['kg', 'ton', 'lb']),
+  defaultUnit: z.literal('kg'),
   theme: z.enum(['light', 'dark', 'system']),
   ticketPrefix: z
     .string()
@@ -305,8 +305,7 @@ function RouteComponent() {
           return;
         }
 
-        const unit = settings?.weightUnit;
-        const defaultUnit = unit === 'kg' || unit === 'ton' || unit === 'lb' ? unit : 'kg';
+        const defaultUnit = 'kg' as const;
         const theme =
           settings?.theme === 'light' || settings?.theme === 'dark' || settings?.theme === 'system'
             ? settings.theme

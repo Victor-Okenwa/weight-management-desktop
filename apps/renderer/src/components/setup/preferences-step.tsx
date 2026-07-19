@@ -13,7 +13,7 @@ import { RequiredLabel, requiredFields } from './required-label';
 
 type PreferencesFields = {
   preferences: {
-    defaultUnit: 'kg' | 'ton' | 'lb';
+    defaultUnit: 'kg';
     theme: 'light' | 'dark' | 'system';
     ticketPrefix: string;
     ticketFooter: string;
@@ -59,11 +59,12 @@ export function PreferencesStep() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="kg">Kilograms (kg)</SelectItem>
-                <SelectItem value="ton">Tons (ton)</SelectItem>
-                <SelectItem value="lb">Pounds (lb)</SelectItem>
               </SelectContent>
             </Select>
-            <FieldDescription>Select the default unit for weight measurements.</FieldDescription>
+            <FieldDescription>
+              Choose the default unit for weight measurements. Only{' '}
+              <span className="font-semibold">kg</span> is supported for now.
+            </FieldDescription>
             {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
           </Field>
         )}

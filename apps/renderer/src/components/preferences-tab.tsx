@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Spinner } from './ui/spinner';
 
 const preferencesSchema = z.object({
-  defaultUnit: z.enum(['kg', 'ton', 'lb']),
+  defaultUnit: z.literal('kg'),
   ticketPrefix: z
     .string()
     .min(1, 'Ticket prefix is required')
@@ -37,7 +37,7 @@ export function PreferencesTab() {
   const form = useForm<Preferences>({
     resolver: zodResolver(preferencesSchema),
     defaultValues: {
-      defaultUnit: (settings?.weightUnit as unknown as undefined) || 'kg',
+      defaultUnit: 'kg',
       ticketPrefix: settings?.ticketPrefix,
       ticketFooter: settings?.ticketFooter,
     },
@@ -123,7 +123,7 @@ export function PreferencesTab() {
                     <Select
                       name={field.name}
                       value={field.value}
-                      defaultValue={settings?.weightUnit}
+                      defaultValue="kg"
                       onValueChange={field.onChange}
                     >
                       <SelectTrigger
@@ -135,12 +135,11 @@ export function PreferencesTab() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="kg">Kilograms (kg)</SelectItem>
-                        <SelectItem value="ton">Tons (ton)</SelectItem>
-                        <SelectItem value="lb">Pounds (lb)</SelectItem>
                       </SelectContent>
                     </Select>
                     <FieldDescription>
-                      Select the default unit for weight measurements.
+                      Choose the default unit for weight measurements. Only{' '}
+                      <span className="font-semibold">kg</span> is supported for now.
                     </FieldDescription>
                     {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                   </Field>
