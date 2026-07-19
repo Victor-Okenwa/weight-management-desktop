@@ -19,6 +19,8 @@ export const requiredFields: Record<string, boolean> = {
   'hardware.dataBits': true,
   'hardware.autoOpen': false,
   'hardware.indicator': true,
+  'hardware.stableTolerance': true,
+  'hardware.stableDurationMs': true,
   'preferences.defaultUnit': true,
   'preferences.theme': true,
   'preferences.ticketPrefix': true,

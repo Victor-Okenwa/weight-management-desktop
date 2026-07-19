@@ -1,20 +1,23 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { appearanceOptions } from '@weight/shared/constants/index';
+import { Monitor, Moon, Sun } from 'lucide-react';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import z from 'zod';
+import { FieldLabelWithInfo } from '@/components/serial-config-help';
 import { useSettingsStore } from '@/store/settingsStore';
+import { cn } from '@/lib/utils';
 import { type Theme, useTheme } from './providers/theme-provider';
 import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Field, FieldDescription, FieldError, FieldLabel } from './ui/field';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Field, FieldError } from './ui/field';
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Spinner } from './ui/spinner';
 
 const preferencesSchema = z.object({
-  defaultUnit: z.enum(['kg', 'ton', 'lb']),
+  defaultUnit: z.literal('kg'),
   ticketPrefix: z
     .string()
     .min(1, 'Ticket prefix is required')
@@ -29,35 +32,43 @@ const preferencesSchema = z.object({
 
 type Preferences = z.infer<typeof preferencesSchema>;
 
+const themeIcons = {
+  light: Sun,
+  dark: Moon,
+  system: Monitor,
+} as const;
+
 export function PreferencesTab() {
   const { settings } = useSettingsStore();
   const { setTheme } = useTheme();
   const [isThemeLoading, setIsThemeLoading] = useState(false);
+  const [pendingTheme, setPendingTheme] = useState<Theme | null>(null);
 
   const form = useForm<Preferences>({
     resolver: zodResolver(preferencesSchema),
     defaultValues: {
-      defaultUnit: (settings?.weightUnit as unknown as undefined) || 'kg',
-      ticketPrefix: settings?.ticketPrefix,
-      ticketFooter: settings?.ticketFooter,
+      defaultUnit: 'kg',
+      ticketPrefix: settings?.ticketPrefix ?? 'SRE',
+      ticketFooter: settings?.ticketFooter ?? 'Thank you for your custom.',
     },
   });
 
   async function handleThemeChange(theme: Theme) {
     setIsThemeLoading(true);
+    setPendingTheme(theme);
 
     try {
-      //   if (settings?.theme === theme) return;
       await window.electronAPI.updateSettings({
-        theme: theme,
+        theme,
       });
 
-      toast.success('Theme change');
+      toast.success('Theme updated');
       setTheme(theme);
     } catch (error) {
-      console.log((error as Error).message || 'Something went wrong');
+      toast.error((error as Error).message || 'Failed to update theme');
     } finally {
       setIsThemeLoading(false);
+      setPendingTheme(null);
     }
   }
 
@@ -69,10 +80,10 @@ export function PreferencesTab() {
         ticketFooter: data.ticketFooter,
       });
 
-      toast.success('Updates are successful');
+      toast.success('Preferences updated');
       location.reload();
     } catch (error) {
-      console.log((error as Error).message || 'Something went wrong');
+      toast.error((error as Error).message || 'Failed to update preferences');
     }
   }
 
@@ -80,50 +91,80 @@ export function PreferencesTab() {
     <article className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle>Change Theme</CardTitle>
+          <CardTitle>Appearance</CardTitle>
+          <CardDescription>Choose how the application looks on this station.</CardDescription>
         </CardHeader>
 
-        <CardContent className="flex flex-wrap gap-4">
-          {appearanceOptions.map((theme) => (
-            <Button
-              className="flex flex-col h-fit! justify-start items-start text-left! py-5 px-5 grow"
-              key={theme.value}
-              disabled={isThemeLoading}
-              onClick={() => handleThemeChange(theme.value)}
-              variant={settings?.theme === theme.value.toLowerCase() ? 'default' : 'outline'}
-            >
-              {isThemeLoading ? (
-                <div>
-                  <Spinner /> Applying changes
-                </div>
-              ) : (
-                <>
-                  <strong>{theme.label}</strong>
-                  <p>{theme.description}</p>
-                </>
-              )}
-            </Button>
-          ))}
+        <CardContent>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {appearanceOptions.map((theme) => {
+              const Icon = themeIcons[theme.value as keyof typeof themeIcons] ?? Monitor;
+              const isActive = settings?.theme === theme.value.toLowerCase();
+              const isPending = isThemeLoading && pendingTheme === theme.value;
+
+              return (
+                <Button
+                  key={theme.value}
+                  type="button"
+                  disabled={isThemeLoading}
+                  onClick={() => handleThemeChange(theme.value)}
+                  variant={isActive ? 'default' : 'outline'}
+                  className={cn(
+                    'h-auto flex-col items-start justify-start gap-2 px-4 py-4 text-left whitespace-normal',
+                    isActive && 'ring-1 ring-primary/40',
+                  )}
+                >
+                  <div className="flex w-full items-center gap-2">
+                    {isPending ? (
+                      <Spinner className="size-4" />
+                    ) : (
+                      <Icon className="size-4 shrink-0" />
+                    )}
+                    <strong className="text-sm">{theme.label}</strong>
+                  </div>
+                  <p
+                    className={cn(
+                      'text-xs font-normal leading-relaxed',
+                      isActive ? 'text-primary-foreground/80' : 'text-muted-foreground',
+                    )}
+                  >
+                    {theme.description}
+                  </p>
+                </Button>
+              );
+            })}
+          </div>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Other Preferences</CardTitle>
+          <CardTitle>Tickets & Units</CardTitle>
+          <CardDescription>Defaults used when recording and printing tickets.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-            <div className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 items-start gap-x-4 gap-y-5 md:grid-cols-2">
               <Controller
                 name="defaultUnit"
                 control={form.control}
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="defaultUnit">Default Unit</FieldLabel>
+                    <FieldLabelWithInfo
+                      htmlFor="defaultUnit"
+                      info={
+                        <span>
+                          Choose the default unit for weight measurements. Only{' '}
+                          <strong>kg</strong> is supported for now.
+                        </span>
+                      }
+                    >
+                      Default Unit
+                    </FieldLabelWithInfo>
                     <Select
                       name={field.name}
                       value={field.value}
-                      defaultValue={settings?.weightUnit}
+                      defaultValue="kg"
                       onValueChange={field.onChange}
                     >
                       <SelectTrigger
@@ -135,24 +176,29 @@ export function PreferencesTab() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="kg">Kilograms (kg)</SelectItem>
-                        <SelectItem value="ton">Tons (ton)</SelectItem>
-                        <SelectItem value="lb">Pounds (lb)</SelectItem>
                       </SelectContent>
                     </Select>
-                    <FieldDescription>
-                      Select the default unit for weight measurements.
-                    </FieldDescription>
                     {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                   </Field>
                 )}
               />
+
               <Controller
                 name="ticketPrefix"
-                defaultValue={settings?.ticketPrefix}
                 control={form.control}
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="ticketPrefix">Ticket Prefix</FieldLabel>
+                    <FieldLabelWithInfo
+                      htmlFor="ticketPrefix"
+                      info={
+                        <span>
+                          Short prefix used for ticket numbers, e.g. <strong>SRE</strong> becomes
+                          SRE-0001. Maximum 3 characters.
+                        </span>
+                      }
+                    >
+                      Ticket Prefix
+                    </FieldLabelWithInfo>
                     <Input
                       {...field}
                       id="ticketPrefix"
@@ -160,9 +206,6 @@ export function PreferencesTab() {
                       placeholder="SRE"
                       maxLength={3}
                     />
-                    <FieldDescription>
-                      The prefix used for ticket numbers, e.g. "SRE".
-                    </FieldDescription>
                     {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                   </Field>
                 )}
@@ -170,35 +213,48 @@ export function PreferencesTab() {
 
               <Controller
                 name="ticketFooter"
-                defaultValue={settings?.ticketFooter}
                 control={form.control}
                 render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="ticketFooter">Ticket Footer</FieldLabel>
+                  <Field className="md:col-span-2" data-invalid={fieldState.invalid}>
+                    <FieldLabelWithInfo
+                      htmlFor="ticketFooter"
+                      info={
+                        <span>
+                          Message printed at the bottom of each ticket. Keep it short and clear for
+                          customers.
+                        </span>
+                      }
+                    >
+                      Ticket Footer
+                    </FieldLabelWithInfo>
                     <Input
                       {...field}
                       id="ticketFooter"
                       className="min-h-12"
                       placeholder="Thank you for your custom"
                     />
-                    <FieldDescription>
-                      The message displayed at the bottom of the printed ticket.
-                    </FieldDescription>
                     {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                   </Field>
                 )}
               />
             </div>
 
-            <Button disabled={form.formState.isSubmitting} className="mt-8 px-16 py-7">
-              {form.formState.isSubmitting ? (
-                <>
-                  <Spinner /> Updating Preferences...
-                </>
-              ) : (
-                'Update Preferences'
-              )}
-            </Button>
+            <div className="flex justify-end border-t border-border/60 pt-5">
+              <Button
+                type="submit"
+                size="lg"
+                disabled={form.formState.isSubmitting}
+                className="min-w-44"
+              >
+                {form.formState.isSubmitting ? (
+                  <>
+                    <Spinner /> Updating...
+                  </>
+                ) : (
+                  'Update Preferences'
+                )}
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>

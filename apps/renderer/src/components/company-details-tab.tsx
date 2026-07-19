@@ -1,11 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { FieldLabelWithInfo } from '@/components/serial-config-help';
 import { type CompanyDetails, companyDetailsSchema } from '@/routes/setup-wizard';
 import { useSettingsStore } from '@/store/settingsStore';
 import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Field, FieldError, FieldGroup, FieldLabel } from './ui/field';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Field, FieldError } from './ui/field';
 import { Input } from './ui/input';
 import { Spinner } from './ui/spinner';
 
@@ -30,118 +31,153 @@ export function CompanyDetailsTab() {
         companyPhone: data.phone,
       });
 
-      toast.success('Updates are successful');
+      toast.success('Company details updated');
       location.reload();
     } catch (error) {
-      console.log((error as Error).message || 'Something went wrong');
+      toast.error((error as Error).message || 'Failed to update company details');
     }
   }
 
   return (
-    <div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Company Details</CardTitle>
-        </CardHeader>
+    <Card>
+      <CardHeader>
+        <CardTitle>Company Details</CardTitle>
+        <CardDescription>
+          Shown on printed tickets and station branding. Company name is required.
+        </CardDescription>
+      </CardHeader>
 
-        <CardContent>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-            <FieldGroup className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              {/* COMPANY NAME */}
-              <Controller
-                name="name"
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="name">Company Name</FieldLabel>
+      <CardContent>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <div className="grid grid-cols-1 items-start gap-x-4 gap-y-5 md:grid-cols-2">
+            <Controller
+              name="name"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabelWithInfo
+                    htmlFor="name"
+                    info={
+                      <span>
+                        Legal or trading name printed on tickets and shown in the app. This field is
+                        required.
+                      </span>
+                    }
+                  >
+                    Company Name
+                  </FieldLabelWithInfo>
+                  <Input
+                    {...field}
+                    id="name"
+                    className="min-h-12 capitalize"
+                    placeholder="Solution Road Equipments and Spars Limited"
+                  />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
 
-                    <Input
-                      {...field}
-                      id="name"
-                      className="min-h-12 capitalize"
-                      placeholder="Solution Road Equipments and Spars Limited"
-                    />
+            <Controller
+              name="email"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabelWithInfo
+                    htmlFor="email"
+                    info={
+                      <span>
+                        Contact email for your company. Optional, but useful on tickets and for
+                        support.
+                      </span>
+                    }
+                  >
+                    Company Email
+                  </FieldLabelWithInfo>
+                  <Input
+                    {...field}
+                    id="email"
+                    type="email"
+                    className="min-h-12"
+                    placeholder="company@example.com"
+                  />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
 
-                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                  </Field>
-                )}
-              />
+            <Controller
+              name="address"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabelWithInfo
+                    htmlFor="address"
+                    info={
+                      <span>
+                        Business address printed on tickets. Keep it short enough to fit on a
+                        receipt.
+                      </span>
+                    }
+                  >
+                    Company Address
+                  </FieldLabelWithInfo>
+                  <Input
+                    {...field}
+                    id="address"
+                    className="min-h-12"
+                    placeholder="123 Main Street"
+                  />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
 
-              {/* EMAIL */}
-              <Controller
-                name="email"
-                defaultValue={settings?.companyEmail}
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="email">Company Email</FieldLabel>
+            <Controller
+              name="phone"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabelWithInfo
+                    htmlFor="phone"
+                    info={
+                      <span>
+                        Phone number customers can call. Include country code when possible (e.g.{' '}
+                        <strong>+234…</strong>).
+                      </span>
+                    }
+                  >
+                    Phone Number
+                  </FieldLabelWithInfo>
+                  <Input
+                    {...field}
+                    id="phone"
+                    className="min-h-12"
+                    placeholder="+23480123456789"
+                  />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
+          </div>
 
-                    <Input
-                      {...field}
-                      id="email"
-                      className="min-h-12"
-                      placeholder="company@example.com"
-                    />
-
-                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                  </Field>
-                )}
-              />
-
-              {/* ADDRESS */}
-              <Controller
-                name="address"
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="address">Company Address</FieldLabel>
-
-                    <Input
-                      {...field}
-                      id="address"
-                      className="min-h-12"
-                      placeholder="123 Main Street"
-                    />
-
-                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                  </Field>
-                )}
-              />
-
-              {/* PHONE */}
-              <Controller
-                name="phone"
-                defaultValue={settings?.companyPhone}
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="phone">Phone Number</FieldLabel>
-
-                    <Input
-                      {...field}
-                      id="phone"
-                      className="min-h-12"
-                      placeholder="+23480123456789"
-                    />
-
-                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                  </Field>
-                )}
-              />
-            </FieldGroup>
-
-            <Button disabled={form.formState.isSubmitting} className="mt-8 px-16 py-7">
+          <div className="flex justify-end border-t border-border/60 pt-5">
+            <Button
+              type="submit"
+              size="lg"
+              disabled={form.formState.isSubmitting}
+              className="min-w-44"
+            >
               {form.formState.isSubmitting ? (
                 <>
-                  <Spinner /> Updating details...
+                  <Spinner /> Updating...
                 </>
               ) : (
                 'Update Details'
               )}
             </Button>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

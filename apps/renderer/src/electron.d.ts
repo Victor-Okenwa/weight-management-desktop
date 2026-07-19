@@ -1,9 +1,11 @@
+import type { HealthResult } from '@weight/database/repositories/health';
+import type { MaterialFilters } from '@weight/database/repositories/materials';
 import type {
   CreateRecordInput,
-  HealthResult,
   RecordFilters,
   UpdateRecordInput,
 } from '@weight/database/repositories/record';
+import type { VehicleFilters } from '@weight/database/repositories/vehicles';
 import type { SerialStatus, WeightReading } from '@weight/shared';
 import type {
   ActivateLicenseResult,
@@ -55,7 +57,7 @@ declare global {
       getMaterialsPaginated: (
         page: number,
         pageSize: number,
-        filters?: { search?: string },
+        filters?: MaterialFilters,
       ) => Promise<PaginatedResult<Material>>;
       updateMaterial: (id: number, data: { name?: string }) => Promise<Material | null>;
       deleteMaterial: (id: number) => Promise<void>;
@@ -69,7 +71,7 @@ declare global {
       getVehiclesPaginated: (
         page: number,
         pageSize: number,
-        filters?: { search?: string },
+        filters?: VehicleFilters,
       ) => Promise<PaginatedResult<Vehicle>>;
       updateVehicle: (
         id: number,

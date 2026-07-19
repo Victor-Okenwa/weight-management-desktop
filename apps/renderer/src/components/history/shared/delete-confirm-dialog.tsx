@@ -1,3 +1,4 @@
+import { DialogScrollBody } from '@/components/history/shared/dialog-scroll-body';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -8,7 +9,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { DialogScrollBody } from '@/components/history/shared/dialog-scroll-body';
 import { Spinner } from '@/components/ui/spinner';
 
 interface DeleteConfirmDialogProps {

@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react';
 import type { Material } from '@weight/shared/types/index';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { DialogScrollBody } from '@/components/history/shared/dialog-scroll-body';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -11,8 +13,6 @@ import {
 } from '@/components/ui/dialog';
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { DialogScrollBody } from '@/components/history/shared/dialog-scroll-body';
-import { toast } from 'sonner';
 
 interface MaterialEditDialogProps {
   material: Material | null;

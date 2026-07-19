@@ -8,6 +8,8 @@ import {
   type IndicatorType,
   type IWeightParser,
 } from '../parser/index.js';
+import { StabilityDetector } from './stability-detector.js';
+
 export class SerialManager {
   private port: SerialPort | null = null;
   private streamParser: Transform | null = null;
@@ -17,6 +19,7 @@ export class SerialManager {
   private currentStatus: SerialStatus = 'idle';
   private onStatus?: (status: SerialStatus) => void;
   private unit = 'kg';
+  private readonly stability: StabilityDetector;
 
   private noDataTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly NO_DATA_DELAY = 5000; // 5 seconds
@@ -33,15 +36,26 @@ export class SerialManager {
     indicatorType: IndicatorType,
     onWeight?: (reading: WeightReading) => void,
     onStatus?: (status: SerialStatus) => void,
+    stability?: { tolerance?: number; durationMs?: number },
   ) {
     this.indicatorType = indicatorType;
     this.weightParser = createWeightParser(indicatorType);
     this.onWeight = onWeight;
     this.onStatus = onStatus;
+    this.stability = new StabilityDetector(
+      stability?.tolerance ?? 0.5,
+      stability?.durationMs ?? 3000,
+    );
   }
 
   public getStatus(): SerialStatus {
     return this.currentStatus;
+  }
+
+  /** Update stability config from settings (resets the settling window). */
+  public setStabilityConfig(tolerance: number, durationMs: number): void {
+    this.stability.setConfig(tolerance, durationMs);
+    logger.info(`Stability config updated: tolerance=${tolerance}, durationMs=${durationMs}`);
   }
 
   connect(serialOptions: SerialOptions) {
@@ -58,6 +72,7 @@ export class SerialManager {
     this.manualDisconnect = false; // reset because we're trying to connect again
     this.currentStatus = 'connecting';
     this.onStatus?.('connecting');
+    this.stability.reset();
 
     this.port = new SerialPort({
       path: serialOptions.port,
@@ -73,13 +88,16 @@ export class SerialManager {
 
     this.streamParser.on('data', (chunk: string | Buffer) => {
       const line = typeof chunk === 'string' ? chunk : chunk.toString();
-      const reading = this.weightParser.parse(line.trim(), this.unit);
-      if (reading) {
+      const parsed = this.weightParser.parse(line.trim(), this.unit);
+      if (parsed) {
         this.clearNoDataTimer();
         if (this.currentStatus !== 'connected') {
           this.currentStatus = 'connected';
           this.onStatus?.('connected');
         }
+
+        const isStable = this.stability.evaluate(parsed.weight);
+        const reading: WeightReading = { ...parsed, isStable };
 
         logger.debug(
           `[${this.indicatorType}] Weight: ${reading.weight} ${reading.unit} ${reading.isStable ? 'STABLE' : ''}`,
@@ -159,6 +177,7 @@ export class SerialManager {
 
     this.manualDisconnect = true;
     this.clearReconnectTimer();
+    this.stability.reset();
     if (this.port?.isOpen) {
       this.port.close((err) => {
         if (err) {
@@ -176,6 +195,7 @@ export class SerialManager {
 
   private cleanupPort() {
     this.clearNoDataTimer();
+    this.stability.reset();
 
     // Remove listeners to avoid memory leaks, then null references
     if (this.port) {

@@ -2,6 +2,7 @@ import type { Table } from '@tanstack/react-table';
 import { Trash2, X } from 'lucide-react';
 import * as React from 'react';
 import { toast } from 'sonner';
+import { DialogScrollBody } from '@/components/history/shared/dialog-scroll-body';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,7 +15,6 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { DialogScrollBody } from '@/components/history/shared/dialog-scroll-body';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
 

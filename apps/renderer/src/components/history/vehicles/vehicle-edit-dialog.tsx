@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react';
 import type { Vehicle } from '@weight/shared/types/index';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { DialogScrollBody } from '@/components/history/shared/dialog-scroll-body';
 import { WeightCaptureArea } from '@/components/record-weight-shared/weight-capture-area';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,10 +14,8 @@ import {
 } from '@/components/ui/dialog';
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { DialogScrollBody } from '@/components/history/shared/dialog-scroll-body';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useWeightStore } from '@/store/weightStore';
-import { toast } from 'sonner';
 
 interface VehicleEditDialogProps {
   vehicle: Vehicle | null;

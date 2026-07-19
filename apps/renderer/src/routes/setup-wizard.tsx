@@ -64,12 +64,21 @@ export const hardwareSchema = z.object({
     }),
   autoOpen: z.boolean(),
   indicator: z.string().min(1, 'Indicator is required'),
+  stableTolerance: z.coerce
+    .number({ message: 'Tolerance is required' })
+    .min(0, 'Tolerance cannot be negative')
+    .max(100, 'Tolerance is too large'),
+  stableDurationMs: z.coerce
+    .number({ message: 'Duration is required' })
+    .int('Duration must be a whole number')
+    .min(100, 'Duration must be at least 100 ms')
+    .max(60_000, 'Duration must be at most 60 seconds'),
 });
 
 export type Hardware = z.infer<typeof hardwareSchema>;
 
 export const preferencesSchema = z.object({
-  defaultUnit: z.enum(['kg', 'ton', 'lb']),
+  defaultUnit: z.literal('kg'),
   theme: z.enum(['light', 'dark', 'system']),
   ticketPrefix: z
     .string()
@@ -191,6 +200,8 @@ const steps = [
       'hardware.dataBits',
       'hardware.autoOpen',
       'hardware.indicator',
+      'hardware.stableTolerance',
+      'hardware.stableDurationMs',
     ] as const,
   },
   {
@@ -255,6 +266,8 @@ function RouteComponent() {
         dataBits: 8,
         autoOpen: false,
         indicator: '',
+        stableTolerance: 0.5,
+        stableDurationMs: 3000,
       },
       preferences: {
         defaultUnit: 'kg',
@@ -305,8 +318,7 @@ function RouteComponent() {
           return;
         }
 
-        const unit = settings?.weightUnit;
-        const defaultUnit = unit === 'kg' || unit === 'ton' || unit === 'lb' ? unit : 'kg';
+        const defaultUnit = 'kg' as const;
         const theme =
           settings?.theme === 'light' || settings?.theme === 'dark' || settings?.theme === 'system'
             ? settings.theme
@@ -353,6 +365,8 @@ function RouteComponent() {
               : 8,
             autoOpen: settings?.autoOpen ?? false,
             indicator: settings?.indicatorType ?? '',
+            stableTolerance: settings?.stableTolerance ?? 0.5,
+            stableDurationMs: settings?.stableDurationMs ?? 3000,
           },
           preferences: {
             defaultUnit,
@@ -466,8 +480,8 @@ function RouteComponent() {
         autoOpen: data.hardware.autoOpen,
         indicatorType: data.hardware.indicator,
         weightUnit: data.preferences.defaultUnit,
-        stableTolerance: existing?.stableTolerance ?? 0.5,
-        stableDurationMs: existing?.stableDurationMs ?? 3000,
+        stableTolerance: data.hardware.stableTolerance,
+        stableDurationMs: data.hardware.stableDurationMs,
         theme: data.preferences.theme,
         autoPrint: existing?.autoPrint ?? false,
         printerName: existing?.printerName ?? '',

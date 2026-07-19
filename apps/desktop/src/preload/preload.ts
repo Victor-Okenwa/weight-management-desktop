@@ -1,9 +1,9 @@
+import type { HealthResult } from '@weight/database/repositories/health';
 import type {
   CreateRecordInput,
   RecordFilters,
   UpdateRecordInput,
 } from '@weight/database/repositories/record';
-import type { HealthResult } from '@weight/database/repositories/health';
 import type {
   ActivateLicenseResult,
   AuthStatus,
@@ -71,7 +71,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getMaterialsPaginated: (
     page: number,
     pageSize: number,
-    filters?: { search?: string },
+    filters?: { search?: string; startDate?: string; endDate?: string },
   ): Promise<PaginatedResult<Material>> =>
     ipcRenderer.invoke('materials:get-paginated', page, pageSize, filters),
   updateMaterial: (id: number, data: { name?: string }): Promise<Material | null> =>
@@ -88,7 +88,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getVehiclesPaginated: (
     page: number,
     pageSize: number,
-    filters?: { search?: string },
+    filters?: { search?: string; startDate?: string; endDate?: string },
   ): Promise<PaginatedResult<Vehicle>> =>
     ipcRenderer.invoke('vehicles:get-paginated', page, pageSize, filters),
   updateVehicle: (

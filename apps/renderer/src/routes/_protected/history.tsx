@@ -2,6 +2,7 @@
 
 import { createFileRoute } from '@tanstack/react-router';
 import { HistoryIcon } from 'lucide-react';
+import { useState } from 'react';
 import { MaterialsTable } from '@/components/history/materials/materials-table';
 import { RecordsTable } from '@/components/history/records/records-table';
 import { VehiclesTable } from '@/components/history/vehicles/vehicles-table';
@@ -13,7 +14,11 @@ export const Route = createFileRoute('/_protected/history')({
   component: RouteComponent,
 });
 
+type HistoryTab = 'records' | 'vehicles' | 'materials';
+
 function RouteComponent() {
+  const [tab, setTab] = useState<HistoryTab>('records');
+
   return (
     <TooltipProvider>
       <div className="mx-auto w-full min-w-0 max-w-6xl space-y-6 overflow-x-hidden p-6">
@@ -31,20 +36,24 @@ function RouteComponent() {
 
         <Separator />
 
-        <Tabs defaultValue="records" className="flex min-w-0 w-full flex-col">
+        <Tabs
+          value={tab}
+          onValueChange={(value) => setTab(value as HistoryTab)}
+          className="flex min-w-0 w-full flex-col"
+        >
           <TabsList>
             <TabsTrigger value="records">Records</TabsTrigger>
             <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
             <TabsTrigger value="materials">Materials</TabsTrigger>
           </TabsList>
           <TabsContent value="records" className="min-w-0">
-            <RecordsTable />
+            {tab === 'records' ? <RecordsTable /> : null}
           </TabsContent>
           <TabsContent value="vehicles" className="min-w-0">
-            <VehiclesTable />
+            {tab === 'vehicles' ? <VehiclesTable /> : null}
           </TabsContent>
           <TabsContent value="materials" className="min-w-0">
-            <MaterialsTable />
+            {tab === 'materials' ? <MaterialsTable /> : null}
           </TabsContent>
         </Tabs>
       </div>

@@ -41,6 +41,8 @@ export async function initDatabase(dbPath: string): Promise<DatabaseInstance> {
   sqldb.run('PRAGMA journal_mode = WAL;'); // will be ignored (in‑memory), but harmless
   sqldb.run('PRAGMA busy_timeout = 5000;');
   sqldb.run('PRAGMA foreign_keys = ON;');
+  sqldb.run('PRAGMA temp_store = MEMORY;');
+  sqldb.run('PRAGMA cache_size = -64000;');
 
   const db = drizzle(sqldb, { schema });
 

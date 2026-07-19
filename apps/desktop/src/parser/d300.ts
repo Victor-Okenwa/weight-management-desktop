@@ -44,12 +44,11 @@ export class D300StreamParser extends Transform {
 }
 
 /**
- * Parses a D300 weight string and detects stability.
+ * Parses a D300 weight string.
  * Example input: "100Wt"
+ * Stability is decided by SerialManager (tolerance + duration).
  */
 export class D300WeightParser {
-  private lastWeight: number | null = null;
-
   parse(
     data: string,
     unit: string = 'kg',
@@ -58,8 +57,6 @@ export class D300WeightParser {
     const match = trimmed.match(/^(-?\d+(\.\d+)?)\s*Wt$/);
     if (!match) return null;
     const weight = Number.parseFloat(match[1]);
-    const isStable = this.lastWeight !== null && weight === this.lastWeight;
-    this.lastWeight = weight;
-    return { weight, unit, raw: trimmed, isStable };
+    return { weight, unit, raw: trimmed, isStable: false };
   }
 }

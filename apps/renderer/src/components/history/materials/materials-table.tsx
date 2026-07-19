@@ -1,12 +1,14 @@
+import type { ColumnFiltersState } from '@tanstack/react-table';
 import type { Material, PaginatedResult } from '@weight/shared/types/index';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { DataTableDateFilter } from '@/components/data-table/data-table-date-filter';
-import { DeleteConfirmDialog } from '@/components/history/shared/delete-confirm-dialog';
-import { createMaterialsColumns } from '@/components/history/materials/materials-table-columns';
 import { MaterialEditDialog } from '@/components/history/materials/material-edit-dialog';
 import { MaterialViewDialog } from '@/components/history/materials/material-view-dialog';
+import { createMaterialsColumns } from '@/components/history/materials/materials-table-columns';
+import { DeleteConfirmDialog } from '@/components/history/shared/delete-confirm-dialog';
 import { HistoryDataTable } from '@/components/history/shared/history-data-table';
+import { getDateRangeFilter } from '@/components/history/shared/server-filter-utils';
 import { useServerDataTable } from '@/hooks/use-server-data-table';
 import { logger } from '@/lib/logger';
 
@@ -17,8 +19,15 @@ function fetchMaterials(
   page: number,
   pageSize: number,
   search: string,
+  columnFilters: ColumnFiltersState,
 ): Promise<PaginatedResult<Material>> {
-  return window.electronAPI.getMaterialsPaginated(page, pageSize, search ? { search } : undefined);
+  const { startDate, endDate } = getDateRangeFilter(columnFilters, 'createdAt');
+
+  return window.electronAPI.getMaterialsPaginated(page, pageSize, {
+    ...(search ? { search } : {}),
+    ...(startDate ? { startDate } : {}),
+    ...(endDate ? { endDate } : {}),
+  });
 }
 
 function deleteMaterials(ids: number[]): Promise<number> {
@@ -42,7 +51,7 @@ export function MaterialsTable() {
     [],
   );
 
-  const { table, isLoading, setSearch, refetch } = useServerDataTable<Material>({
+  const { table, isLoading, isInitialLoading, setSearch, refetch } = useServerDataTable<Material>({
     columns,
     fetchPage: fetchMaterials,
     onError: (error) => {
@@ -73,6 +82,7 @@ export function MaterialsTable() {
       <HistoryDataTable
         table={table}
         isLoading={isLoading}
+        isInitialLoading={isInitialLoading}
         columnCount={columns.length}
         entityName="material"
         searchPlaceholder="Search materials..."
