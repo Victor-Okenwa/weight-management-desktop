@@ -125,6 +125,11 @@ Thumbs.db
 app/dist/
 electron-builder-effective-config.yaml
 
+# Licensing — never commit private keys or issued customer licenses
+**/private.pem
+*.license.json
+*.license
+
 # Local Netlify folder
 .netlify
 

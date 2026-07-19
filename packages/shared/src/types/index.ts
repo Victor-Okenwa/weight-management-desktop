@@ -70,7 +70,22 @@ export interface SettingsRow {
   autoPrint: boolean;
   printerName: string;
   printCopies: number;
+}
+
+export type PasswordMode = 'none' | 'required';
+
+export interface InstallationRow {
+  id: number;
   setupCompleted: boolean;
+  machineId: string;
+  licenseIssuedAt: string | null;
+  licenseExpiresAt: string | null;
+  licenseSignature: string | null;
+  activatedAt: string | null;
+  /** null = not chosen yet during setup */
+  passwordMode: PasswordMode | null;
+  passwordSalt: string | null;
+  passwordHash: string | null;
 }
 
 export interface SerialPortInfo {
@@ -119,3 +134,42 @@ export interface PaginatedResult<T> {
   page: number;
   pageSize: number;
 }
+
+/** Offline license payload (matches WMS-licenser LICENSE_FORMAT). */
+export interface LicensePayload {
+  machineId: string;
+  issuedAt: string;
+  expiresAt: string;
+  signature: string;
+}
+
+export type ActivateLicenseResult =
+  | { ok: true; expiresAt: string; machineId: string }
+  | { ok: false; error: string };
+
+export interface LicenseStatus {
+  /** True when a stored license matches this PC and is not expired. */
+  activated: boolean;
+  machineId: string | null;
+  issuedAt: string | null;
+  expiresAt: string | null;
+  /** Whole days until expiry (ceil). Null when no expiry date. Negative if past. */
+  daysRemaining: number | null;
+  /** True when activated and 0–14 days remain. */
+  isExpiringSoon: boolean;
+  setupCompleted: boolean;
+  /** Reconstructed license JSON for setup resume / display (not a DB column). */
+  licenseJson: string | null;
+  /** null = security step not completed yet */
+  passwordMode: PasswordMode | null;
+}
+
+export interface AuthStatus {
+  passwordMode: PasswordMode | null;
+  /** True when mode was chosen (none or required). */
+  passwordConfigured: boolean;
+  /** In-memory for this process; always false on app start. */
+  sessionUnlocked: boolean;
+}
+
+export type PasswordActionResult = { ok: true } | { ok: false; error: string };

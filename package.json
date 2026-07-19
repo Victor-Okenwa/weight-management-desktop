@@ -19,7 +19,7 @@
   },
   "keywords": [],
   "author": "Victor-Okenwa",
-  "license": "ISC",
+  "license": "UNLICENSED",
   "packageManager": "pnpm@10.28.2",
   "catalog": {
     "typescript": "^6.0.3"

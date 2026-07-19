@@ -15,6 +15,7 @@ import {
 import { useEffect } from 'react';
 import { toast } from 'sonner';
 
+import { AppFooter } from '@/components/app-footer';
 import { NotFound } from '@/components/not-found';
 import { type Theme, useTheme } from '@/components/providers/theme-provider';
 import {
@@ -74,14 +75,31 @@ export const Route = createFileRoute('/_protected')({
       return;
     }
 
-    const setupCompleted = await window.electronAPI.isSetupCompleted();
+    const [setupCompleted, licenseStatus, authStatus] = await Promise.all([
+      window.electronAPI.isSetupCompleted(),
+      window.electronAPI.getLicenseStatus(),
+      window.electronAPI.getAuthStatus(),
+    ]);
 
-    if (!setupCompleted) {
-      // Redirect to setup-wizard if setup is NOT completed
-      window.electronAPI.log('info', 'App not connected');
+    // Need wizard when setup unfinished, or when unlock is no longer valid
+    // (expired license / different motherboard after hardware change).
+    if (!setupCompleted || !licenseStatus.activated) {
+      window.electronAPI.log(
+        'info',
+        !setupCompleted
+          ? 'Setup not completed — opening setup wizard'
+          : 'License not active — opening setup wizard for unlock',
+      );
 
       throw redirect({
         to: '/setup-wizard',
+      });
+    }
+
+    if (authStatus.passwordMode === 'required' && !authStatus.sessionUnlocked) {
+      window.electronAPI.log('info', 'Password required — opening app lock');
+      throw redirect({
+        to: '/app-lock',
       });
     }
   },
@@ -114,17 +132,7 @@ function RouteComponent() {
           <TopBar />
           <Outlet />
         </main>
-        <footer className="border-t px-4 py-3">
-          <p className="text-center text-sm">
-            In case of any bugs,issues or tech support please contact{' '}
-            <b>Solution Road Equipment and Spars limited</b>
-          </p>
-          <hr className="my-3" />
-          <p className="text-center text-sm">
-            This sharing and remaking of this software is strictly prohibited except licensed by{' '}
-            <b>Solution Road Equipment and Spars limited</b> Tech Support
-          </p>
-        </footer>
+        <AppFooter />
       </div>
     </SidebarProvider>
   );

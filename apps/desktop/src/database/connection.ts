@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { type DatabaseInstance, initDatabase } from '@weight/database';
+import { ensureInstallationRow } from '@weight/database/repositories/installation';
 import { settings } from '@weight/database/schema';
 import { eq } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/sql-js/migrator';
@@ -24,16 +25,22 @@ export async function setupDatabase(): Promise<DatabaseInstance> {
 
   const db = await initDatabase(dbPath);
 
-  // Path to migrations (drizzle folder in the database package)
+  // Path to migrations (drizzle folder in the database package).
+  // In dev, compiled code lives in apps/desktop/dist/database → climb to repo root.
   const migrationsFolder = isDev
-    ? path.join(__dirname, '..', '..', 'packages', 'database', 'drizzle')
+    ? path.join(__dirname, '..', '..', '..', '..', 'packages', 'database', 'drizzle')
     : path.join(process.resourcesPath, 'migrations');
+
+  logger.info(`Applying migrations from: ${migrationsFolder}`);
 
   try {
     migrate(db, { migrationsFolder });
     console.log('Database migrations applied successfully.');
+    logger.info('Database migrations applied successfully.');
   } catch (err) {
     console.error('Migration failed:', err);
+    logger.error(`Migration failed: ${(err as Error).message}`);
+    throw err;
   }
 
   // Seed default settings if first run
@@ -71,11 +78,18 @@ export async function setupDatabase(): Promise<DatabaseInstance> {
         autoPrint: false,
         printerName: '',
         printCopies: 1,
-        setupCompleted: false,
       })
       .run();
-    db.save();
   }
+
+  // Always ensure the single-row installation record exists
+  try {
+    ensureInstallationRow(db);
+  } catch (err) {
+    logger.error(`Failed to ensure installation row: ${(err as Error).message}`);
+  }
+
+  db.save();
 
   dbInstance = db;
   return db;

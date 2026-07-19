@@ -26,7 +26,22 @@ export const settings = sqliteTable('settings', {
   autoPrint: integer('auto_print', { mode: 'boolean' }).notNull().default(false),
   printerName: text('printer_name').notNull().default(''),
   printCopies: integer('print_copies').notNull().default(1),
+});
+
+// ---------- Installation (single-row station / license lifecycle) ----------
+export const installation = sqliteTable('installation', {
+  id: integer('id').primaryKey().default(1),
   setupCompleted: integer('setup_completed', { mode: 'boolean' }).notNull().default(false),
+  /** Machine ID this station / license is bound to. */
+  machineId: text('machine_id').notNull().default(''),
+  licenseIssuedAt: text('license_issued_at'),
+  licenseExpiresAt: text('license_expires_at'),
+  licenseSignature: text('license_signature'),
+  activatedAt: text('activated_at'),
+  /** null = not chosen yet during setup; 'none' = passwordless; 'required' = app password */
+  passwordMode: text('password_mode', { enum: ['none', 'required'] }),
+  passwordSalt: text('password_salt'),
+  passwordHash: text('password_hash'),
 });
 
 // ---------- Vehicles ----------

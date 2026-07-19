@@ -10,15 +10,23 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SetupWizardRouteImport } from './routes/setup-wizard'
+import { Route as AppLockRouteImport } from './routes/app-lock'
 import { Route as ProtectedRouteRouteImport } from './routes/_protected/route'
 import { Route as ProtectedIndexRouteImport } from './routes/_protected/index'
 import { Route as ProtectedSettingsRouteImport } from './routes/_protected/settings'
+import { Route as ProtectedRenewLicenseRouteImport } from './routes/_protected/renew-license'
 import { Route as ProtectedRecordWeightRouteImport } from './routes/_protected/record-weight'
+import { Route as ProtectedLicenseRouteImport } from './routes/_protected/license'
 import { Route as ProtectedHistoryRouteImport } from './routes/_protected/history'
 
 const SetupWizardRoute = SetupWizardRouteImport.update({
   id: '/setup-wizard',
   path: '/setup-wizard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppLockRoute = AppLockRouteImport.update({
+  id: '/app-lock',
+  path: '/app-lock',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProtectedRouteRoute = ProtectedRouteRouteImport.update({
@@ -35,9 +43,19 @@ const ProtectedSettingsRoute = ProtectedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => ProtectedRouteRoute,
 } as any)
+const ProtectedRenewLicenseRoute = ProtectedRenewLicenseRouteImport.update({
+  id: '/renew-license',
+  path: '/renew-license',
+  getParentRoute: () => ProtectedRouteRoute,
+} as any)
 const ProtectedRecordWeightRoute = ProtectedRecordWeightRouteImport.update({
   id: '/record-weight',
   path: '/record-weight',
+  getParentRoute: () => ProtectedRouteRoute,
+} as any)
+const ProtectedLicenseRoute = ProtectedLicenseRouteImport.update({
+  id: '/license',
+  path: '/license',
   getParentRoute: () => ProtectedRouteRoute,
 } as any)
 const ProtectedHistoryRoute = ProtectedHistoryRouteImport.update({
@@ -48,44 +66,73 @@ const ProtectedHistoryRoute = ProtectedHistoryRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof ProtectedIndexRoute
+  '/app-lock': typeof AppLockRoute
   '/setup-wizard': typeof SetupWizardRoute
   '/history': typeof ProtectedHistoryRoute
+  '/license': typeof ProtectedLicenseRoute
   '/record-weight': typeof ProtectedRecordWeightRoute
+  '/renew-license': typeof ProtectedRenewLicenseRoute
   '/settings': typeof ProtectedSettingsRoute
 }
 export interface FileRoutesByTo {
+  '/app-lock': typeof AppLockRoute
   '/setup-wizard': typeof SetupWizardRoute
   '/history': typeof ProtectedHistoryRoute
+  '/license': typeof ProtectedLicenseRoute
   '/record-weight': typeof ProtectedRecordWeightRoute
+  '/renew-license': typeof ProtectedRenewLicenseRoute
   '/settings': typeof ProtectedSettingsRoute
   '/': typeof ProtectedIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_protected': typeof ProtectedRouteRouteWithChildren
+  '/app-lock': typeof AppLockRoute
   '/setup-wizard': typeof SetupWizardRoute
   '/_protected/history': typeof ProtectedHistoryRoute
+  '/_protected/license': typeof ProtectedLicenseRoute
   '/_protected/record-weight': typeof ProtectedRecordWeightRoute
+  '/_protected/renew-license': typeof ProtectedRenewLicenseRoute
   '/_protected/settings': typeof ProtectedSettingsRoute
   '/_protected/': typeof ProtectedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/setup-wizard' | '/history' | '/record-weight' | '/settings'
+  fullPaths:
+    | '/'
+    | '/app-lock'
+    | '/setup-wizard'
+    | '/history'
+    | '/license'
+    | '/record-weight'
+    | '/renew-license'
+    | '/settings'
   fileRoutesByTo: FileRoutesByTo
-  to: '/setup-wizard' | '/history' | '/record-weight' | '/settings' | '/'
+  to:
+    | '/app-lock'
+    | '/setup-wizard'
+    | '/history'
+    | '/license'
+    | '/record-weight'
+    | '/renew-license'
+    | '/settings'
+    | '/'
   id:
     | '__root__'
     | '/_protected'
+    | '/app-lock'
     | '/setup-wizard'
     | '/_protected/history'
+    | '/_protected/license'
     | '/_protected/record-weight'
+    | '/_protected/renew-license'
     | '/_protected/settings'
     | '/_protected/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   ProtectedRouteRoute: typeof ProtectedRouteRouteWithChildren
+  AppLockRoute: typeof AppLockRoute
   SetupWizardRoute: typeof SetupWizardRoute
 }
 
@@ -96,6 +143,13 @@ declare module '@tanstack/react-router' {
       path: '/setup-wizard'
       fullPath: '/setup-wizard'
       preLoaderRoute: typeof SetupWizardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app-lock': {
+      id: '/app-lock'
+      path: '/app-lock'
+      fullPath: '/app-lock'
+      preLoaderRoute: typeof AppLockRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_protected': {
@@ -119,11 +173,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedSettingsRouteImport
       parentRoute: typeof ProtectedRouteRoute
     }
+    '/_protected/renew-license': {
+      id: '/_protected/renew-license'
+      path: '/renew-license'
+      fullPath: '/renew-license'
+      preLoaderRoute: typeof ProtectedRenewLicenseRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
     '/_protected/record-weight': {
       id: '/_protected/record-weight'
       path: '/record-weight'
       fullPath: '/record-weight'
       preLoaderRoute: typeof ProtectedRecordWeightRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
+    '/_protected/license': {
+      id: '/_protected/license'
+      path: '/license'
+      fullPath: '/license'
+      preLoaderRoute: typeof ProtectedLicenseRouteImport
       parentRoute: typeof ProtectedRouteRoute
     }
     '/_protected/history': {
@@ -138,14 +206,18 @@ declare module '@tanstack/react-router' {
 
 interface ProtectedRouteRouteChildren {
   ProtectedHistoryRoute: typeof ProtectedHistoryRoute
+  ProtectedLicenseRoute: typeof ProtectedLicenseRoute
   ProtectedRecordWeightRoute: typeof ProtectedRecordWeightRoute
+  ProtectedRenewLicenseRoute: typeof ProtectedRenewLicenseRoute
   ProtectedSettingsRoute: typeof ProtectedSettingsRoute
   ProtectedIndexRoute: typeof ProtectedIndexRoute
 }
 
 const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
   ProtectedHistoryRoute: ProtectedHistoryRoute,
+  ProtectedLicenseRoute: ProtectedLicenseRoute,
   ProtectedRecordWeightRoute: ProtectedRecordWeightRoute,
+  ProtectedRenewLicenseRoute: ProtectedRenewLicenseRoute,
   ProtectedSettingsRoute: ProtectedSettingsRoute,
   ProtectedIndexRoute: ProtectedIndexRoute,
 }
@@ -156,6 +228,7 @@ const ProtectedRouteRouteWithChildren = ProtectedRouteRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   ProtectedRouteRoute: ProtectedRouteRouteWithChildren,
+  AppLockRoute: AppLockRoute,
   SetupWizardRoute: SetupWizardRoute,
 }
 export const routeTree = rootRouteImport
