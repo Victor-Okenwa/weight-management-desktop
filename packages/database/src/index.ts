@@ -58,3 +58,5 @@ export async function initDatabase(dbPath: string): Promise<DatabaseInstance> {
 
   return Object.assign(db, { save, close });
 }
+
+export { nowIso } from './timestamps.js';

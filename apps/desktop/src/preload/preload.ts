@@ -77,6 +77,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   updateMaterial: (id: number, data: { name?: string }): Promise<Material | null> =>
     ipcRenderer.invoke('materials:update', id, data),
   deleteMaterial: (id: number): Promise<void> => ipcRenderer.invoke('materials:delete', id),
+  deleteMaterials: (ids: number[]): Promise<number> =>
+    ipcRenderer.invoke('materials:delete-many', ids),
 
   // Health
   checkDatabaseHealth: (): Promise<HealthResult> => ipcRenderer.invoke('db:health-check'),
@@ -94,6 +96,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     data: { name?: string; tareWeight?: number | null; tareUnit?: string | null },
   ): Promise<Vehicle | null> => ipcRenderer.invoke('vehicles:update', id, data),
   deleteVehicle: (id: number): Promise<void> => ipcRenderer.invoke('vehicles:delete', id),
+  deleteVehicles: (ids: number[]): Promise<number> =>
+    ipcRenderer.invoke('vehicles:delete-many', ids),
 
   // Records
   createRecord: (data: CreateRecordInput): Promise<RecordType> =>
@@ -102,6 +106,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('records:update', id, data),
   getRecordById: (id: number): Promise<RecordType | null> =>
     ipcRenderer.invoke('records:get-by-id', id),
+  getRecordByTicketId: (ticketId: string): Promise<RecordType | null> =>
+    ipcRenderer.invoke('records:get-by-ticket-id', ticketId),
   getRecordsPaginated: (
     page: number,
     pageSize: number,

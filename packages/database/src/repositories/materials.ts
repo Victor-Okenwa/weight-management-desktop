@@ -1,7 +1,8 @@
 import type { Material, PaginatedResult } from '@weight/shared/types/index';
-import { count, eq, sql } from 'drizzle-orm';
+import { count, eq, inArray, sql } from 'drizzle-orm';
 import type { DatabaseInstance } from '../index.js';
-import { materials } from '../schema/index.js';
+import { materials, records } from '../schema/index.js';
+import { nowIso } from '../timestamps.js';
 
 export function getOrCreateMaterial(db: DatabaseInstance, name: string): number {
   const trimmed = name.trim();
@@ -15,7 +16,7 @@ export function getOrCreateMaterial(db: DatabaseInstance, name: string): number 
 
   const result = db
     .insert(materials)
-    .values({ name: trimmed })
+    .values({ name: trimmed, createdAt: nowIso() })
     .returning({ id: materials.id })
     .get();
 
@@ -36,7 +37,7 @@ export function getMaterialsPaginated(
   const conditions = [];
 
   if (filters?.search) {
-    conditions.push(sql`${materials.name} LIKE ${'%' + filters.search + '%'}`);
+    conditions.push(sql`${materials.name} LIKE ${`%${filters.search}%`}`);
   }
 
   const whereClause = conditions.length > 0 ? conditions[0] : undefined;
@@ -73,16 +74,19 @@ export function updateMaterial(
     data.name = trimmed;
   }
 
-  const result = db
-    .update(materials)
-    .set(data)
-    .where(eq(materials.id, id))
-    .returning()
-    .get();
+  const result = db.update(materials).set(data).where(eq(materials.id, id)).returning().get();
 
   return result as Material;
 }
 
 export function deleteMaterial(db: DatabaseInstance, id: number): void {
+  db.delete(records).where(eq(records.materialId, id)).run();
   db.delete(materials).where(eq(materials.id, id)).run();
+}
+
+export function deleteMaterials(db: DatabaseInstance, ids: number[]): number {
+  if (ids.length === 0) return 0;
+  db.delete(records).where(inArray(records.materialId, ids)).run();
+  const result = db.delete(materials).where(inArray(materials.id, ids)).returning().all();
+  return result.length;
 }

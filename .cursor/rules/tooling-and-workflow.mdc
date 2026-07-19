@@ -1,0 +1,20 @@
+---
+description: Development workflow, formatting, and pre-commit expectations
+alwaysApply: true
+---
+
+# Tooling & Workflow
+
+- Start the dev environment with `pnpm dev` from the repo root (runs Turbo, cleans desktop `dist`, watches all packages).
+- Build everything with `pnpm build` from the root.
+
+## Formatting
+
+- Biome is the single formatter/linter: single quotes, semicolons, trailing commas, 2-space indent.
+- Do NOT introduce ESLint or Prettier config.
+- Run `pnpm format` (or `pnpm check`) before committing.
+
+## Before committing
+
+- Run `pnpm format`.
+- Ensure `pnpm build` passes with no type errors.

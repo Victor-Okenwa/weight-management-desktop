@@ -59,6 +59,7 @@ declare global {
       ) => Promise<PaginatedResult<Material>>;
       updateMaterial: (id: number, data: { name?: string }) => Promise<Material | null>;
       deleteMaterial: (id: number) => Promise<void>;
+      deleteMaterials: (ids: number[]) => Promise<number>;
 
       // Health
       checkDatabaseHealth: () => Promise<HealthResult>;
@@ -75,11 +76,13 @@ declare global {
         data: { name?: string; tareWeight?: number | null; tareUnit?: string | null },
       ) => Promise<Vehicle | null>;
       deleteVehicle: (id: number) => Promise<void>;
+      deleteVehicles: (ids: number[]) => Promise<number>;
 
       // Records
       createRecord: (data: CreateRecordInput) => Promise<RecordType>;
       updateRecord: (id: number, data: UpdateRecordInput) => Promise<RecordType | null>;
       getRecordById: (id: number) => Promise<RecordType | null>;
+      getRecordByTicketId: (ticketId: string) => Promise<RecordType | null>;
       getRecordsPaginated: (
         page: number,
         pageSize: number,

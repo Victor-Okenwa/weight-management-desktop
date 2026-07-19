@@ -50,14 +50,14 @@ export const vehicles = sqliteTable('vehicles', {
   name: text('name').notNull().unique(),
   tareWeight: real('tare_weight'),
   tareUnit: text('tare_unit'),
-  createdAt: text('created_at').default('CURRENT_TIMESTAMP'),
+  createdAt: text('created_at').notNull(),
 });
 
 // ---------- Materials ----------
 export const materials = sqliteTable('materials', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   name: text('name').notNull().unique(),
-  createdAt: text('created_at').default('CURRENT_TIMESTAMP'),
+  createdAt: text('created_at').notNull(),
 });
 
 // ---------- Records (weighing transactions) ----------
@@ -77,6 +77,6 @@ export const records = sqliteTable('records', {
   vehicleId: integer('vehicle_id').references(() => vehicles.id, { onDelete: 'set null' }),
   materialId: integer('material_id').references(() => materials.id, { onDelete: 'set null' }),
   remark: text('remark'),
-  createdAt: text('created_at').default('CURRENT_TIMESTAMP'),
-  updatedAt: text('updated_at').default('CURRENT_TIMESTAMP'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
 });

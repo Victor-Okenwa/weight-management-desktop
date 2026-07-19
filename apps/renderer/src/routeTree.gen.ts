@@ -18,6 +18,7 @@ import { Route as ProtectedRenewLicenseRouteImport } from './routes/_protected/r
 import { Route as ProtectedRecordWeightRouteImport } from './routes/_protected/record-weight'
 import { Route as ProtectedLicenseRouteImport } from './routes/_protected/license'
 import { Route as ProtectedHistoryRouteImport } from './routes/_protected/history'
+import { Route as ProtectedEditWeightRouteImport } from './routes/_protected/edit-weight'
 
 const SetupWizardRoute = SetupWizardRouteImport.update({
   id: '/setup-wizard',
@@ -63,11 +64,17 @@ const ProtectedHistoryRoute = ProtectedHistoryRouteImport.update({
   path: '/history',
   getParentRoute: () => ProtectedRouteRoute,
 } as any)
+const ProtectedEditWeightRoute = ProtectedEditWeightRouteImport.update({
+  id: '/edit-weight',
+  path: '/edit-weight',
+  getParentRoute: () => ProtectedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof ProtectedIndexRoute
   '/app-lock': typeof AppLockRoute
   '/setup-wizard': typeof SetupWizardRoute
+  '/edit-weight': typeof ProtectedEditWeightRoute
   '/history': typeof ProtectedHistoryRoute
   '/license': typeof ProtectedLicenseRoute
   '/record-weight': typeof ProtectedRecordWeightRoute
@@ -77,6 +84,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/app-lock': typeof AppLockRoute
   '/setup-wizard': typeof SetupWizardRoute
+  '/edit-weight': typeof ProtectedEditWeightRoute
   '/history': typeof ProtectedHistoryRoute
   '/license': typeof ProtectedLicenseRoute
   '/record-weight': typeof ProtectedRecordWeightRoute
@@ -89,6 +97,7 @@ export interface FileRoutesById {
   '/_protected': typeof ProtectedRouteRouteWithChildren
   '/app-lock': typeof AppLockRoute
   '/setup-wizard': typeof SetupWizardRoute
+  '/_protected/edit-weight': typeof ProtectedEditWeightRoute
   '/_protected/history': typeof ProtectedHistoryRoute
   '/_protected/license': typeof ProtectedLicenseRoute
   '/_protected/record-weight': typeof ProtectedRecordWeightRoute
@@ -102,6 +111,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app-lock'
     | '/setup-wizard'
+    | '/edit-weight'
     | '/history'
     | '/license'
     | '/record-weight'
@@ -111,6 +121,7 @@ export interface FileRouteTypes {
   to:
     | '/app-lock'
     | '/setup-wizard'
+    | '/edit-weight'
     | '/history'
     | '/license'
     | '/record-weight'
@@ -122,6 +133,7 @@ export interface FileRouteTypes {
     | '/_protected'
     | '/app-lock'
     | '/setup-wizard'
+    | '/_protected/edit-weight'
     | '/_protected/history'
     | '/_protected/license'
     | '/_protected/record-weight'
@@ -201,10 +213,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedHistoryRouteImport
       parentRoute: typeof ProtectedRouteRoute
     }
+    '/_protected/edit-weight': {
+      id: '/_protected/edit-weight'
+      path: '/edit-weight'
+      fullPath: '/edit-weight'
+      preLoaderRoute: typeof ProtectedEditWeightRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
   }
 }
 
 interface ProtectedRouteRouteChildren {
+  ProtectedEditWeightRoute: typeof ProtectedEditWeightRoute
   ProtectedHistoryRoute: typeof ProtectedHistoryRoute
   ProtectedLicenseRoute: typeof ProtectedLicenseRoute
   ProtectedRecordWeightRoute: typeof ProtectedRecordWeightRoute
@@ -214,6 +234,7 @@ interface ProtectedRouteRouteChildren {
 }
 
 const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
+  ProtectedEditWeightRoute: ProtectedEditWeightRoute,
   ProtectedHistoryRoute: ProtectedHistoryRoute,
   ProtectedLicenseRoute: ProtectedLicenseRoute,
   ProtectedRecordWeightRoute: ProtectedRecordWeightRoute,

@@ -43,6 +43,8 @@ export async function setupDatabase(): Promise<DatabaseInstance> {
     throw err;
   }
 
+  db.save();
+
   // Seed default settings if first run
   const existingSettings = db
     .select({ id: settings.id })

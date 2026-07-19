@@ -4,6 +4,7 @@ import type { DatabaseInstance } from '../index.js';
 import { materials, records, settings, vehicles } from '../schema/index.js';
 import { getOrCreateMaterial } from './materials.js';
 import { getOrCreateVehicle } from './vehicles.js';
+import { nowIso } from '../timestamps.js';
 
 function getNextTicketId(db: DatabaseInstance): string {
   const row = db
@@ -45,7 +46,12 @@ export interface CreateRecordInput {
 export function createRecord(db: DatabaseInstance, data: CreateRecordInput): Record {
   let vehicleId: number | null = null;
   if (data.vehicleName) {
-    vehicleId = getOrCreateVehicle(db, data.vehicleName, data.vehicleTareWeight, data.vehicleTareUnit);
+    vehicleId = getOrCreateVehicle(
+      db,
+      data.vehicleName,
+      data.vehicleTareWeight,
+      data.vehicleTareUnit,
+    );
   }
 
   let materialId: number | null = null;
@@ -55,6 +61,7 @@ export function createRecord(db: DatabaseInstance, data: CreateRecordInput): Rec
 
   const ticketId = getNextTicketId(db);
 
+  const timestamp = nowIso();
   const result = db
     .insert(records)
     .values({
@@ -68,6 +75,8 @@ export function createRecord(db: DatabaseInstance, data: CreateRecordInput): Rec
       vehicleId,
       materialId,
       remark: data.remark ?? null,
+      createdAt: timestamp,
+      updatedAt: timestamp,
     })
     .returning()
     .get();
@@ -92,10 +101,19 @@ export interface UpdateRecordInput {
   updatedAt?: string;
 }
 
-export function updateRecord(db: DatabaseInstance, id: number, data: UpdateRecordInput): Record | null {
+export function updateRecord(
+  db: DatabaseInstance,
+  id: number,
+  data: UpdateRecordInput,
+): Record | null {
   let vehicleId: number | undefined;
   if (data.vehicleName) {
-    vehicleId = getOrCreateVehicle(db, data.vehicleName, data.vehicleTareWeight, data.vehicleTareUnit);
+    vehicleId = getOrCreateVehicle(
+      db,
+      data.vehicleName,
+      data.vehicleTareWeight,
+      data.vehicleTareUnit,
+    );
   }
 
   let materialId: number | undefined;
@@ -111,37 +129,53 @@ export function updateRecord(db: DatabaseInstance, id: number, data: UpdateRecor
   if (vehicleId !== undefined) updateData.vehicleId = vehicleId;
   if (materialId !== undefined) updateData.materialId = materialId;
 
-  updateData.updatedAt = new Date().toISOString();
+  updateData.updatedAt = nowIso();
 
   const result = db.update(records).set(updateData).where(eq(records.id, id)).returning().get();
 
   return result as Record;
 }
 
+const recordSelect = {
+  id: records.id,
+  ticketId: records.ticketId,
+  operator: records.operator,
+  operationType: records.operationType,
+  grossWeight: records.grossWeight,
+  tareWeight: records.tareWeight,
+  netWeight: records.netWeight,
+  status: records.status,
+  vehicleId: records.vehicleId,
+  materialId: records.materialId,
+  remark: records.remark,
+  createdAt: records.createdAt,
+  updatedAt: records.updatedAt,
+  vehicleName: vehicles.name,
+  materialName: materials.name,
+};
+
 export function getRecordById(db: DatabaseInstance, id: number): Record | null {
-  const result = db
-    .select({
-      id: records.id,
-      ticketId: records.ticketId,
-      operator: records.operator,
-      operationType: records.operationType,
-      grossWeight: records.grossWeight,
-      tareWeight: records.tareWeight,
-      netWeight: records.netWeight,
-      status: records.status,
-      vehicleId: records.vehicleId,
-      materialId: records.materialId,
-      remark: records.remark,
-      createdAt: records.createdAt,
-      updatedAt: records.updatedAt,
-      vehicleName: vehicles.name,
-      materialName: materials.name,
-    })
-    .from(records)
-    .leftJoin(vehicles, eq(records.vehicleId, vehicles.id))
-    .leftJoin(materials, eq(records.materialId, materials.id))
-    .where(eq(records.id, id))
-    .get() ?? null;
+  const result =
+    db
+      .select(recordSelect)
+      .from(records)
+      .leftJoin(vehicles, eq(records.vehicleId, vehicles.id))
+      .leftJoin(materials, eq(records.materialId, materials.id))
+      .where(eq(records.id, id))
+      .get() ?? null;
+
+  return result as Record;
+}
+
+export function getRecordByTicketId(db: DatabaseInstance, ticketId: string): Record | null {
+  const result =
+    db
+      .select(recordSelect)
+      .from(records)
+      .leftJoin(vehicles, eq(records.vehicleId, vehicles.id))
+      .leftJoin(materials, eq(records.materialId, materials.id))
+      .where(eq(records.ticketId, ticketId))
+      .get() ?? null;
 
   return result as Record;
 }

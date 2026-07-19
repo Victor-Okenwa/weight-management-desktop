@@ -1,0 +1,29 @@
+---
+description: Database layer conventions - Drizzle schema, repositories, migrations
+globs: packages/database/**/*.ts
+alwaysApply: false
+---
+
+# Database (SQLite via sql.js)
+
+- Schema definitions live in `src/schema/index.ts`.
+- Repository functions live in `src/repositories/`, one file per entity (`record.ts`, `vehicles.ts`, `materials.ts`, `settings.ts`, `health.ts`).
+- Interact with the DB ONLY through repository functions. Do not write inline queries outside the repository layer.
+
+## Migrations
+
+- Generate migrations with `drizzle-kit generate`; store them in the `drizzle/` folder (outside `src`).
+- `migrate.ts` applies migrations to the development database.
+- Migrations run automatically on app startup in production.
+
+## Persistence & integrity
+
+- With sql.js, always call `db.save()` after every mutation to persist to disk (this becomes automatic if we move to better-sqlite3).
+- The `settings` table is a fixed-column table with exactly one row (`id = 1`). There is no key-value table.
+- Foreign keys are used (`vehicleId`, `materialId` in `records`). Never hard-delete a vehicle/material that is referenced; restrict or soft-delete.
+
+```ts
+// GOOD - mutate via repository, then persist
+const record = createRecord(db, data);
+db.save();
+```

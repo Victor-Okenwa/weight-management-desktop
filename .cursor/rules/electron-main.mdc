@@ -1,0 +1,33 @@
+---
+description: Electron main process - logging, security, and error handling
+globs: apps/desktop/**/*.ts
+alwaysApply: false
+---
+
+# Electron Main Process
+
+## Logging
+
+- Use the structured logger from `apps/desktop/src/logger.ts` (based on electron-log): `logger.info()`, `logger.error()`, `logger.warn()`, `logger.debug()`.
+- Replace `console.*` calls in the main process with the logger.
+- Log files are stored in `app.getPath('userData')/logs/` with rotation (max 5 MB, keep last 5 archives).
+- Renderer logs arrive via the `log` IPC channel and are recorded by the main process.
+
+## Error handling
+
+- Main-process errors are always caught and logged with descriptive messages; avoid unhandled rejections (never let a promise reject uncaught).
+- Surface user-facing failures to the renderer so it can show a toast; never fail silently.
+
+```ts
+try {
+  serialManager.connect(serialOptions);
+} catch (err) {
+  logger.error(`Failed to connect serial port: ${(err as Error).message}`);
+}
+```
+
+## Security & Electron best practices
+
+- `webPreferences`: `contextIsolation: true`, `nodeIntegration: false`, `sandbox: false` (sandbox false is required for the preload).
+- Load renderer content locally; no remote content unless absolutely necessary.
+- The preload exposes only specific, safe methods. Never expose `ipcRenderer` directly or any Node.js globals.

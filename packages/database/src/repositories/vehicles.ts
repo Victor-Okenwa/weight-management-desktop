@@ -1,7 +1,8 @@
 import type { PaginatedResult, Vehicle } from '@weight/shared/types/index';
-import { count, eq, sql } from 'drizzle-orm';
+import { count, eq, inArray, sql } from 'drizzle-orm';
 import type { DatabaseInstance } from '../index.js';
-import { vehicles } from '../schema/index.js';
+import { records, vehicles } from '../schema/index.js';
+import { nowIso } from '../timestamps.js';
 
 export function getOrCreateVehicle(
   db: DatabaseInstance,
@@ -37,6 +38,7 @@ export function getOrCreateVehicle(
       name: trimmed,
       tareWeight: tareWeight ?? null,
       tareUnit: tareUnit ?? null,
+      createdAt: nowIso(),
     })
     .returning({ id: vehicles.id })
     .get();
@@ -119,5 +121,13 @@ export function updateVehicleTare(
 }
 
 export function deleteVehicle(db: DatabaseInstance, id: number): void {
+  db.delete(records).where(eq(records.vehicleId, id)).run();
   db.delete(vehicles).where(eq(vehicles.id, id)).run();
+}
+
+export function deleteVehicles(db: DatabaseInstance, ids: number[]): number {
+  if (ids.length === 0) return 0;
+  db.delete(records).where(inArray(records.vehicleId, ids)).run();
+  const result = db.delete(vehicles).where(inArray(vehicles.id, ids)).returning().all();
+  return result.length;
 }

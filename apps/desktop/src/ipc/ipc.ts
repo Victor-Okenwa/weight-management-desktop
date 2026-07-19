@@ -2,6 +2,7 @@
 
 import {
   deleteMaterial,
+  deleteMaterials,
   getAllMaterials,
   getMaterialsPaginated,
   updateMaterial,
@@ -12,6 +13,7 @@ import {
   deleteRecord,
   deleteRecords,
   getRecordById,
+  getRecordByTicketId,
   getRecordsPaginated,
   updateRecord,
 } from '@weight/database/repositories/record';
@@ -19,6 +21,7 @@ import { isSetupCompleted, markSetupCompleted } from '@weight/database/repositor
 import { getAllSettings, updateSettings } from '@weight/database/repositories/settings';
 import {
   deleteVehicle,
+  deleteVehicles,
   getAllVehicles,
   getVehiclesPaginated,
   updateVehicle,
@@ -235,6 +238,13 @@ export function registerIpcHandlers(serialManager: SerialManager) {
     db.save();
   });
 
+  ipcMain.handle('materials:delete-many', (_event, ids: number[]) => {
+    const db = getDatabase();
+    const count = deleteMaterials(db, ids);
+    db.save();
+    return count;
+  });
+
   // ---------- Vehicles ----------
   ipcMain.handle('vehicles:get-all', () => {
     const db = getDatabase();
@@ -259,6 +269,13 @@ export function registerIpcHandlers(serialManager: SerialManager) {
     db.save();
   });
 
+  ipcMain.handle('vehicles:delete-many', (_event, ids: number[]) => {
+    const db = getDatabase();
+    const count = deleteVehicles(db, ids);
+    db.save();
+    return count;
+  });
+
   // ---------- Records ----------
   ipcMain.handle('records:create', (_event, data) => {
     const db = getDatabase();
@@ -277,6 +294,11 @@ export function registerIpcHandlers(serialManager: SerialManager) {
   ipcMain.handle('records:get-by-id', (_event, id: number) => {
     const db = getDatabase();
     return getRecordById(db, id);
+  });
+
+  ipcMain.handle('records:get-by-ticket-id', (_event, ticketId: string) => {
+    const db = getDatabase();
+    return getRecordByTicketId(db, ticketId);
   });
 
   ipcMain.handle('records:get-paginated', (_event, page: number, pageSize: number, filters?) => {

@@ -35,12 +35,20 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useWeightUpdates } from '@/hooks/use-weight-updates';
+import { glassSurfaceClassName } from '@/lib/glass-surface';
 import { logger } from '@/lib/logger';
+import { cn } from '@/lib/utils';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useWeightStore } from '@/store/weightStore';
 
@@ -66,6 +74,23 @@ const sidebarRoutes = [
     label: 'Settings',
   },
 ];
+
+function isRouteActive(link: string, currentPath: string) {
+  if (link === '/') {
+    return currentPath === '/' || currentPath === '/_protected/';
+  }
+
+  return currentPath === link || currentPath.startsWith(`${link}/`);
+}
+
+function useIsNavigating() {
+  return useRouterState({
+    select: (state) =>
+      state.isLoading ||
+      state.isTransitioning ||
+      state.matches.some((match) => match.status === 'pending'),
+  });
+}
 
 export const Route = createFileRoute('/_protected')({
   component: RouteComponent,
@@ -127,10 +152,10 @@ function RouteComponent() {
     <SidebarProvider>
       <AppSidebar settings={settings} />
 
-      <div className="w-full">
-        <main>
+      <div className="min-w-0 w-full flex-1">
+        <main className="min-w-0">
           <TopBar />
-          <Outlet />
+          <RouteContent />
         </main>
         <AppFooter />
       </div>
@@ -138,46 +163,158 @@ function RouteComponent() {
   );
 }
 
-function AppSidebar({ settings }: { settings: SettingsRow | null }) {
-  // Get the current location from TanStack Router
-  const router = useRouterState();
-  const currentPath = router.location.pathname;
+function AppFooter() {
+  return (
+    <footer className="border-t border-border/60 px-4 py-4">
+      <div className={cn(glassSurfaceClassName, 'p-4')}>
+        <div className="relative z-10 space-y-4">
+          <div className="space-y-2 text-center">
+            <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground/80">
+              Support
+            </p>
+            <p className="text-sm text-muted-foreground">
+              In case of any bugs, issues or tech support please contact{' '}
+              <span className="font-semibold text-primary">
+                Solution Road Equipment and Spars limited
+              </span>
+            </p>
+          </div>
+
+          <div className="h-px bg-border/60" />
+
+          <div className="space-y-2 text-center">
+            <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground/80">
+              License
+            </p>
+            <p className="text-xs leading-relaxed text-muted-foreground/90">
+              This sharing and remaking of this software is strictly prohibited except when licensed
+              by{' '}
+              <span className="font-medium text-foreground">
+                Solution Road Equipment and Spars limited
+              </span>{' '}
+              Tech Support
+            </p>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+function RouteContent() {
+  const isNavigating = useIsNavigating();
 
   return (
-    <Sidebar>
-      {/* <SidebarHeader /> */}
-      <SidebarContent>
+    <div className="relative min-w-0">
+      {isNavigating && (
+        <>
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 z-40 h-0.5 overflow-hidden bg-muted"
+          >
+            <div className="h-full w-1/3 animate-pulse bg-primary shadow-[0_0_12px_2px] shadow-primary/50" />
+          </div>
+          <div
+            aria-live="polite"
+            className="absolute inset-0 z-30 flex items-start justify-center bg-background/35 pt-24 backdrop-blur-[1px]"
+          >
+            <div className="flex items-center gap-2 rounded-xl border border-border/60 bg-card/85 px-4 py-3 shadow-lg backdrop-blur-md">
+              <Loader2 className="size-4 animate-spin text-primary" />
+              <span className="text-sm text-muted-foreground">Loading page...</span>
+            </div>
+          </div>
+        </>
+      )}
+      <div
+        className={cn(
+          'min-w-0 transition-opacity duration-200',
+          isNavigating && 'pointer-events-none opacity-60',
+        )}
+      >
+        <Outlet />
+      </div>
+    </div>
+  );
+}
+
+function AppSidebar({ settings }: { settings: SettingsRow | null }) {
+  const currentPath = useRouterState({ select: (state) => state.location.pathname });
+  const isNavigating = useIsNavigating();
+  const companyInitial = settings?.companyName?.trim()?.[0]?.toUpperCase() ?? '?';
+
+  return (
+    <Sidebar className="border-r border-sidebar-border/60">
+      <SidebarHeader className="border-b border-sidebar-border/60 px-3 py-4">
+        <div className="flex items-center gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-sidebar-primary/30 bg-sidebar-primary/10 shadow-[0_0_20px_-8px] shadow-sidebar-primary/30">
+            <Weight className="size-5 text-sidebar-primary" />
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold tracking-wide">WMS</p>
+            <p className="truncate text-xs text-muted-foreground">Weight Management</p>
+          </div>
+        </div>
+      </SidebarHeader>
+
+      <SidebarContent className="px-2 py-3">
         <SidebarGroup>
-          {sidebarRoutes.map(({ icon: Icon, link, label }) => {
-            const isActive =
-              currentPath === link || (link === '/' && currentPath === '/_protected/');
-            return (
-              <Link
-                key={link}
-                to={link}
-                className={`flex items-center px-4 py-2 rounded-lg transition-colors gap-2 ${
-                  isActive
-                    ? 'bg-primary text-primary-foreground font-semibold'
-                    : 'hover:bg-muted hover:text-foreground'
-                }`}
-              >
-                <Icon className="w-5 h-5" />
-                <span>{label}</span>
-              </Link>
-            );
-          })}
+          <SidebarGroupLabel className="px-2 text-[11px] uppercase tracking-[0.14em] text-muted-foreground/80">
+            Navigation
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu className="gap-1.5">
+              {sidebarRoutes.map(({ icon: Icon, link, label }) => {
+                const isActive = isRouteActive(link, currentPath);
+                const isLoading = isNavigating && isActive;
+
+                return (
+                  <SidebarMenuItem key={link}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
+                      size="lg"
+                      className={cn(
+                        'rounded-lg border border-transparent transition-all duration-200',
+                        isActive &&
+                          'border-sidebar-primary/25 bg-sidebar-primary/12 text-sidebar-primary shadow-[0_0_20px_-10px] shadow-sidebar-primary/40',
+                      )}
+                    >
+                      <Link to={link}>
+                        <Icon className="size-4" />
+                        <span>{label}</span>
+                        {isLoading && (
+                          <Loader2 className="ml-auto size-4 shrink-0 animate-spin opacity-80" />
+                        )}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
+
+      <SidebarFooter className="border-t border-sidebar-border/60 p-2">
         <AlertDialog>
-          <AlertDialogTrigger className="flex gap-2 items-center max-w-full bg-secondary py-2 px-1 border-t">
-            <span className="size-10 rounded-full bg-secondary capitalize font-bold text-base text-center place-content-center shadow">
-              {settings?.companyName?.[0]}
+          <AlertDialogTrigger
+            className={cn(
+              'flex w-full max-w-full items-center gap-3 rounded-xl border border-sidebar-border/60',
+              'bg-sidebar-accent/40 p-2.5 text-left transition-colors',
+              'hover:border-sidebar-primary/25 hover:bg-sidebar-accent/70',
+            )}
+          >
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-full border border-sidebar-primary/20 bg-sidebar-primary/10 text-sm font-bold capitalize text-sidebar-primary shadow-[0_0_16px_-8px] shadow-sidebar-primary/50">
+              {companyInitial}
             </span>
 
-            <div className="overflow-clip max-w-[80%]">
-              <span className="capitalize truncate text-sm">{settings?.companyName}</span>
-              <p className="text-xs truncate text-accent">{settings?.companyEmail}</p>
+            <div className="min-w-0 flex-1 overflow-hidden">
+              <span className="block truncate text-sm font-medium capitalize">
+                {settings?.companyName?.trim() || 'Company'}
+              </span>
+              <p className="truncate text-xs text-muted-foreground">
+                {settings?.companyEmail?.trim() || 'View company details'}
+              </p>
             </div>
           </AlertDialogTrigger>
 
@@ -189,57 +326,57 @@ function AppSidebar({ settings }: { settings: SettingsRow | null }) {
               <AlertDialogTitle>Company Details</AlertDialogTitle>
             </AlertDialogHeader>
 
-            <div>
-              <div className="space-y-4">
-                <div>
-                  <span className="block font-semibold text-sm mb-1">Name</span>
-                  <span className="capitalize">
-                    {settings?.companyName?.trim() ? (
-                      settings.companyName
-                    ) : (
-                      <span className="text-muted-foreground">--</span>
-                    )}
-                  </span>
-                </div>
-                <hr />
-                <div>
-                  <span className="block font-semibold text-sm mb-1">Email</span>
-                  <span>
-                    {settings?.companyEmail?.trim() ? (
-                      settings.companyEmail
-                    ) : (
-                      <span className="text-muted-foreground">--</span>
-                    )}
-                  </span>
-                </div>
-                <hr />
-                <div>
-                  <span className="block font-semibold text-sm mb-1">Phone</span>
-                  <span>
-                    {settings?.companyPhone?.trim() ? (
-                      settings.companyPhone
-                    ) : (
-                      <span className="text-muted-foreground">--</span>
-                    )}
-                  </span>
-                </div>
-                <hr />
-                <div>
-                  <span className="block font-semibold text-sm mb-1">Address</span>
-                  <span>
-                    {settings?.companyAddress?.trim() ? (
-                      settings.companyAddress
-                    ) : (
-                      <span className="text-muted-foreground">--</span>
-                    )}
-                  </span>
-                </div>
+            <div className="space-y-4">
+              <div>
+                <span className="mb-1 block text-sm font-semibold">Name</span>
+                <span className="capitalize">
+                  {settings?.companyName?.trim() ? (
+                    settings.companyName
+                  ) : (
+                    <span className="text-muted-foreground">--</span>
+                  )}
+                </span>
+              </div>
+              <hr />
+              <div>
+                <span className="mb-1 block text-sm font-semibold">Email</span>
+                <span>
+                  {settings?.companyEmail?.trim() ? (
+                    settings.companyEmail
+                  ) : (
+                    <span className="text-muted-foreground">--</span>
+                  )}
+                </span>
+              </div>
+              <hr />
+              <div>
+                <span className="mb-1 block text-sm font-semibold">Phone</span>
+                <span>
+                  {settings?.companyPhone?.trim() ? (
+                    settings.companyPhone
+                  ) : (
+                    <span className="text-muted-foreground">--</span>
+                  )}
+                </span>
+              </div>
+              <hr />
+              <div>
+                <span className="mb-1 block text-sm font-semibold">Address</span>
+                <span>
+                  {settings?.companyAddress?.trim() ? (
+                    settings.companyAddress
+                  ) : (
+                    <span className="text-muted-foreground">--</span>
+                  )}
+                </span>
               </div>
             </div>
 
             <AlertDialogFooter>
               <AlertDialogAction asChild>
-                <Link to="/settings">Update Information</Link>
+                <Link to="/settings" search={{ tab: 'company' }}>
+                  Update Information
+                </Link>
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -260,7 +397,6 @@ function TopBar() {
     !latestReading;
 
   const signalYellow = serialStatus === 'connecting' || serialStatus === 'reconnecting';
-
   const signalLoading = serialStatus === 'reconnecting' || serialStatus === 'connecting';
 
   async function handleReconnect() {
@@ -272,66 +408,91 @@ function TopBar() {
     }
   }
 
+  const SignalIcon = signalRed ? SignalLowIcon : signalYellow ? SignalMediumIcon : SignalHighIcon;
+
   return (
-    <nav className="bg-sidebar/70 px-2 py-3 sticky top-0 w-full flex items-center justify-between z-50 backdrop-blur-lg">
-      <section className="flex items-center gap-1">
-        <SidebarTrigger />
+    <header className="sticky top-0 z-50 border-b border-border/60 px-3 py-3">
+      <nav
+        className={cn(glassSurfaceClassName, 'flex items-center justify-between gap-3 px-3 py-2.5')}
+      >
+        <section className="relative z-10 flex items-center gap-3">
+          <SidebarTrigger />
+          <div className="min-w-0">
+            <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground/80">
+              System
+            </p>
+            <p className="truncate text-sm font-semibold tracking-wide">Weight Management</p>
+          </div>
+        </section>
 
-        <span className="text-sm">Weight Management</span>
-      </section>
+        <section className="relative z-10 flex flex-wrap items-center justify-end gap-2">
+          <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-background/30 px-2.5 py-1.5">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span
+                  className={cn(
+                    'flex size-7 items-center justify-center rounded-lg border transition-colors',
+                    signalRed &&
+                      'border-destructive/30 bg-destructive/10 shadow-[0_0_12px_-6px] shadow-destructive/50',
+                    signalYellow &&
+                      'border-yellow-500/30 bg-yellow-500/10 shadow-[0_0_12px_-6px] shadow-yellow-500/40',
+                    !signalRed &&
+                      !signalYellow &&
+                      'border-green-500/30 bg-green-500/10 shadow-[0_0_12px_-6px] shadow-green-500/40',
+                  )}
+                >
+                  <SignalIcon
+                    className={cn(
+                      'size-4',
+                      signalRed && 'text-red-700 dark:text-red-400',
+                      signalYellow && 'text-yellow-700 dark:text-yellow-400',
+                      !signalRed && !signalYellow && 'text-green-700 dark:text-green-400',
+                    )}
+                  />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <span>
+                  {signalRed
+                    ? 'Connection lost or unstable. Please check the device connection or go to settings and change the COM port.'
+                    : signalYellow
+                      ? 'Connecting to the device. Please wait...'
+                      : 'Connected and receiving stable readings.'}
+                </span>
+              </TooltipContent>
+            </Tooltip>
 
-      <section className="flex items-center gap-2">
-        <div className="flex items-center font-light text-sm border-r pr-2 gap-0">
-          <span className="flex justify-start h-full">
-            {signalRed ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <SignalLowIcon className="text-red-700 dark:text-red-400 -mr-2" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <span>
-                    Connection lost or unstable. Please check the device connection or go to
-                    settings and change he COM port.
-                  </span>
-                </TooltipContent>
-              </Tooltip>
-            ) : signalYellow ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <SignalMediumIcon className="text-yellow-700 dark:text-yellow-400" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <span>Connecting to the device. Please wait...</span>
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <SignalHighIcon className="text-green-700 dark:text-green-400" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <span>Connected and receiving stable readings.</span>
-                </TooltipContent>
-              </Tooltip>
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/70">
+                Port
+              </p>
+              <p className="truncate text-sm font-medium">{settings?.serialPort ?? '--'}</p>
+            </div>
+          </div>
+
+          <Badge
+            variant={signalRed ? 'destructive' : 'outline'}
+            className={cn(
+              'h-7 rounded-lg px-2.5 capitalize',
+              !signalRed &&
+                'border-primary/20 bg-primary/10 text-primary shadow-[0_0_16px_-8px] shadow-primary/40',
             )}
-          </span>
-
-          <span>{settings?.serialPort}</span>
-        </div>
-
-        <div className="pr-2 border-r">
-          <Badge variant={signalRed ? 'destructive' : 'outline'}>
-            {signalLoading && <Loader2 />}
+          >
+            {signalLoading && <Loader2 className="animate-spin" />}
             {serialStatus}
           </Badge>
-        </div>
 
-        {signalRed && (
-          <Button className="max-h-10" onClick={handleReconnect}>
-            Reconnect
-          </Button>
-        )}
-      </section>
-    </nav>
+          {signalRed && (
+            <Button
+              size="sm"
+              className="h-7 shadow-[0_0_16px_-8px] shadow-primary/40"
+              onClick={handleReconnect}
+            >
+              Reconnect
+            </Button>
+          )}
+        </section>
+      </nav>
+    </header>
   );
 }
