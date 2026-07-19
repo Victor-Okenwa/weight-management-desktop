@@ -46,6 +46,27 @@ export interface SerialOptions {
   autoOpen: boolean;
 }
 
+export type PaperSizeGroup = '80mm' | '58mm' | 'A4' | 'Letter' | 'Other';
+
+export interface PrinterInfo {
+  name: string;
+  displayName: string;
+  isDefault: boolean;
+}
+
+export type PrintersGrouped = {
+  [K in PaperSizeGroup]: PrinterInfo[];
+};
+
+export interface PrintTicketInput {
+  printerName: string;
+  paperSize: PaperSizeGroup;
+  copies: number;
+  recordId: number;
+}
+
+export type PrintTicketResult = { ok: true } | { ok: false; error: string };
+
 export interface SettingsRow {
   companyName: string;
   companyAddress: string;
@@ -67,9 +88,10 @@ export interface SettingsRow {
   stableTolerance: number;
   stableDurationMs: number;
   theme: string;
-  autoPrint: boolean;
-  printerName: string;
+  printAuto: boolean;
+  printPrinterName: string;
   printCopies: number;
+  printPaperSize: PaperSizeGroup;
 }
 
 export type PasswordMode = 'none' | 'required';

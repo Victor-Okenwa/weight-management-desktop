@@ -1,11 +1,14 @@
 import type { Record as WeightRecord } from '@weight/shared/types/index';
+import { Printer } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { DialogScrollBody } from '@/components/history/shared/dialog-scroll-body';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -28,9 +31,15 @@ interface RecordViewDialogProps {
   record: WeightRecord | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onPrint?: (record: WeightRecord) => void;
 }
 
-export function RecordViewDialog({ record, open, onOpenChange }: RecordViewDialogProps) {
+export function RecordViewDialog({
+  record,
+  open,
+  onOpenChange,
+  onPrint,
+}: RecordViewDialogProps) {
   if (!record) return null;
 
   return (
@@ -73,6 +82,14 @@ export function RecordViewDialog({ record, open, onOpenChange }: RecordViewDialo
             <DetailRow label="Updated" value={formatDate(record.updatedAt)} />
           </div>
         </DialogScrollBody>
+        {record.status === 'completed' && onPrint && (
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onPrint(record)}>
+              <Printer className="size-4" />
+              Print ticket
+            </Button>
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );

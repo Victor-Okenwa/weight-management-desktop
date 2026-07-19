@@ -77,9 +77,10 @@ export async function setupDatabase(): Promise<DatabaseInstance> {
         stableTolerance: 0.5,
         stableDurationMs: 3000,
         theme: 'system',
-        autoPrint: false,
-        printerName: '',
+        printAuto: false,
+        printPrinterName: '',
         printCopies: 1,
+        printPaperSize: '80mm',
       })
       .run();
   }

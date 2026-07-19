@@ -14,6 +14,9 @@ import type {
   Material,
   PaginatedResult,
   PasswordActionResult,
+  PrintersGrouped,
+  PrintTicketInput,
+  PrintTicketResult,
   Record as RecordType,
   SerialPortInfo,
   SettingsRow,
@@ -92,6 +95,10 @@ declare global {
       ) => Promise<PaginatedResult<RecordType>>;
       deleteRecord: (id: number) => Promise<RecordType | null>;
       deleteRecords: (ids: number[]) => Promise<number>;
+
+      // Printing
+      listPrintersGrouped: () => Promise<{ groups: PrintersGrouped }>;
+      printTicket: (input: PrintTicketInput) => Promise<PrintTicketResult>;
     };
   }
 }

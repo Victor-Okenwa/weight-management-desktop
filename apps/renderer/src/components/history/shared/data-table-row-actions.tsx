@@ -1,19 +1,23 @@
-import { Eye, Pencil, Trash2 } from 'lucide-react';
+import { Eye, Pencil, Printer, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface DataTableRowActionsProps {
   onView: () => void;
   onEdit?: () => void;
+  onPrint?: () => void;
   onDelete: () => void;
   showEdit?: boolean;
+  showPrint?: boolean;
 }
 
 export function DataTableRowActions({
   onView,
   onEdit,
+  onPrint,
   onDelete,
   showEdit = true,
+  showPrint = false,
 }: DataTableRowActionsProps) {
   return (
     <div className="flex items-center gap-0.5">
@@ -35,6 +39,17 @@ export function DataTableRowActions({
             </Button>
           </TooltipTrigger>
           <TooltipContent>Edit</TooltipContent>
+        </Tooltip>
+      )}
+      {showPrint && onPrint && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button type="button" variant="ghost" size="icon" className="size-8" onClick={onPrint}>
+              <Printer className="size-4" />
+              <span className="sr-only">Print</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Print</TooltipContent>
         </Tooltip>
       )}
       <Tooltip>

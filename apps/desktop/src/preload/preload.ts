@@ -11,6 +11,9 @@ import type {
   Material,
   PaginatedResult,
   PasswordActionResult,
+  PrintersGrouped,
+  PrintTicketInput,
+  PrintTicketResult,
   Record as RecordType,
   SerialPortInfo,
   SettingsRow,
@@ -117,4 +120,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   deleteRecord: (id: number): Promise<RecordType | null> =>
     ipcRenderer.invoke('records:delete', id),
   deleteRecords: (ids: number[]): Promise<number> => ipcRenderer.invoke('records:delete-many', ids),
+
+  // Printing
+  listPrintersGrouped: (): Promise<{ groups: PrintersGrouped }> =>
+    ipcRenderer.invoke('printers:list-grouped'),
+  printTicket: (input: PrintTicketInput): Promise<PrintTicketResult> =>
+    ipcRenderer.invoke('print:ticket', input),
 });

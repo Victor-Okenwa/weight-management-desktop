@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { PrinterDialog, type PrinterSelection } from '@/components/printer-dialog';
 import { FormFields } from '@/components/record-weight-shared/form-fields';
 import { newWeightSchema } from '@/components/record-weight-shared/schema';
 import { WeightCaptureArea } from '@/components/record-weight-shared/weight-capture-area';
@@ -15,6 +16,7 @@ import { WeightSummaryCards } from '@/components/record-weight-shared/weight-sum
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
+import { savePrintDefaults, tryAutoPrintRecord } from '@/lib/print-record';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useWeightStore } from '@/store/weightStore';
 
@@ -41,6 +43,7 @@ function EditWeightPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [printRecord, setPrintRecord] = useState<WeightRecord | null>(null);
 
   const form = useForm({
     resolver: zodResolver(newWeightSchema),
@@ -162,13 +165,27 @@ function EditWeightPage() {
         return;
       }
       toast.success('Weight record completed');
-      router.history.back();
+
+      const autoPrinted = await tryAutoPrintRecord(updated, settings);
+      if (autoPrinted) {
+        router.history.back();
+        return;
+      }
+
+      setPrintRecord(updated);
     } catch {
       toast.error('Failed to update record');
     } finally {
       setIsSubmitting(false);
     }
   });
+
+  async function handlePrintConfirm(selection: PrinterSelection) {
+    if (selection.saveAsDefault) {
+      await savePrintDefaults(selection);
+    }
+    router.history.back();
+  }
 
   if (isLoading) {
     return (
@@ -265,6 +282,23 @@ function EditWeightPage() {
           )}
         </Button>
       </div>
+
+      <PrinterDialog
+        open={printRecord != null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPrintRecord(null);
+            router.history.back();
+          }
+        }}
+        mode="print"
+        record={printRecord}
+        defaultPrinterName={settings?.printPrinterName ?? ''}
+        defaultPaperSize={settings?.printPaperSize ?? '80mm'}
+        defaultCopies={settings?.printCopies ?? 1}
+        allowSaveDefault
+        onConfirm={handlePrintConfirm}
+      />
     </div>
   );
 }
