@@ -163,44 +163,6 @@ function RouteComponent() {
   );
 }
 
-function AppFooter() {
-  return (
-    <footer className="border-t border-border/60 px-4 py-4">
-      <div className={cn(glassSurfaceClassName, 'p-4')}>
-        <div className="relative z-10 space-y-4">
-          <div className="space-y-2 text-center">
-            <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground/80">
-              Support
-            </p>
-            <p className="text-sm text-muted-foreground">
-              In case of any bugs, issues or tech support please contact{' '}
-              <span className="font-semibold text-primary">
-                Solution Road Equipment and Spars limited
-              </span>
-            </p>
-          </div>
-
-          <div className="h-px bg-border/60" />
-
-          <div className="space-y-2 text-center">
-            <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground/80">
-              License
-            </p>
-            <p className="text-xs leading-relaxed text-muted-foreground/90">
-              This sharing and remaking of this software is strictly prohibited except when licensed
-              by{' '}
-              <span className="font-medium text-foreground">
-                Solution Road Equipment and Spars limited
-              </span>{' '}
-              Tech Support
-            </p>
-          </div>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
 function RouteContent() {
   const isNavigating = useIsNavigating();
 
