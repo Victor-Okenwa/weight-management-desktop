@@ -1,0 +1,44 @@
+{
+  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
+  "appId": "com.solutionroad.weightmanagement",
+  "productName": "Solution Road Weight Management",
+  "copyright": "Copyright © Solution Road",
+  "directories": {
+    "output": "release",
+    "buildResources": "assets"
+  },
+  "files": [
+    "dist/**/*",
+    "assets/**/*",
+    {
+      "from": "../renderer/dist",
+      "to": "renderer",
+      "filter": ["**/*"]
+    }
+  ],
+  "asar": true,
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "assets/logo.png",
+    "artifactName": "${productName}-${version}-Setup.${ext}"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Solution Road Weight Management"
+  },
+  "publish": {
+    "provider": "github",
+    "owner": "Victor-Okenwa",
+    "repo": "weight-management-desktop",
+    "private": true,
+    "releaseType": "release"
+  }
+}

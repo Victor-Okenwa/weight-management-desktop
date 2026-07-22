@@ -24,6 +24,14 @@ import type {
 } from '@weight/shared/types/index';
 import { contextBridge, ipcRenderer } from 'electron';
 
+type UpdateStatusEvent =
+  | { type: 'checking' }
+  | { type: 'available'; version: string }
+  | { type: 'not-available'; version: string }
+  | { type: 'progress'; percent: number; transferred: number; total: number }
+  | { type: 'downloaded'; version: string }
+  | { type: 'error'; message: string };
+
 contextBridge.exposeInMainWorld('electronAPI', {
   listSerialPorts: (): Promise<SerialPortInfo[]> => ipcRenderer.invoke('serial:list-ports'),
   reconnectPort: () => ipcRenderer.invoke('serial:reconnect'),
@@ -130,4 +138,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('print:preview', input),
   printTicket: (input: PrintTicketInput): Promise<PrintTicketResult> =>
     ipcRenderer.invoke('print:ticket', input),
+
+  // Updates
+  getAppVersion: (): Promise<string> => ipcRenderer.invoke('update:get-version'),
+  checkForUpdates: (): Promise<unknown> => ipcRenderer.invoke('update:check'),
+  downloadUpdate: (): Promise<unknown> => ipcRenderer.invoke('update:download'),
+  installUpdate: (): Promise<void> => ipcRenderer.invoke('update:install'),
+  onUpdateStatus: (callback: (event: UpdateStatusEvent) => void) => {
+    const handler = (_event: unknown, payload: UpdateStatusEvent) => callback(payload);
+    ipcRenderer.on('update:status', handler);
+    return () => ipcRenderer.removeListener('update:status', handler);
+  },
 });

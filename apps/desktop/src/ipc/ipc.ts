@@ -50,6 +50,12 @@ import { listPrintersGrouped } from '../printing/list-printers.js';
 import { previewTicket } from '../printing/preview-ticket.js';
 import { printTicket } from '../printing/print-ticket.js';
 import type { SerialManager } from '../serial/serial-manager.js';
+import {
+  checkForAppUpdates,
+  downloadAppUpdate,
+  getAppVersion,
+  installAppUpdate,
+} from '../updater/auto-updater.js';
 
 export function registerIpcHandlers(serialManager: SerialManager) {
   // Serial-port
@@ -344,6 +350,12 @@ export function registerIpcHandlers(serialManager: SerialManager) {
   ipcMain.handle('print:preview', (_event, input: PrintPreviewInput) => previewTicket(input));
 
   ipcMain.handle('print:ticket', async (_event, input: PrintTicketInput) => printTicket(input));
+
+  // ---------- Updates ----------
+  ipcMain.handle('update:get-version', () => getAppVersion());
+  ipcMain.handle('update:check', () => checkForAppUpdates());
+  ipcMain.handle('update:download', () => downloadAppUpdate());
+  ipcMain.handle('update:install', () => installAppUpdate());
 
   // ---------- Renderer logging ----------
   ipcMain.handle('db:health-check', () => {

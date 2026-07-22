@@ -1,7 +1,8 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createFileRoute } from '@tanstack/react-router';
-import { Building2, Cable, Printer, Settings2, Shield, SlidersHorizontal } from 'lucide-react';
+import { Building2, Cable, Info, Printer, Settings2, Shield, SlidersHorizontal } from 'lucide-react';
 import { z } from 'zod';
+import { AboutTab } from '@/components/about-tab';
 import { CompanyDetailsTab } from '@/components/company-details-tab';
 import { PreferencesTab } from '@/components/preferences-tab';
 import { PrintSettingsTab } from '@/components/print-settings-tab';
@@ -12,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { glassSurfaceClassName } from '@/lib/glass-surface';
 import { cn } from '@/lib/utils';
 
-const settingsTabs = ['serial', 'preferences', 'print', 'company', 'security'] as const;
+const settingsTabs = ['serial', 'preferences', 'print', 'company', 'security', 'about'] as const;
 
 const settingsSearchSchema = z.object({
   tab: z.enum(settingsTabs).default('serial'),
@@ -38,7 +39,8 @@ function RouteComponent() {
         <div>
           <h2 className="text-xl font-bold">Settings</h2>
           <p className="text-sm text-muted-foreground">
-            Configure serial connection, preferences, printing, company details, and security
+            Configure serial connection, preferences, printing, company details, security, and
+            updates
           </p>
         </div>
       </div>
@@ -76,6 +78,10 @@ function RouteComponent() {
               <Shield className="size-4" />
               Security
             </TabsTrigger>
+            <TabsTrigger value="about">
+              <Info className="size-4" />
+              About
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="serial" className="min-w-0">
@@ -96,6 +102,10 @@ function RouteComponent() {
 
           <TabsContent value="security" className="min-w-0">
             <SecurityTab />
+          </TabsContent>
+
+          <TabsContent value="about" className="min-w-0">
+            <AboutTab />
           </TabsContent>
         </Tabs>
       </div>

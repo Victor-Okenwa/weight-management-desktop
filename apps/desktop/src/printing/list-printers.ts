@@ -15,12 +15,15 @@ export async function listPrintersGrouped(): Promise<{ groups: PrintersGrouped }
   const printers = await win.webContents.getPrintersAsync();
   return {
     groups: groupPrinters(
-      printers.map((p) => ({
-        name: p.name,
-        displayName: p.displayName,
-        description: p.description,
-        isDefault: p.isDefault,
-      })),
+      printers.map((p) => {
+        const info = p as typeof p & { isDefault?: boolean };
+        return {
+          name: info.name,
+          displayName: info.displayName,
+          description: info.description,
+          isDefault: Boolean(info.isDefault),
+        };
+      }),
     ),
   };
 }

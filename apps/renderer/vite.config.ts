@@ -7,6 +7,8 @@ import { defineConfig } from 'vite';
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Relative asset URLs required for Electron file:// / asar loading
+  base: './',
   plugins: [
     tanstackRouter({
       target: 'react',

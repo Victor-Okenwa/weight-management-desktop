@@ -6,22 +6,22 @@
   "main": "dist/main.js",
   "type": "module",
   "scripts": {
-    "clean": "rimraf dist",
-    "build": "tsc",
+    "clean": "rimraf dist release",
+    "inject-token": "node scripts/inject-update-token.mjs",
+    "build": "pnpm inject-token && tsc",
     "watch": "tsc --watch",
     "electron": "electron .",
     "dev": "rimraf dist && concurrently \"pnpm watch\" \"wait-on dist/main.js && electronmon .\"",
-    "dist": "pnpm build && electron-builder"
+    "dist": "pnpm inject-token && pnpm build && electron-builder --win --publish never",
+    "release": "pnpm inject-token && pnpm build && electron-builder --win --publish always"
   },
   "keywords": [],
   "author": "",
   "license": "UNLICENSED",
   "packageManager": "pnpm@10.28.2",
-  "build": {
-    "files": [
-      "dist/**/*",
-      "assets/**/*"
-    ]
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Victor-Okenwa/weight-management-desktop.git"
   },
   "dependencies": {
     "@serialport/parser-delimiter": "^13.0.0",
@@ -31,6 +31,7 @@
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.33.0",
     "electron": "^42.0.1",
+    "electron-updater": "^6.6.2",
     "serialport": "^13.0.0"
   },
   "devDependencies": {

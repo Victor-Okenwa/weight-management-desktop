@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' }); // load local env overrides
 
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { getAllSettings } from '@weight/database/repositories/settings';
 import type { SerialOptions, SettingsRow } from '@weight/shared/types/index';
 import { app, BrowserWindow, screen } from 'electron';
@@ -10,49 +11,36 @@ import { getDatabase, setupDatabase } from './database/connection.js';
 import { registerIpcHandlers } from './ipc/ipc.js';
 import type { IndicatorType } from './parser/index.js';
 import { SerialManager } from './serial/serial-manager.js';
+import { startAutoUpdater } from './updater/auto-updater.js';
 
-const __dirname = path.resolve();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const isDev = !app.isPackaged;
-
-const harcodedSerialOptions = {
-  port: 'COM7',
-  baudRate: 2400,
-  dataBits: 8,
-  stopBits: 1,
-  parity: 'none',
-  flowControl: 'none',
-  autoOpen: false,
-};
 
 app.setAppUserModelId('com.solutionroad.weightmanagement');
 
 let mainWindow: BrowserWindow | null = null;
+let isCleaningUp = false;
+
 const iconPath = path.join(app.getAppPath(), 'assets', 'logo.png');
 
 function createMainWindow() {
   const primaryDisplay = screen.getPrimaryDisplay();
-
   const { width, height } = primaryDisplay.workAreaSize;
-
-  // Recommended initial sizing
   const windowWidth = Math.floor(width * 0.9);
   const windowHeight = Math.floor(height * 0.9);
 
   mainWindow = new BrowserWindow({
     icon: iconPath,
-
     width: windowWidth,
     height: windowHeight,
     autoHideMenuBar: isDev,
-
     title: 'Solution Road Weight Management',
-
     backgroundColor: '#1e1e1e',
     show: true,
-
     webPreferences: {
-      preload: path.join(__dirname, 'dist', 'preload', 'preload.js'),
+      preload: path.join(__dirname, 'preload', 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
@@ -60,32 +48,28 @@ function createMainWindow() {
     },
   });
 
-  // Show only when ready
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show();
-
     if (isDev) {
       mainWindow?.webContents.openDevTools();
     }
   });
 
-  mainWindow.webContents.openDevTools();
-
   if (isDev) {
-    // Load frontend
-    // mainWindow.loadURL(`data:text/html,<h1>Hello</h1>`);
+    mainWindow.webContents.openDevTools();
     mainWindow.loadURL('http://localhost:2500');
+  } else if (app.isPackaged) {
+    mainWindow.loadFile(path.join(app.getAppPath(), 'renderer', 'index.html'));
   } else {
+    // Running `electron .` against local dist without a full package
     mainWindow.loadFile(path.join(__dirname, '../../renderer/dist/index.html'));
   }
 
-  // Cleanup
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
 }
 
-// Helper to read serial options from settings with fallbacks
 function getSerialOptions(settingsRow: SettingsRow): SerialOptions {
   return {
     port: (settingsRow.serialPort || 'COM1') as `COM${number}`,
@@ -93,24 +77,34 @@ function getSerialOptions(settingsRow: SettingsRow): SerialOptions {
     dataBits: (settingsRow.dataBits || 8) as 8,
     stopBits: (settingsRow.stopBits || 1) as 1,
     parity: (settingsRow.parity || 'none') as 'none',
-    flowControl: (settingsRow.flowControl || 'none') as 'none', // not stored in settings yet, keep default
+    flowControl: (settingsRow.flowControl || 'none') as 'none',
     autoOpen: settingsRow.autoOpen || false,
   };
 }
 
+function cleanupResources(serialManager: SerialManager) {
+  if (isCleaningUp) return;
+  isCleaningUp = true;
+  try {
+    serialManager.disconnect();
+    const currentDb = getDatabase();
+    currentDb.save();
+    currentDb.close();
+  } catch {
+    // Best-effort cleanup on quit / update install
+  }
+}
+
 app.whenReady().then(async () => {
-  // 1. Database ready
   await setupDatabase();
   const db = getDatabase();
 
-  // 2. Read current settings (there is exactly one row after seeding)
   const settingsRow = getAllSettings(db);
   const serialOptions = getSerialOptions(settingsRow as SettingsRow);
   const indicatorType = settingsRow?.indicatorType || 'd300';
 
   console.log(settingsRow);
 
-  // 3. Create serial manager
   const serialManager = new SerialManager(
     indicatorType as IndicatorType,
     (reading) => {
@@ -129,37 +123,24 @@ app.whenReady().then(async () => {
     },
   );
 
-  // 4. Register all IPC handlers (now they have access to serialManager)
   registerIpcHandlers(serialManager);
-
-  // 5. Open the window
   createMainWindow();
-
-  // 6. Connect to serial port
   serialManager.connect(serialOptions);
 
-  // 7. App lifecycle events
+  startAutoUpdater({
+    getMainWindow: () => mainWindow,
+    prepareInstall: () => cleanupResources(serialManager),
+  });
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
   });
 
-  app.on('before-quit', async (event) => {
-    event.preventDefault();
-    serialManager.disconnect();
-    const currentDb = getDatabase();
-    currentDb.save();
-    currentDb.close();
-    app.quit();
+  app.on('before-quit', () => {
+    cleanupResources(serialManager);
   });
 });
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
-});
-
-app.on('window-all-closed', () => {
-  // macOS behavior
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
 });

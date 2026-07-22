@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 
 export function AppFooter() {
   const [status, setStatus] = useState<LicenseStatus | null>(null);
+  const [version, setVersion] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -18,7 +19,17 @@ export function AppFooter() {
         // Footer stays usable without license details
       }
     }
+    async function loadVersion() {
+      if (!window.electronAPI?.getAppVersion) return;
+      try {
+        const next = await window.electronAPI.getAppVersion();
+        if (!cancelled) setVersion(next);
+      } catch {
+        // Optional version display
+      }
+    }
     void load();
+    void loadVersion();
     return () => {
       cancelled = true;
     };
@@ -32,6 +43,12 @@ export function AppFooter() {
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-[11px] leading-tight text-muted-foreground">
         <p className="min-w-0 truncate">
           <span className="text-foreground/80">Solution Road</span>
+          {version ? (
+            <>
+              <span className="mx-1.5 text-border">|</span>
+              <span className="font-mono text-foreground/70">v{version}</span>
+            </>
+          ) : null}
           {status?.machineId ? (
             <>
               <span className="mx-1.5 text-border">|</span>

@@ -25,6 +25,14 @@ import type {
   Vehicle,
 } from '@weight/shared/types/index';
 
+type UpdateStatusEvent =
+  | { type: 'checking' }
+  | { type: 'available'; version: string }
+  | { type: 'not-available'; version: string }
+  | { type: 'progress'; percent: number; transferred: number; total: number }
+  | { type: 'downloaded'; version: string }
+  | { type: 'error'; message: string };
+
 declare global {
   interface Window {
     electronAPI: {
@@ -102,6 +110,13 @@ declare global {
       listPrintersGrouped: () => Promise<{ groups: PrintersGrouped }>;
       previewTicket: (input: PrintPreviewInput) => Promise<PrintPreviewResult>;
       printTicket: (input: PrintTicketInput) => Promise<PrintTicketResult>;
+
+      // Updates
+      getAppVersion: () => Promise<string>;
+      checkForUpdates: () => Promise<unknown>;
+      downloadUpdate: () => Promise<unknown>;
+      installUpdate: () => Promise<void>;
+      onUpdateStatus: (callback: (event: UpdateStatusEvent) => void) => () => void;
     };
   }
 }

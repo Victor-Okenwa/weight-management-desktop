@@ -15,7 +15,9 @@
     "format": "biome format --write .",
     "format:check": "biome format .",
     "lint": "biome lint .",
-    "check": "biome check ."
+    "check": "biome check .",
+    "release:win": "pnpm --filter @weight/renderer build && pnpm --filter @weight/desktop release",
+    "dist:win": "pnpm --filter @weight/renderer build && pnpm --filter @weight/desktop dist"
   },
   "keywords": [],
   "author": "Victor-Okenwa",
