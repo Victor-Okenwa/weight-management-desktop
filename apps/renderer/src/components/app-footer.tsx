@@ -3,10 +3,13 @@ import type { LicenseStatus } from '@weight/shared/types/index';
 import { useEffect, useState } from 'react';
 import { formatDaysRemaining, formatLicenseDateShort } from '@/components/setup/license-expiry';
 import { cn } from '@/lib/utils';
+import { availableUpdateVersion, useUpdateStore } from '@/store/updateStore';
 
 export function AppFooter() {
   const [status, setStatus] = useState<LicenseStatus | null>(null);
-  const [version, setVersion] = useState<string | null>(null);
+  const version = useUpdateStore((s) => s.currentVersion);
+  const updateStatus = useUpdateStore((s) => s.status);
+  const availableVersion = availableUpdateVersion(updateStatus);
 
   useEffect(() => {
     let cancelled = false;
@@ -23,7 +26,7 @@ export function AppFooter() {
       if (!window.electronAPI?.getAppVersion) return;
       try {
         const next = await window.electronAPI.getAppVersion();
-        if (!cancelled) setVersion(next);
+        if (!cancelled) useUpdateStore.getState().setCurrentVersion(next);
       } catch {
         // Optional version display
       }
@@ -76,6 +79,17 @@ export function AppFooter() {
         </p>
 
         <nav className="flex shrink-0 items-center gap-3">
+          <Link
+            to="/software-update"
+            className={cn(
+              'transition-colors hover:underline',
+              availableVersion
+                ? 'font-medium text-amber-800 dark:text-amber-300'
+                : 'text-foreground/70 hover:text-foreground',
+            )}
+          >
+            {availableVersion ? `Update v${availableVersion}` : 'Software Update'}
+          </Link>
           <Link
             to="/license"
             className="text-foreground/70 transition-colors hover:text-foreground hover:underline"

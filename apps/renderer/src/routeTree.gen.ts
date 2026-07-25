@@ -13,6 +13,7 @@ import { Route as SetupWizardRouteImport } from './routes/setup-wizard'
 import { Route as AppLockRouteImport } from './routes/app-lock'
 import { Route as ProtectedRouteRouteImport } from './routes/_protected/route'
 import { Route as ProtectedIndexRouteImport } from './routes/_protected/index'
+import { Route as ProtectedSoftwareUpdateRouteImport } from './routes/_protected/software-update'
 import { Route as ProtectedSettingsRouteImport } from './routes/_protected/settings'
 import { Route as ProtectedRenewLicenseRouteImport } from './routes/_protected/renew-license'
 import { Route as ProtectedRecordWeightRouteImport } from './routes/_protected/record-weight'
@@ -37,6 +38,11 @@ const ProtectedRouteRoute = ProtectedRouteRouteImport.update({
 const ProtectedIndexRoute = ProtectedIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => ProtectedRouteRoute,
+} as any)
+const ProtectedSoftwareUpdateRoute = ProtectedSoftwareUpdateRouteImport.update({
+  id: '/software-update',
+  path: '/software-update',
   getParentRoute: () => ProtectedRouteRoute,
 } as any)
 const ProtectedSettingsRoute = ProtectedSettingsRouteImport.update({
@@ -80,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/record-weight': typeof ProtectedRecordWeightRoute
   '/renew-license': typeof ProtectedRenewLicenseRoute
   '/settings': typeof ProtectedSettingsRoute
+  '/software-update': typeof ProtectedSoftwareUpdateRoute
 }
 export interface FileRoutesByTo {
   '/app-lock': typeof AppLockRoute
@@ -90,6 +97,7 @@ export interface FileRoutesByTo {
   '/record-weight': typeof ProtectedRecordWeightRoute
   '/renew-license': typeof ProtectedRenewLicenseRoute
   '/settings': typeof ProtectedSettingsRoute
+  '/software-update': typeof ProtectedSoftwareUpdateRoute
   '/': typeof ProtectedIndexRoute
 }
 export interface FileRoutesById {
@@ -103,6 +111,7 @@ export interface FileRoutesById {
   '/_protected/record-weight': typeof ProtectedRecordWeightRoute
   '/_protected/renew-license': typeof ProtectedRenewLicenseRoute
   '/_protected/settings': typeof ProtectedSettingsRoute
+  '/_protected/software-update': typeof ProtectedSoftwareUpdateRoute
   '/_protected/': typeof ProtectedIndexRoute
 }
 export interface FileRouteTypes {
@@ -117,6 +126,7 @@ export interface FileRouteTypes {
     | '/record-weight'
     | '/renew-license'
     | '/settings'
+    | '/software-update'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/app-lock'
@@ -127,6 +137,7 @@ export interface FileRouteTypes {
     | '/record-weight'
     | '/renew-license'
     | '/settings'
+    | '/software-update'
     | '/'
   id:
     | '__root__'
@@ -139,6 +150,7 @@ export interface FileRouteTypes {
     | '/_protected/record-weight'
     | '/_protected/renew-license'
     | '/_protected/settings'
+    | '/_protected/software-update'
     | '/_protected/'
   fileRoutesById: FileRoutesById
 }
@@ -176,6 +188,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof ProtectedIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
+    '/_protected/software-update': {
+      id: '/_protected/software-update'
+      path: '/software-update'
+      fullPath: '/software-update'
+      preLoaderRoute: typeof ProtectedSoftwareUpdateRouteImport
       parentRoute: typeof ProtectedRouteRoute
     }
     '/_protected/settings': {
@@ -230,6 +249,7 @@ interface ProtectedRouteRouteChildren {
   ProtectedRecordWeightRoute: typeof ProtectedRecordWeightRoute
   ProtectedRenewLicenseRoute: typeof ProtectedRenewLicenseRoute
   ProtectedSettingsRoute: typeof ProtectedSettingsRoute
+  ProtectedSoftwareUpdateRoute: typeof ProtectedSoftwareUpdateRoute
   ProtectedIndexRoute: typeof ProtectedIndexRoute
 }
 
@@ -240,6 +260,7 @@ const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
   ProtectedRecordWeightRoute: ProtectedRecordWeightRoute,
   ProtectedRenewLicenseRoute: ProtectedRenewLicenseRoute,
   ProtectedSettingsRoute: ProtectedSettingsRoute,
+  ProtectedSoftwareUpdateRoute: ProtectedSoftwareUpdateRoute,
   ProtectedIndexRoute: ProtectedIndexRoute,
 }
 

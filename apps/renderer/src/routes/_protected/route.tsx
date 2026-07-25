@@ -45,6 +45,8 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { SoftwareUpdateBanner } from '@/components/software-update-banner';
+import { useAppUpdates } from '@/hooks/use-app-updates';
 import { useWeightUpdates } from '@/hooks/use-weight-updates';
 import { glassSurfaceClassName } from '@/lib/glass-surface';
 import { logger } from '@/lib/logger';
@@ -73,7 +75,7 @@ const sidebarRoutes = [
     link: '/settings',
     label: 'Settings',
   },
-];
+] as const;
 
 function isRouteActive(link: string, currentPath: string) {
   if (link === '/') {
@@ -134,7 +136,8 @@ export const Route = createFileRoute('/_protected')({
 });
 
 function RouteComponent() {
-  useWeightUpdates(); // start listening to updates
+  useWeightUpdates(); // start listening to weight/serial updates
+  useAppUpdates(); // start listening to software updates
 
   const { loadSettings, settings } = useSettingsStore();
   const { setTheme } = useTheme();
@@ -155,6 +158,7 @@ function RouteComponent() {
       <div className="min-w-0 w-full flex-1">
         <main className="min-w-0">
           <TopBar />
+          <SoftwareUpdateBanner />
           <RouteContent />
         </main>
         <AppFooter />

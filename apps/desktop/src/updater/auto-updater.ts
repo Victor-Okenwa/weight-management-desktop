@@ -1,9 +1,14 @@
+import { createRequire } from 'node:module';
 import type { BrowserWindow } from 'electron';
 import { app } from 'electron';
-import { autoUpdater } from 'electron-updater';
+import type { AppUpdater } from 'electron-updater';
 import { logger } from '../logger.js';
 import { UPDATE_GITHUB } from './update-config.js';
 import { UPDATE_GH_TOKEN } from './update-token.generated.js';
+
+// electron-updater is CommonJS; named ESM imports fail under Electron's ESM loader.
+const require = createRequire(import.meta.url);
+const { autoUpdater } = require('electron-updater') as { autoUpdater: AppUpdater };
 
 export type UpdateStatusEvent =
   | { type: 'checking' }
