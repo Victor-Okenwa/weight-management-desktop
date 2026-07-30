@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 
 export type UpdateStatusEvent =
+  | { type: 'checking-connectivity' }
+  | { type: 'offline' }
+  | { type: 'checking-store' }
+  | { type: 'store-unreachable' }
   | { type: 'checking' }
   | { type: 'available'; version: string }
   | { type: 'not-available'; version: string }
@@ -10,12 +14,18 @@ export type UpdateStatusEvent =
 
 export type UpdateUiState =
   | { kind: 'idle' }
+  | { kind: 'checking-connectivity' }
+  | { kind: 'checking-store' }
   | { kind: 'checking' }
   | { kind: 'available'; version: string }
   | { kind: 'up-to-date'; version: string }
   | { kind: 'downloading'; percent: number; version?: string }
   | { kind: 'ready'; version: string }
   | { kind: 'error'; message: string };
+
+export const OFFLINE_MESSAGE = 'You appear to be offline. Check your internet connection and try again.';
+export const STORE_UNREACHABLE_MESSAGE =
+  "Can't reach the update server right now. Please try again shortly.";
 
 interface UpdateState {
   currentVersion: string | null;
@@ -32,6 +42,14 @@ interface UpdateState {
 
 function statusFromEvent(event: UpdateStatusEvent, prev: UpdateUiState): UpdateUiState {
   switch (event.type) {
+    case 'checking-connectivity':
+      return { kind: 'checking-connectivity' };
+    case 'offline':
+      return { kind: 'error', message: OFFLINE_MESSAGE };
+    case 'checking-store':
+      return { kind: 'checking-store' };
+    case 'store-unreachable':
+      return { kind: 'error', message: STORE_UNREACHABLE_MESSAGE };
     case 'checking':
       return { kind: 'checking' };
     case 'available':

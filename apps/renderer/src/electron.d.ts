@@ -26,6 +26,10 @@ import type {
 } from '@weight/shared/types/index';
 
 type UpdateStatusEvent =
+  | { type: 'checking-connectivity' }
+  | { type: 'offline' }
+  | { type: 'checking-store' }
+  | { type: 'store-unreachable' }
   | { type: 'checking' }
   | { type: 'available'; version: string }
   | { type: 'not-available'; version: string }

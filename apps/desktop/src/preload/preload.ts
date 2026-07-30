@@ -25,6 +25,10 @@ import type {
 import { contextBridge, ipcRenderer } from 'electron';
 
 type UpdateStatusEvent =
+  | { type: 'checking-connectivity' }
+  | { type: 'offline' }
+  | { type: 'checking-store' }
+  | { type: 'store-unreachable' }
   | { type: 'checking' }
   | { type: 'available'; version: string }
   | { type: 'not-available'; version: string }

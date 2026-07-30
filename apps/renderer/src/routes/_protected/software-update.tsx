@@ -31,11 +31,20 @@ function RouteComponent() {
     });
   }, []);
 
+  const isCheckingConnectivity = status.kind === 'checking-connectivity';
+  const isCheckingStore = status.kind === 'checking-store';
   const isChecking = status.kind === 'checking';
+  const isCheckingAnyStage = isCheckingConnectivity || isCheckingStore || isChecking;
   const isDownloading = status.kind === 'downloading';
   const canDownload = status.kind === 'available';
   const canInstall = status.kind === 'ready';
   const isUpToDate = status.kind === 'up-to-date';
+
+  const checkingLabel = isCheckingConnectivity
+    ? 'Checking internet connectivity…'
+    : isCheckingStore
+      ? 'Reaching binary store…'
+      : 'Checking for updates…';
 
   return (
     <article className="mx-auto w-full max-w-3xl space-y-6 px-4 py-6 md:px-6">
@@ -71,8 +80,8 @@ function RouteComponent() {
               ? 'Update available'
               : isUpToDate
                 ? 'Up to date'
-                : isChecking
-                  ? 'Checking…'
+                : isCheckingAnyStage
+                  ? checkingLabel
                   : isDownloading
                     ? 'Downloading…'
                     : canInstall
@@ -160,12 +169,12 @@ function RouteComponent() {
               type="button"
               variant="outline"
               size="lg"
-              disabled={busy || isChecking || isDownloading}
+              disabled={busy || isCheckingAnyStage || isDownloading}
               onClick={() => void checkForUpdatesAction()}
             >
-              {isChecking ? (
+              {isCheckingAnyStage ? (
                 <>
-                  <Spinner /> Checking…
+                  <Spinner /> {checkingLabel}
                 </>
               ) : (
                 <>

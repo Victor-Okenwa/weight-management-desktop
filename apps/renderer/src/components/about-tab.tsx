@@ -5,11 +5,24 @@ import { checkForUpdatesAction } from '@/hooks/use-app-updates';
 import { availableUpdateVersion, useUpdateStore } from '@/store/updateStore';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Spinner } from './ui/spinner';
 
 export function AboutTab() {
   const currentVersion = useUpdateStore((s) => s.currentVersion);
   const status = useUpdateStore((s) => s.status);
+  const busy = useUpdateStore((s) => s.busy);
   const availableVersion = availableUpdateVersion(status);
+
+  const isCheckingAnyStage =
+    status.kind === 'checking-connectivity' ||
+    status.kind === 'checking-store' ||
+    status.kind === 'checking';
+  const checkingLabel =
+    status.kind === 'checking-connectivity'
+      ? 'Checking internet connectivity…'
+      : status.kind === 'checking-store'
+        ? 'Reaching binary store…'
+        : 'Checking for updates…';
 
   useEffect(() => {
     if (!window.electronAPI?.getAppVersion) return;
@@ -52,8 +65,20 @@ export function AboutTab() {
         </div>
 
         <div className="flex flex-wrap justify-end gap-2 border-t border-border/60 pt-5">
-          <Button type="button" variant="outline" size="lg" onClick={() => void checkForUpdatesAction()}>
-            Check for updates
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            disabled={busy || isCheckingAnyStage}
+            onClick={() => void checkForUpdatesAction()}
+          >
+            {isCheckingAnyStage ? (
+              <>
+                <Spinner /> {checkingLabel}
+              </>
+            ) : (
+              'Check for updates'
+            )}
           </Button>
           <Button type="button" size="lg" asChild className="min-w-44">
             <Link to="/software-update">Software Update</Link>

@@ -1,7 +1,12 @@
 import { useRouter } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
-import { availableUpdateVersion, useUpdateStore } from '@/store/updateStore';
+import {
+  availableUpdateVersion,
+  OFFLINE_MESSAGE,
+  STORE_UNREACHABLE_MESSAGE,
+  useUpdateStore,
+} from '@/store/updateStore';
 
 export function useAppUpdates() {
   const router = useRouter();
@@ -16,6 +21,16 @@ export function useAppUpdates() {
 
     const unsubscribe = window.electronAPI.onUpdateStatus((event) => {
       applyEvent(event);
+
+      if (event.type === 'offline') {
+        toast.error(OFFLINE_MESSAGE);
+        return;
+      }
+
+      if (event.type === 'store-unreachable') {
+        toast.error(STORE_UNREACHABLE_MESSAGE);
+        return;
+      }
 
       if (event.type === 'error') {
         toast.error(event.message);

@@ -3,6 +3,7 @@ import type { BrowserWindow } from 'electron';
 import { app } from 'electron';
 import type { AppUpdater } from 'electron-updater';
 import { logger } from '../logger.js';
+import { checkGithubStoreReachable, checkInternetConnectivity } from './connectivity.js';
 import { UPDATE_GITHUB } from './update-config.js';
 import { UPDATE_GH_TOKEN } from './update-token.generated.js';
 
@@ -11,6 +12,10 @@ const require = createRequire(import.meta.url);
 const { autoUpdater } = require('electron-updater') as { autoUpdater: AppUpdater };
 
 export type UpdateStatusEvent =
+  | { type: 'checking-connectivity' }
+  | { type: 'offline' }
+  | { type: 'checking-store' }
+  | { type: 'store-unreachable' }
   | { type: 'checking' }
   | { type: 'available'; version: string }
   | { type: 'not-available'; version: string }
@@ -87,9 +92,11 @@ export function startAutoUpdater(options: {
     send({ type: 'error', message: error.message });
   });
 
-  // Silent check shortly after startup so About tab can show status without a click
+  // Silent check shortly after startup so About tab can show status without a click.
+  // This workstation is offline-first, so startup checks must not surface
+  // "you're offline" noise — see checkForAppUpdates({ silent: true }) below.
   setTimeout(() => {
-    void checkForAppUpdates().catch((error) => {
+    void checkForAppUpdates({ silent: true }).catch((error) => {
       logger.warn(`[updater] startup check failed: ${(error as Error).message}`);
     });
   }, 8_000);
@@ -99,11 +106,47 @@ export function getAppVersion(): string {
   return app.getVersion();
 }
 
-export async function checkForAppUpdates() {
+let inFlightCheck: ReturnType<typeof runUpdateCheck> | null = null;
+
+export async function checkForAppUpdates(options?: { silent?: boolean }) {
+  if (inFlightCheck) return inFlightCheck;
+  inFlightCheck = runUpdateCheck(options).finally(() => {
+    inFlightCheck = null;
+  });
+  return inFlightCheck;
+}
+
+async function runUpdateCheck(options?: { silent?: boolean }) {
+  const silent = options?.silent ?? false;
+
   if (!app.isPackaged) {
-    send({ type: 'not-available', version: app.getVersion() });
+    if (!silent) send({ type: 'not-available', version: app.getVersion() });
     return { updateInfo: null as null };
   }
+
+  if (!silent) send({ type: 'checking-connectivity' });
+  const hasInternet = await checkInternetConnectivity();
+  if (!hasInternet) {
+    if (silent) {
+      logger.debug('[updater] startup check skipped: offline');
+    } else {
+      send({ type: 'offline' });
+    }
+    return { updateInfo: null as null };
+  }
+
+  if (!silent) send({ type: 'checking-store' });
+  const storeReachable = await checkGithubStoreReachable();
+  if (!storeReachable) {
+    if (silent) {
+      logger.debug('[updater] startup check skipped: store unreachable');
+    } else {
+      send({ type: 'store-unreachable' });
+    }
+    return { updateInfo: null as null };
+  }
+
+  // The existing 'checking-for-update' listener emits { type: 'checking' }.
   return autoUpdater.checkForUpdates();
 }
 
