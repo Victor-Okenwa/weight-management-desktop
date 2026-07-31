@@ -1,9 +1,11 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createFileRoute } from '@tanstack/react-router';
-import { Building2, Cable, Settings2, Shield, SlidersHorizontal } from 'lucide-react';
+import { Building2, Cable, Info, Printer, Settings2, Shield, SlidersHorizontal } from 'lucide-react';
 import { z } from 'zod';
+import { AboutTab } from '@/components/about-tab';
 import { CompanyDetailsTab } from '@/components/company-details-tab';
 import { PreferencesTab } from '@/components/preferences-tab';
+import { PrintSettingsTab } from '@/components/print-settings-tab';
 import { SecurityTab } from '@/components/security-tab';
 import { SerialConfigurationsTab } from '@/components/serial-configurations-tab';
 import { Separator } from '@/components/ui/separator';
@@ -11,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { glassSurfaceClassName } from '@/lib/glass-surface';
 import { cn } from '@/lib/utils';
 
-const settingsTabs = ['serial', 'preferences', 'company', 'security'] as const;
+const settingsTabs = ['serial', 'preferences', 'print', 'company', 'security', 'about'] as const;
 
 const settingsSearchSchema = z.object({
   tab: z.enum(settingsTabs).default('serial'),
@@ -37,7 +39,8 @@ function RouteComponent() {
         <div>
           <h2 className="text-xl font-bold">Settings</h2>
           <p className="text-sm text-muted-foreground">
-            Configure serial connection, preferences, company details, and security
+            Configure serial connection, preferences, printing, company details, security, and
+            updates
           </p>
         </div>
       </div>
@@ -63,6 +66,10 @@ function RouteComponent() {
               <SlidersHorizontal className="size-4" />
               Preferences
             </TabsTrigger>
+            <TabsTrigger value="print">
+              <Printer className="size-4" />
+              Print
+            </TabsTrigger>
             <TabsTrigger value="company">
               <Building2 className="size-4" />
               Company Details
@@ -70,6 +77,10 @@ function RouteComponent() {
             <TabsTrigger value="security">
               <Shield className="size-4" />
               Security
+            </TabsTrigger>
+            <TabsTrigger value="about">
+              <Info className="size-4" />
+              About
             </TabsTrigger>
           </TabsList>
 
@@ -81,12 +92,20 @@ function RouteComponent() {
             <PreferencesTab />
           </TabsContent>
 
+          <TabsContent value="print" className="min-w-0">
+            <PrintSettingsTab />
+          </TabsContent>
+
           <TabsContent value="company" className="min-w-0">
             <CompanyDetailsTab />
           </TabsContent>
 
           <TabsContent value="security" className="min-w-0">
             <SecurityTab />
+          </TabsContent>
+
+          <TabsContent value="about" className="min-w-0">
+            <AboutTab />
           </TabsContent>
         </Tabs>
       </div>

@@ -14,11 +14,28 @@ import type {
   Material,
   PaginatedResult,
   PasswordActionResult,
+  PrintersGrouped,
+  PrintPreviewInput,
+  PrintPreviewResult,
+  PrintTicketInput,
+  PrintTicketResult,
   Record as RecordType,
   SerialPortInfo,
   SettingsRow,
   Vehicle,
 } from '@weight/shared/types/index';
+
+type UpdateStatusEvent =
+  | { type: 'checking-connectivity' }
+  | { type: 'offline' }
+  | { type: 'checking-store' }
+  | { type: 'store-unreachable' }
+  | { type: 'checking' }
+  | { type: 'available'; version: string }
+  | { type: 'not-available'; version: string }
+  | { type: 'progress'; percent: number; transferred: number; total: number }
+  | { type: 'downloaded'; version: string }
+  | { type: 'error'; message: string };
 
 declare global {
   interface Window {
@@ -92,6 +109,18 @@ declare global {
       ) => Promise<PaginatedResult<RecordType>>;
       deleteRecord: (id: number) => Promise<RecordType | null>;
       deleteRecords: (ids: number[]) => Promise<number>;
+
+      // Printing
+      listPrintersGrouped: () => Promise<{ groups: PrintersGrouped }>;
+      previewTicket: (input: PrintPreviewInput) => Promise<PrintPreviewResult>;
+      printTicket: (input: PrintTicketInput) => Promise<PrintTicketResult>;
+
+      // Updates
+      getAppVersion: () => Promise<string>;
+      checkForUpdates: () => Promise<unknown>;
+      downloadUpdate: () => Promise<unknown>;
+      installUpdate: () => Promise<void>;
+      onUpdateStatus: (callback: (event: UpdateStatusEvent) => void) => () => void;
     };
   }
 }

@@ -23,9 +23,10 @@ export const settings = sqliteTable('settings', {
   stableTolerance: real('stable_tolerance').notNull().default(0.5),
   stableDurationMs: integer('stable_duration_ms').notNull().default(3000),
   theme: text('theme').notNull().default('system'),
-  autoPrint: integer('auto_print', { mode: 'boolean' }).notNull().default(false),
-  printerName: text('printer_name').notNull().default(''),
+  printAuto: integer('print_auto', { mode: 'boolean' }).notNull().default(false),
+  printPrinterName: text('print_printer_name').notNull().default(''),
   printCopies: integer('print_copies').notNull().default(1),
+  printPaperSize: text('print_paper_size').notNull().default('80mm'),
 });
 
 // ---------- Installation (single-row station / license lifecycle) ----------

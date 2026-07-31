@@ -1,11 +1,12 @@
 /* eslint-disable react-refresh/only-export-components */
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import type { Material, Vehicle } from '@weight/shared/types/index';
+import type { Material, Record as WeightRecord, Vehicle } from '@weight/shared/types/index';
 import { Check, ChevronLeft, ChevronRight, Save, Scale } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { PrinterDialog, type PrinterSelection } from '@/components/printer-dialog';
 import { GrossWeightStep } from '@/components/record-weight-shared/new-record/gross-weight-step';
 import { TareWeightStep } from '@/components/record-weight-shared/new-record/tare-weight-step';
 import { VehicleSelectionStep } from '@/components/record-weight-shared/new-record/vehicle-selection-step';
@@ -14,6 +15,7 @@ import { newWeightSchema } from '@/components/record-weight-shared/schema';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
+import { savePrintDefaults, tryAutoPrintRecord } from '@/lib/print-record';
 import { cn } from '@/lib/utils';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useWeightStore } from '@/store/weightStore';
@@ -47,6 +49,7 @@ function RouteComponent() {
   const [capturedGrossWeight, setCapturedGrossWeight] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(false);
+  const [printRecord, setPrintRecord] = useState<WeightRecord | null>(null);
 
   const form = useForm({
     resolver: zodResolver(newWeightSchema),
@@ -275,15 +278,29 @@ function RouteComponent() {
     setIsSubmitting(true);
     try {
       const payload = buildSubmitPayload('completed');
-      await window.electronAPI.createRecord(payload);
+      const created = await window.electronAPI.createRecord(payload);
       toast.success('Record saved');
-      navigate({ to: '/' });
+
+      const autoPrinted = await tryAutoPrintRecord(created, settings);
+      if (autoPrinted) {
+        navigate({ to: '/' });
+        return;
+      }
+
+      setPrintRecord(created);
     } catch {
       toast.error('Failed to save record');
     } finally {
       setIsSubmitting(false);
     }
-  }, [validateCurrentStep, buildSubmitPayload, navigate]);
+  }, [validateCurrentStep, buildSubmitPayload, navigate, settings]);
+
+  async function handlePrintConfirm(selection: PrinterSelection) {
+    if (selection.saveAsDefault) {
+      await savePrintDefaults(selection);
+    }
+    navigate({ to: '/' });
+  }
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6 min-h-screen">
@@ -470,6 +487,23 @@ function RouteComponent() {
           )}
         </div>
       </div>
+
+      <PrinterDialog
+        open={printRecord != null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPrintRecord(null);
+            navigate({ to: '/' });
+          }
+        }}
+        mode="print"
+        record={printRecord}
+        defaultPrinterName={settings?.printPrinterName ?? ''}
+        defaultPaperSize={settings?.printPaperSize ?? '80mm'}
+        defaultCopies={settings?.printCopies ?? 1}
+        allowSaveDefault
+        onConfirm={handlePrintConfirm}
+      />
     </div>
   );
 }

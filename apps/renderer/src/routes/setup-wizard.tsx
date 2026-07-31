@@ -483,9 +483,6 @@ function RouteComponent() {
         stableTolerance: data.hardware.stableTolerance,
         stableDurationMs: data.hardware.stableDurationMs,
         theme: data.preferences.theme,
-        autoPrint: existing?.autoPrint ?? false,
-        printerName: existing?.printerName ?? '',
-        printCopies: existing?.printCopies ?? 1,
       });
 
       await window.electronAPI.completeSetup({});

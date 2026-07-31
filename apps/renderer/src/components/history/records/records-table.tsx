@@ -13,8 +13,11 @@ import {
   getDateRangeFilter,
   getStringListFilter,
 } from '@/components/history/shared/server-filter-utils';
+import { PrinterDialog, type PrinterSelection } from '@/components/printer-dialog';
 import { useServerDataTable } from '@/hooks/use-server-data-table';
 import { logger } from '@/lib/logger';
+import { savePrintDefaults } from '@/lib/print-record';
+import { useSettingsStore } from '@/store/settingsStore';
 
 function fetchRecords(
   page: number,
@@ -42,8 +45,10 @@ function deleteRecords(ids: number[]): Promise<number> {
 export function RecordsTable() {
   'use no memo';
   const navigate = useNavigate();
+  const { settings, loadSettings } = useSettingsStore();
   const [viewItem, setViewItem] = useState<WeightRecord | null>(null);
   const [deleteItem, setDeleteItem] = useState<WeightRecord | null>(null);
+  const [printItem, setPrintItem] = useState<WeightRecord | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const columns = useMemo(
@@ -53,6 +58,7 @@ export function RecordsTable() {
         onEdit: (record) => {
           void navigate({ to: '/edit-weight', search: { ticketId: record.ticketId } });
         },
+        onPrint: setPrintItem,
         onDelete: setDeleteItem,
       }),
     [navigate],
@@ -130,6 +136,27 @@ export function RecordsTable() {
         record={viewItem}
         open={viewItem != null}
         onOpenChange={(open) => !open && setViewItem(null)}
+        onPrint={(record) => {
+          setViewItem(null);
+          setPrintItem(record);
+        }}
+      />
+
+      <PrinterDialog
+        open={printItem != null}
+        onOpenChange={(open) => !open && setPrintItem(null)}
+        mode="print"
+        record={printItem}
+        defaultPrinterName={settings?.printPrinterName ?? ''}
+        defaultPaperSize={settings?.printPaperSize ?? '80mm'}
+        defaultCopies={settings?.printCopies ?? 1}
+        allowSaveDefault
+        onConfirm={async (selection: PrinterSelection) => {
+          if (selection.saveAsDefault) {
+            await savePrintDefaults(selection);
+            await loadSettings();
+          }
+        }}
       />
 
       <DeleteConfirmDialog

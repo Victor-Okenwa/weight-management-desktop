@@ -26,7 +26,12 @@ import {
   getVehiclesPaginated,
   updateVehicle,
 } from '@weight/database/repositories/vehicles';
-import type { SerialOptions } from '@weight/shared/types/index';
+import type {
+  PaperSizeGroup,
+  PrintPreviewInput,
+  PrintTicketInput,
+  SerialOptions,
+} from '@weight/shared/types/index';
 import { ipcMain } from 'electron';
 import { SerialPort } from 'serialport';
 import { getDatabase } from '../database/connection.js';
@@ -41,7 +46,16 @@ import {
 } from '../license/app-password.js';
 import { activateLicense, getLicenseStatus, getMachineId } from '../license/license-service.js';
 import { logger } from '../logger.js';
+import { listPrintersGrouped } from '../printing/list-printers.js';
+import { previewTicket } from '../printing/preview-ticket.js';
+import { printTicket } from '../printing/print-ticket.js';
 import type { SerialManager } from '../serial/serial-manager.js';
+import {
+  checkForAppUpdates,
+  downloadAppUpdate,
+  getAppVersion,
+  installAppUpdate,
+} from '../updater/auto-updater.js';
 
 export function registerIpcHandlers(serialManager: SerialManager) {
   // Serial-port
@@ -102,9 +116,10 @@ export function registerIpcHandlers(serialManager: SerialManager) {
       stableTolerance: row.stableTolerance,
       stableDurationMs: row.stableDurationMs,
       theme: row.theme,
-      autoPrint: row.autoPrint,
-      printerName: row.printerName,
+      printAuto: row.printAuto,
+      printPrinterName: row.printPrinterName,
       printCopies: row.printCopies,
+      printPaperSize: (row.printPaperSize || '80mm') as PaperSizeGroup,
       flowControl: row.flowControl,
       autoOpen: row.autoOpen,
     };
@@ -328,6 +343,19 @@ export function registerIpcHandlers(serialManager: SerialManager) {
     db.save();
     return count;
   });
+
+  // ---------- Printing ----------
+  ipcMain.handle('printers:list-grouped', async () => listPrintersGrouped());
+
+  ipcMain.handle('print:preview', (_event, input: PrintPreviewInput) => previewTicket(input));
+
+  ipcMain.handle('print:ticket', async (_event, input: PrintTicketInput) => printTicket(input));
+
+  // ---------- Updates ----------
+  ipcMain.handle('update:get-version', () => getAppVersion());
+  ipcMain.handle('update:check', () => checkForAppUpdates());
+  ipcMain.handle('update:download', () => downloadAppUpdate());
+  ipcMain.handle('update:install', () => installAppUpdate());
 
   // ---------- Renderer logging ----------
   ipcMain.handle('db:health-check', () => {

@@ -14,6 +14,7 @@ function formatWeight(value: number | null): string {
 export interface RecordsColumnActions {
   onView: (record: WeightRecord) => void;
   onEdit: (record: WeightRecord) => void;
+  onPrint: (record: WeightRecord) => void;
   onDelete: (record: WeightRecord) => void;
 }
 
@@ -136,8 +137,10 @@ export function createRecordsColumns(actions: RecordsColumnActions): ColumnDef<W
         <DataTableRowActions
           onView={() => actions.onView(row.original)}
           onEdit={() => actions.onEdit(row.original)}
+          onPrint={() => actions.onPrint(row.original)}
           onDelete={() => actions.onDelete(row.original)}
           showEdit={row.original.status === 'pending'}
+          showPrint={row.original.status === 'completed'}
         />
       ),
       enableSorting: false,
