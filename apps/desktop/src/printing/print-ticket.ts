@@ -41,19 +41,59 @@ export async function printTicket(input: {
       return { ok: false, error: `Printer "${printerName}" was not found` };
     }
 
+    const printOptions = {
+      silent: true,
+      printBackground: true,
+      deviceName: matched.name,
+      copies,
+      // Use the page's own @page CSS margins instead of the driver's default
+      // margins; on some thermal printer drivers the default margin is
+      // added on top of/instead of our CSS margin, shrinking the real
+      // printable width and clipping right-anchored content.
+      margins: { marginType: 'none' as const },
+    };
+
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/ae86dde8-539a-4041-add6-1f0ce25a4703', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '81ac12' },
+      body: JSON.stringify({
+        sessionId: '81ac12',
+        runId: 'run1',
+        hypothesisId: 'H-margins',
+        location: 'print-ticket.ts:printOptions',
+        message: 'print options sent to webContents.print',
+        data: {
+          paperSize: input.paperSize,
+          matchedPrinter: matched.name,
+          matchedDisplayName: matched.displayName,
+          printOptions,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion agent log
+
     await new Promise<void>((resolve, reject) => {
-      printWindow.webContents.print(
-        {
-          silent: true,
-          printBackground: true,
-          deviceName: matched.name,
-          copies,
-        },
-        (success, failureReason) => {
-          if (success) resolve();
-          else reject(new Error(failureReason || 'Print failed'));
-        },
-      );
+      printWindow.webContents.print(printOptions, (success, failureReason) => {
+        // #region agent log
+        fetch('http://127.0.0.1:7244/ingest/ae86dde8-539a-4041-add6-1f0ce25a4703', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '81ac12' },
+          body: JSON.stringify({
+            sessionId: '81ac12',
+            runId: 'run1',
+            hypothesisId: 'H-margins',
+            location: 'print-ticket.ts:print-callback',
+            message: 'print callback result',
+            data: { success, failureReason },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion agent log
+        if (success) resolve();
+        else reject(new Error(failureReason || 'Print failed'));
+      });
     });
 
     return { ok: true };

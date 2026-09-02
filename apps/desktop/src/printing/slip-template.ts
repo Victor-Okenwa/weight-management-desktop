@@ -13,6 +13,18 @@ function formatWeight(value: number | null | undefined, unit: string): string {
   return `${value.toLocaleString(undefined, { maximumFractionDigits: 3 })} ${escapeHtml(unit)}`;
 }
 
+function formatDateTime(value: string | null | undefined): string {
+  if (!value) return '--';
+  const date = new Date(value.replace(' ', 'T'));
+  if (Number.isNaN(date.getTime())) return escapeHtml(value);
+  const day = date.getDate();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${day}/${month}/${year} ${hours}:${minutes}`;
+}
+
 function pageCss(paperSize: PaperSizeGroup): string {
   switch (paperSize) {
     case '58mm':
@@ -25,12 +37,6 @@ function pageCss(paperSize: PaperSizeGroup): string {
         @page { size: A4; margin: 12mm; }
         body { width: 100%; max-width: 180mm; font-size: 14px; margin: 0 auto; }
       `;
-    case 'Letter':
-      return `
-        @page { size: letter; margin: 0.5in; }
-        body { width: 100%; max-width: 7in; font-size: 14px; margin: 0 auto; }
-      `;
-    case 'Other':
     case '80mm':
     default:
       return `
@@ -65,6 +71,8 @@ export function buildSlipHtml(
       color: #111;
       margin: 0;
       padding: 0;
+      overflow-wrap: break-word;
+      word-break: break-word;
     }
     h1 {
       font-size: 1.15em;
@@ -76,12 +84,20 @@ export function buildSlipHtml(
     .line { border-top: 1px dashed #444; margin: 8px 0; }
     .row {
       display: flex;
-      justify-content: space-between;
-      gap: 8px;
+      align-items: flex-start;
+      gap: 6px;
       margin: 3px 0;
     }
-    .label { color: #444; }
-    .value { font-weight: 600; text-align: right; }
+    .label { color: #444; flex: 0 0 4.4em; }
+    .value {
+      font-weight: 600;
+      font-size: 0.85em;
+      text-align: left;
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow-wrap: break-word;
+      word-break: break-word;
+    }
     .weights .value { font-variant-numeric: tabular-nums; }
     .footer {
       text-align: center;
@@ -111,8 +127,8 @@ export function buildSlipHtml(
     <div class="row"><span class="label">Net</span><span class="value">${formatWeight(record.netWeight, unit)}</span></div>
   </div>
   <div class="line"></div>
-  <div class="row"><span class="label">Created</span><span class="value">${escapeHtml(record.createdAt)}</span></div>
-  <div class="row"><span class="label">Updated</span><span class="value">${escapeHtml(record.updatedAt)}</span></div>
+  <div class="row"><span class="label">Created</span><span class="value">${formatDateTime(record.createdAt)}</span></div>
+  <div class="row"><span class="label">Updated</span><span class="value">${formatDateTime(record.updatedAt)}</span></div>
   ${record.remark ? `<div class="row"><span class="label">Remark</span><span class="value">${escapeHtml(record.remark)}</span></div>` : ''}
   ${footer ? `<div class="footer">${footer}</div>` : ''}
 </body>

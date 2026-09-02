@@ -1,3 +1,4 @@
+import { isPaperSizeGroup } from '@weight/shared/constants/index';
 import type { PaperSizeGroup, Record as WeightRecord, SettingsRow } from '@weight/shared/types/index';
 import { toast } from 'sonner';
 
@@ -12,7 +13,7 @@ export async function tryAutoPrintRecord(
 
   const result = await window.electronAPI.printTicket({
     printerName: settings.printPrinterName,
-    paperSize: (settings.printPaperSize || '80mm') as PaperSizeGroup,
+    paperSize: isPaperSizeGroup(settings.printPaperSize) ? settings.printPaperSize : '80mm',
     copies: settings.printCopies || 1,
     recordId: record.id,
   });

@@ -1,4 +1,4 @@
-import { paperSizeOptions } from '@weight/shared/constants/index';
+import { isPaperSizeGroup, paperSizeOptions } from '@weight/shared/constants/index';
 import type { PaperSizeGroup } from '@weight/shared/types/index';
 import { Printer } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -17,7 +17,7 @@ export function PrintSettingsTab() {
   const { settings, loadSettings } = useSettingsStore();
   const [printAuto, setPrintAuto] = useState(settings?.printAuto ?? false);
   const [printPaperSize, setPrintPaperSize] = useState<PaperSizeGroup>(
-    settings?.printPaperSize ?? '80mm',
+    isPaperSizeGroup(settings?.printPaperSize) ? settings.printPaperSize : '80mm',
   );
   const [printCopies, setPrintCopies] = useState(settings?.printCopies ?? 1);
   const [printPrinterName, setPrintPrinterName] = useState(settings?.printPrinterName ?? '');
@@ -26,7 +26,7 @@ export function PrintSettingsTab() {
 
   useEffect(() => {
     setPrintAuto(settings?.printAuto ?? false);
-    setPrintPaperSize(settings?.printPaperSize ?? '80mm');
+    setPrintPaperSize(isPaperSizeGroup(settings?.printPaperSize) ? settings.printPaperSize : '80mm');
     setPrintCopies(settings?.printCopies ?? 1);
     setPrintPrinterName(settings?.printPrinterName ?? '');
   }, [settings]);

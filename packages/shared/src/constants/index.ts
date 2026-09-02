@@ -17,15 +17,17 @@ export const FLOW_CONTROL_OPTIONS = ['none', 'xon/xoff', 'hardware'] as const;
 // Allowed data bits
 export const DATA_BITS = [5, 6, 7, 8];
 
-export const PAPER_SIZE_GROUPS = ['80mm', '58mm', 'A4', 'Letter', 'Other'] as const;
+export const PAPER_SIZE_GROUPS = ['A4', '80mm', '58mm'] as const;
 
 export const paperSizeOptions = [
+  { label: 'A4', value: 'A4' as const },
   { label: '80mm (thermal)', value: '80mm' as const },
   { label: '58mm (thermal)', value: '58mm' as const },
-  { label: 'A4', value: 'A4' as const },
-  { label: 'Letter', value: 'Letter' as const },
-  { label: 'Other', value: 'Other' as const },
 ] as const;
+
+export function isPaperSizeGroup(value: unknown): value is (typeof PAPER_SIZE_GROUPS)[number] {
+  return (PAPER_SIZE_GROUPS as readonly unknown[]).includes(value);
+}
 
 export const appearanceOptions = [
   {

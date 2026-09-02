@@ -14,7 +14,7 @@ import type {
   Material,
   PaginatedResult,
   PasswordActionResult,
-  PrintersGrouped,
+  PrinterInfo,
   PrintPreviewInput,
   PrintPreviewResult,
   PrintTicketInput,
@@ -111,7 +111,7 @@ declare global {
       deleteRecords: (ids: number[]) => Promise<number>;
 
       // Printing
-      listPrintersGrouped: () => Promise<{ groups: PrintersGrouped }>;
+      listPrinters: () => Promise<{ printers: PrinterInfo[] }>;
       previewTicket: (input: PrintPreviewInput) => Promise<PrintPreviewResult>;
       printTicket: (input: PrintTicketInput) => Promise<PrintTicketResult>;
 

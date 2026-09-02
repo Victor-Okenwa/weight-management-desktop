@@ -11,7 +11,7 @@ import type {
   Material,
   PaginatedResult,
   PasswordActionResult,
-  PrintersGrouped,
+  PrinterInfo,
   PrintPreviewInput,
   PrintPreviewResult,
   PrintTicketInput,
@@ -136,8 +136,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   deleteRecords: (ids: number[]): Promise<number> => ipcRenderer.invoke('records:delete-many', ids),
 
   // Printing
-  listPrintersGrouped: (): Promise<{ groups: PrintersGrouped }> =>
-    ipcRenderer.invoke('printers:list-grouped'),
+  listPrinters: (): Promise<{ printers: PrinterInfo[] }> => ipcRenderer.invoke('printers:list'),
   previewTicket: (input: PrintPreviewInput): Promise<PrintPreviewResult> =>
     ipcRenderer.invoke('print:preview', input),
   printTicket: (input: PrintTicketInput): Promise<PrintTicketResult> =>

@@ -46,17 +46,13 @@ export interface SerialOptions {
   autoOpen: boolean;
 }
 
-export type PaperSizeGroup = '80mm' | '58mm' | 'A4' | 'Letter' | 'Other';
+export type PaperSizeGroup = 'A4' | '80mm' | '58mm';
 
 export interface PrinterInfo {
   name: string;
   displayName: string;
   isDefault: boolean;
 }
-
-export type PrintersGrouped = {
-  [K in PaperSizeGroup]: PrinterInfo[];
-};
 
 export interface PrintTicketInput {
   printerName: string;
