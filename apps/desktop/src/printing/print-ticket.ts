@@ -46,11 +46,14 @@ export async function printTicket(input: {
       printBackground: true,
       deviceName: matched.name,
       copies,
-      // Use the page's own @page CSS margins instead of the driver's default
-      // margins; on some thermal printer drivers the default margin is
-      // added on top of/instead of our CSS margin, shrinking the real
-      // printable width and clipping right-anchored content.
-      margins: { marginType: 'none' as const },
+      // 'none' forces a literal zero-pixel margin, which strips away the
+      // buffer a printer needs for its own physical unprintable edge strip
+      // (caused left-aligned text to clip on the left). 'printableArea' asks
+      // Chromium to use the smallest margin that still stays within the
+      // printer driver's real printable bounds, avoiding both that edge
+      // clipping and the oversized 'default' driver margin that previously
+      // shrank the usable width and clipped right-anchored content.
+      margins: { marginType: 'printableArea' as const },
     };
 
     // #region agent log
@@ -59,8 +62,8 @@ export async function printTicket(input: {
       headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '81ac12' },
       body: JSON.stringify({
         sessionId: '81ac12',
-        runId: 'run1',
-        hypothesisId: 'H-margins',
+        runId: 'run2',
+        hypothesisId: 'H-printable-area',
         location: 'print-ticket.ts:printOptions',
         message: 'print options sent to webContents.print',
         data: {
@@ -82,8 +85,8 @@ export async function printTicket(input: {
           headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '81ac12' },
           body: JSON.stringify({
             sessionId: '81ac12',
-            runId: 'run1',
-            hypothesisId: 'H-margins',
+            runId: 'run2',
+            hypothesisId: 'H-printable-area',
             location: 'print-ticket.ts:print-callback',
             message: 'print callback result',
             data: { success, failureReason },

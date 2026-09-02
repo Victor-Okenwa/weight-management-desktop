@@ -41,6 +41,18 @@ interface PrinterDialogProps {
   onConfirm: (selection: PrinterSelection) => void | Promise<void>;
 }
 
+/**
+ * Best-effort guess of a printer's paper width from its name, e.g. "XPrinter-58"
+ * or "POS-80". Used to keep the page size selector in sync when the user
+ * switches printers, since printing an 80mm-formatted slip on a 58mm printer
+ * (or vice versa) causes real content to be physically clipped.
+ */
+function inferPaperSizeFromPrinterName(name: string): PaperSizeGroup | null {
+  if (/\b58\b/.test(name)) return '58mm';
+  if (/\b80\b/.test(name)) return '80mm';
+  return null;
+}
+
 function previewWidthClass(paperSize: PaperSizeGroup): string {
   switch (paperSize) {
     case '58mm':
@@ -111,9 +123,18 @@ export function PrinterDialog({
   useEffect(() => {
     if (!open) return;
     if (printers.some((p) => p.name === printerName)) return;
-    const fallback = printers.find((p) => p.isDefault)?.name ?? printers[0]?.name ?? '';
-    setPrinterName(fallback);
+    const fallback = printers.find((p) => p.isDefault) ?? printers[0];
+    setPrinterName(fallback?.name ?? '');
+    const inferred = fallback && inferPaperSizeFromPrinterName(fallback.displayName || fallback.name);
+    if (inferred) setPaperSize(inferred);
   }, [open, printers, printerName]);
+
+  function handlePrinterChange(name: string) {
+    setPrinterName(name);
+    const printer = printers.find((p) => p.name === name);
+    const inferred = printer && inferPaperSizeFromPrinterName(printer.displayName || printer.name);
+    if (inferred) setPaperSize(inferred);
+  }
 
   useEffect(() => {
     if (!open || mode !== 'print' || !record) {
@@ -229,7 +250,7 @@ export function PrinterDialog({
                 <Label htmlFor="print-printer-select">Select printer</Label>
                 <Select
                   value={printerName}
-                  onValueChange={setPrinterName}
+                  onValueChange={handlePrinterChange}
                   disabled={isLoadingPrinters || printers.length === 0}
                 >
                   <SelectTrigger id="print-printer-select" className="min-h-11">

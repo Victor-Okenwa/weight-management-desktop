@@ -28,9 +28,13 @@ function formatDateTime(value: string | null | undefined): string {
 function pageCss(paperSize: PaperSizeGroup): string {
   switch (paperSize) {
     case '58mm':
+      // 58mm thermal rolls commonly have a real printable width of ~48mm
+      // (not the naive 58mm - 2*2mm = 54mm), so content sized to 54mm was
+      // wider than the printer's actual print head, clipping the right end
+      // of lines/wrapped text.
       return `
         @page { size: 58mm auto; margin: 2mm; }
-        body { width: 54mm; font-size: 11px; }
+        body { width: 48mm; font-size: 11px; }
       `;
     case 'A4':
       return `
@@ -77,10 +81,10 @@ export function buildSlipHtml(
     h1 {
       font-size: 1.15em;
       margin: 0 0 4px;
-      text-align: center;
+      text-align: left;
       text-transform: uppercase;
     }
-    .meta { text-align: center; font-size: 0.9em; color: #333; margin-bottom: 8px; }
+    .meta { text-align: left; font-size: 0.9em; color: #333; margin-bottom: 8px; }
     .line { border-top: 1px dashed #444; margin: 8px 0; }
     .row {
       display: flex;
@@ -100,7 +104,7 @@ export function buildSlipHtml(
     }
     .weights .value { font-variant-numeric: tabular-nums; }
     .footer {
-      text-align: center;
+      text-align: left;
       margin-top: 10px;
       font-size: 0.9em;
     }
